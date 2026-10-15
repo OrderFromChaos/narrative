@@ -81,13 +81,16 @@ in `checks.py` and comments in `pyproject-snippet.toml` and `requirements-lock.t
 
 Do not fix these, and do not re-report them as new:
 - a person as the real subject, misread by the parser: `A reader who has never opened the module
-  must understand`, `the person making an edit must know`, `a reader arriving … from a stack trace
-  sees`, `Could someone change this value safely knowing`, `The reader needs every shape the module
-  can emit and needs no volume`
+  must understand`, `the person making an edit must know`, `when the person making the change
+  knows`, `a reader arriving … from a stack trace sees`, `Could someone change this value safely
+  knowing`, `The reader needs every shape the module can emit and needs no volume`, `how many files
+  the edit touches`
 - verb-shaped modifiers: `thinking traces`, `is missing`, `attribute declared in`, `a group described
-  only with`, `database values`
-- literal code verbs the lists do not cover: `declares global`, `may catch it` (an exception), `hold
-  open` and `an idle hold` (a file handle or connection)
+  only with`, `database values`, `the isort setting`, and the table cell `PascalCase classes`
+- literal code verbs the lists do not cover: `declares global`, `a second module declaring a second
+  global`, `may catch it` (an exception), `hold open` and `an idle hold` (a file handle or
+  connection), `stages that nothing reuses`
+- trade terms: `the source pushes` and `when the source supports it` (push notifications)
 - the rule text naming the word it bans (`deliberately`, `holds`, `its own`, `no longer` in the
   bullets that ban them), quoted bad examples, and dashes after a list-item term
 - decision ids and the missing module docstring in the generated files

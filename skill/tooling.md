@@ -7,7 +7,7 @@ Tested with ruff 0.16.3, pylint 4.0.7, mypy 2.3.1 and vermin 1.8.0, against the 
 
 ## Environments
 
-**uv** manages environments and packages: `uv venv`, `uv add`, `uv run`. Not pip or virtualenv
+Use **uv** for environments and packages: `uv venv`, `uv add`, `uv run`. Not pip or virtualenv
 directly. (R10-uv)
 
 ## The split
@@ -94,7 +94,7 @@ local, so the module value silently never changes.
 ## Gotchas
 
 **`ruff format` collapses a 4-arg signature back onto one line** unless it ends with a magic
-trailing comma. With the comma, the exploded form survives formatting. Without it, the signature is
+trailing comma. With the comma, the signature stays exploded. Without it, the signature is
 joined onto one line.
 
 So the ">3 args goes multiline" rule in `SKILL.md` survives only because of the trailing comma.
@@ -185,8 +185,8 @@ error: Argument 1 to "add" of "set" has incompatible type "str | None"; expected
 ```
 
 Two separate `elif` branches each narrow `node` to one type, so `node.name` is `str`. Merge only
-where the narrowing survives the merge. Where it does not, narrowing wins (R2b-B5). `NAR007`
-enforces the parentheses for the cases where merging is fine.
+where mypy narrows the merged branch the same way. Where it does not, narrowing wins (R2b-B5).
+`NAR007` enforces the parentheses for the cases where merging is fine.
 
 **`ruff format` puts one item per line in any collection literal that does not fit on one line**,
 with or without a trailing comma.

@@ -11,7 +11,8 @@ no tool can check is marked as such.
 
 ## The measure
 
-**Name the change before you make it, and the name must give you one file to open.** (`R7-M01`)
+**Name the change before you make it. The name must be enough for you to know the one file to
+open.** (`R7-M01`)
 
 Say what the change is in the words a colleague would use: "the vendor revised the frame format",
 "the retention window moved to 90 days", "we added a third lockfile format". A design passes when
@@ -40,11 +41,12 @@ Spend a named type or a file to delete a threaded parameter. Never the reverse.
 
 A per-vendor retry cap is a property of the manufacturer's networking stack, so it belongs with the
 vendor and not in a generic backoff module. A retention window is a property of the data, not of the
-scheduler that applies it. Four questions that look unrelated have their answer in this one rule:
+scheduler that runs the cleanup. Four questions that look unrelated have their answer in this one
+rule:
 
 - **Do not make a caller pass what the callee can compute from its arguments and imports.**
-  (`R7-A01-revised`) A store module may import a config module rather than push a lookup onto every
-  caller. **This outranks dependency direction.** The two rules collide often.
+  (`R7-A01-revised`) A store module may import a config module, so that no caller has to pass it a
+  lookup. **This outranks dependency direction.** The two rules collide often.
 
 - **An exception type belongs in the shared vocabulary, not in the module that raises it.**
   (`R7-A04-revised`) Any module may catch it, so it belongs to no one module. The alternative pays
@@ -107,8 +109,8 @@ reason. Layers inferred from current imports make every existing edge legal by c
 
 **A cycle is a wrong cut, not an import problem.** (`R7-A02`) Break it with a shared vocabulary
 module. Do not reach for `if TYPE_CHECKING`. It is cheap only because the future import is
-mandatory. Do not dissolve the shared type into primitives. **A callee that takes primitives
-pushes its destructuring decision onto every caller.**
+mandatory. Do not dissolve the shared type into primitives. **When a callee takes primitives, every
+caller has to destructure the shared type.**
 
 **Call a first-party module by name.** `from collector import store`, then `store.insertReading`.
 (`R7-B06`) `R3a-08` applies here too. Import the class, and keep the verb qualified.

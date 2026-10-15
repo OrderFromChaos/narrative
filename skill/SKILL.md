@@ -132,8 +132,8 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
 
 - Anything added in 3.12 or later is out, including the `type` statement and PEP 695 generics.
 
-- A comment on a guard for a runtime newer than the floor gives the version: `# on 3.12.1 and later,
-  wait_closed() waits for open connections`. (R10-version-guard)
+- On a guard for a runtime newer than the floor, the comment has the version: `# on 3.12.1 and
+  later, wait_closed() waits for open connections`. (R10-version-guard)
 
 ## Structure inside a function
 
@@ -163,14 +163,14 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
 - Mixed `and`/`or` parenthesises each group explicitly. Never `A and B or C and D`. Ruff cannot
   produce this form, so `SIM114` is disabled and `NAR007` enforces it. (R2b-B4)
 
-- Merge branches that share a body **only where the type checker's narrowing survives the merge.**
-  If you merge two `isinstance` branches, even with parentheses, mypy widens the subject back to a
-  union and loses the narrowing. Two explicit branches beat one clever condition. (R2b-B5)
+- Merge branches that share a body **only where the type checker narrows the merged branch the same
+  way.** If you merge two `isinstance` branches, even with parentheses, mypy widens the subject back
+  to a union and loses the narrowing. Two explicit branches beat one clever condition. (R2b-B5)
 
 - Collection literals get one item per line **wherever `ruff format` explodes them**. That is any
-  literal it cannot fit on one line. This is how the formatter behaves, not a further rule. A short
-  literal it leaves packed is already correct. A word-list-shaped literal may use a `# fmt: off` /
-  `# fmt: on` fence to stay packed. (R2b-B2)
+  literal it cannot fit on one line. This is the output of `ruff format`, not a further rule. A
+  short literal it leaves packed is already correct. A word-list-shaped literal may use a
+  `# fmt: off` / `# fmt: on` fence to stay packed. (R2b-B2)
 
 ## Naming
 
@@ -425,7 +425,7 @@ silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum`
   abort on the first bad item. (Q24)
 
 - **The config gate is the exception.** (R8-D25-resolved) `Q24` governs the batch a program
-  processes, not the configuration telling it what to process. With a half-valid config, what the
+  processes, not the configuration of what to process. With a half-valid config, what the
   program was asked to do is unknown, so the gate raises on the first malformed entry and the
   program exits. Degrading there would run the job the operator did not ask for.
 
@@ -530,8 +530,8 @@ first, before `main()`, so it is about what the program is *for*, not how it wor
 **Write for a professional developer who has the file open.** That reader knows the language and the
 vocabulary of the trade, so `API`, `idempotent` and `tuple` are the right words and a plain-English
 circumlocution around them is worse. One idea per sentence. **One word for one thing, and the word
-is the identifier the code uses.** `unassigned` in a docstring where the code has `unattributed`
-sends a reader to grep for something that is not there. (R9-09)
+is the identifier the code uses.** With `unassigned` in a docstring where the code has
+`unattributed`, a reader greps for something that is not there. (R9-09)
 
 The prose rules for comments and docstrings are in **Comments**.
 
@@ -645,7 +645,7 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 **Compress what survives:**
 
 - **Name the property, do not explain it.** `Rows are keyed on team, total and quota, so runs are
-  idempotent` replaces three sentences describing idempotence.
+  idempotent` replaces three sentences about idempotence.
 - **State an ordering as its sort key.** In prose, a multi-level sort is ambiguous between one
   composite key and two separate sorts. `Teams sort by (-over, -used, team). The paths inside a team
   sort by (-size, path)` settles that, and the tie-break on `team` is visibly ascending while the
@@ -675,7 +675,7 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   calls one contains a `raise`. (Q05, R2-03, R2-05, R5-05, R8-D18-resolved)
 
   The trigger is contract complexity, not length alone, so the parameter count sits beside the line
-  count. A bare line threshold would reward fragmentation. Splitting a 21-line
+  count. A bare line threshold is easy to get around by fragmentation. Splitting a 21-line
   function into two 12-line ones deletes the obligation without simplifying either contract.
 
 - **The docstring has a summary and a `Raises:` section. It has `Args:` and `Returns:` only where
@@ -695,10 +695,10 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   sentence already implies. (Q05)
 
 - **A docstring is about its file alone.** Do not assert what another module does, do not claim to
-  be the only place something happens, and do not count callers.
-  `nothing outside this module imports sqlite3` and `this is the one place that builds it` are
-  claims that no tool checks and that the next commit falsifies. Name another module only where a
-  reader of *this* file needs the name in order to use this file. (R9-02)
+  be the only place something happens, and do not count callers. `nothing outside this module
+  imports sqlite3` and `this is the one place that builds it` are claims that no tool checks and
+  that the next commit can make false. Name another module only where a reader of *this* file needs
+  the name in order to use this file. (R9-02)
 
 - Where semantics vary by implementation (file moves, copies, path manipulation), **show a
   concrete before/after example**, not prose. (R3a-11)
@@ -808,7 +808,7 @@ R10-depth-example, R10-period-join)
   attach the second clause to the wrong noun. `# migrate before load, which reads the account_id
   column` → `# migrate before load. load reads the account_id column` (R10-period-join)
 - terse. Drop articles where nothing is lost, never the subject or the verb (R10-seed-10, R10-terse-narrow)
-- every clause has a subject and a verb. A label naming the thing is fine: `# least recently used
+- every clause has a subject and a verb. A label for the thing is fine: `# least recently used
   first`, `Exact, case-sensitive comparison.` A predicate with its subject cut is not:
   `Bound to one machine` → `The modifier is bound to one machine`, and
   `# named, so a recreated container gets it back` → `# named volumes persist when a container
@@ -881,11 +881,12 @@ R10-depth-example, R10-period-join)
   above `pendulum.parse(raw_at, tz=None)`, not below the `try` block. End-of-line for a short note.
   (R10-Q34, R10-locality, R10-fence-form, R10-argument-placement)
 
-`NAR012` to `NAR016` and `NAR018` flag six wording faults in comments and docstrings, and a clean run is no
-evidence about the rest of these lists. Check every comment and docstring you write or touch against
-them. A dash after a list-item term is allowed. `NAR015` also flags `no longer` about data. Such a
-sentence usually gives data an agent verb, so reword it. Silence a false positive with
-`# noqa: NARxxx`. (R10-lint, R10-skill-gaps, R10-list-dash, R10-nar015-scope, R10-nar016, R10-nar018)
+`NAR012` to `NAR016` and `NAR018` flag six wording faults in comments and docstrings, and a clean
+run is no evidence about the rest of these lists. Check every comment and docstring you write or
+touch against them. A dash after a list-item term is allowed. `NAR015` also flags `no longer` about
+data. Such a sentence usually has data as the subject of an agent verb, so reword it. Silence a
+false positive with `# noqa: NARxxx`. (R10-lint, R10-skill-gaps, R10-list-dash, R10-nar015-scope,
+R10-nar016, R10-nar018)
 
 `NAR017` is an agent verb on a subject that cannot act, meaning a noun that is not a person, with a verb for
 something only a person does: thought or speech (`a period ranks`, `the report names it`, `a policy
@@ -975,7 +976,7 @@ docstring summary, the input to **Prose review**.
 | exit | meaning |
 |---|---|
 | 0 | every tool passed |
-| 1 | at least one tool reported a finding |
+| 1 | at least one tool had a finding |
 | 2 | the toolchain or the config is missing, so nothing was checked |
 
 The job of each layer, and the tool defaults that break rules of this skill, are in `tooling.md`. For
