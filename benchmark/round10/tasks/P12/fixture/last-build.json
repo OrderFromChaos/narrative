@@ -1,0 +1,60 @@
+{
+  "packages": {
+    "api": {
+      "src/api/routes.py": "3cc4a951a7c9f9976d5e43fd3a4980054efd524294dfb1046d5d0a11eedcc2a1"
+    },
+    "app": {
+      "src/app/main.ts": "96dbaac49fc6b9ee59bbd9c321d527d030caacbd35d2871ba938b3691b3f4b8e"
+    },
+    "cli": {
+      "bin/cli.py": "d4e9d7d044de345860088d51e11f9ce176573e1c717b4b73f2fd916d42cb88ed"
+    },
+    "codegen": {
+      "codegen.py": "27e18523b2cec07f4af3d54a6a9609b3d9f35ee83f97cea6a6c78064a0024b2b"
+    },
+    "config": {},
+    "core": {
+      "src/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/core/store.py": "b44e8676131571bc78a4b2bba67c1a13e6c7684da799e23732662a41486c0d66"
+    },
+    "dashboard": {
+      "dashboard.py": "5865091aeba4a03230e64716d144ca3ee63c2da8b9d918f64a6248a24fbd97cb"
+    },
+    "docs": {
+      "guide/install.md": "6dc0b6713bbd13c3625086d5aee414d2ec38b90d02dba8c3e48015d14e61d744",
+      "guide/old-setup.md": "abc536c737803a19e87e6824dd5c071338a675ffe1e412c8d2aad07025eaac7d"
+    },
+    "eta": {
+      "eta.py": "db53c2cd1e2dcc67003f712e8e48283919f01af4446ed3f392a61d45996554dd"
+    },
+    "fmt": {
+      "fmt.py": "a61dc26ecd3190e31cf63243b806b9fbc8a824deb5e9f554b910b08782f7f4eb"
+    },
+    "lint": {
+      "lint.py": "9721f1795d2ea59ebd649dbe65391cf2b2e56d1453bf335e338d73ce2fd9934c"
+    },
+    "net": {
+      "include/socket.h": "a2f7cfef978d1fdb4a804c20678aa271f9bbbeb989d95012102db52be63d92bd",
+      "src/socket.c": "2470f582d3b590354936c24429e3ce4e8d1f47b2b309906aaec311720075b40a"
+    },
+    "net-http": {
+      "client.c": "4d500086799da39a933bec69c93a90799bb766167a6f943139b5272cac53c252"
+    },
+    "report": {
+      "report.py": "3bca155fdc5c4462edc254e163d786e5e22d90225b69568ce882e7e9b799337f"
+    },
+    "styles": {
+      "base.css": "25e8ca1220810764d6705aee5efae670904cb0a8b56059f49b6e7d0659662a8f",
+      "theme.css": "2bcc8fcafdb3b6767438c737bbb1fcbeedd4d5567be9705a2890672aa2836320"
+    },
+    "theta": {
+      "theta.py": "f1a1f986c90b8f6d5b90253f39efce7a33f2c325170c7684464b09ef81cfaa08"
+    },
+    "ui": {
+      "src/ui/button.ts": "b61f6ecd1e224a571945128b7aa2bc3321f2da62604e3d096db97e1b3b7a6d4f"
+    },
+    "zeta": {
+      "zeta.py": "a52130174672a12144043d622a9831ff695c837faffaa5c9288bdfdf334b3a49"
+    }
+  }
+}

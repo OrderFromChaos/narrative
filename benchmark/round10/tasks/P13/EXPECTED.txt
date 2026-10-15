@@ -1,0 +1,20 @@
+17 occurrences, 3 rejected, exit 1. All dates 2027; UTC first, then start_local.
+backup-check: 03-12T07:30Z 02:30-05:00; 03-14T07:30Z 03:30-04:00; 03-15T06:30Z 02:30-04:00
+harbour-batch: 03-16T15:30Z, 03-20T15:30Z, 03-30T15:30Z, 04-03T15:30Z, each 02:30+11:00 on the next local day (17, 21, 31 Mar, 4 Apr)
+month-end: 03-31T15:00Z 17:00+02:00, summary "Monatsabschluss und Überprüfung"; nothing in April
+release-review: 04-30T15:00Z 16:00+01:00 only, summary "Release review, London"
+board: 03-09T00:00Z and 04-13T00:00Z, both 09:00+09:00
+crit: 04-08T12:00Z 14:00+02:00; 04-16T09:00Z 11:00+02:00 "Design crit (moved)", moved_from_utc 04-15T12:00Z; 04-22T12:00Z 14:00+02:00
+patch: 03-20T23:00Z, 03-30T23:00Z, 04-09T23:00Z, timezone "UTC", local +00:00
+every other occurrence has moved_from_utc null
+rejected: line 47 anniversary@kestrel.test unsupported rule; line 76 crit@kestrel.test orphan override; line 88 vendor-call@kestrel.test unknown time zone
+traps:
+  jump forward: 2027-03-14 02:30 New York does not exist; zoneinfo without a round trip prints 02:30-05:00, fold=1 gives 06:30Z, and skipping it loses the occurrence
+  COUNT with EXDATE: COUNT=4 covers 12..15 March and 13 March is excluded, so 3 occurrences; adding 16 March gives 4
+  clock goes back: 2027-04-04 02:30 Sydney occurs twice; pendulum's default (the later one) gives 04-03T16:30Z 02:30+10:00
+  BYMONTHDAY=31: clamping to the month's last day adds 04-30T15:00Z for month-end
+  -1FR with EXDATE 12:00 New York: equal to 16:00 London on 26 March, so 03-26T16:00Z is excluded; comparing wall clocks keeps it, and reading -1FR as 4FR gives 04-23 instead of 04-30
+  UTC UNTIL: 13 April 09:00 Tokyo is exactly 20270413T000000Z and is kept; comparing local 09:00 with 00:00, reading UNTIL as Tokyo time, or a strict comparison drops it
+  overrides: the 29 April crit moves to 3 May, outside the window, so it disappears; keeping it at 04-29T12:00Z is wrong, and the 30 April override matches no occurrence
+  folded lines: counting unfolded lines gives rejected lines 45, 74, 86; not unfolding breaks release-review's RRULE (BYDA / Y=-1FR) and the tab-folded summary; the VTIMEZONE's DTSTART and YEARLY RRULE must not form an event
+Computed by hand and checked against a separate reference implementation; the expansions were cross-checked with dateutil.rrule and the ambiguous time with pendulum's default.

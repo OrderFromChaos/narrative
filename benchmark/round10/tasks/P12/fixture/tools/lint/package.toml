@@ -1,0 +1,3 @@
+name = "lint"
+dependencies = ["fmt"]
+sources = ["*.py"]

@@ -28,19 +28,19 @@ makes some older example wrong.
 
 ```bash
 .lintenv/bin/python .claude/skills/self-consistency-narrative/prose_as_comments.py S
-.lintenv/bin/python skill/agentverbs.py S
-.lintenv/bin/python skill/checks.py S --select NAR013 --select NAR014 --select NAR015 --select NAR016 --select NAR018
+.lintenv/bin/python skill/agentverbs.py skill/SKILL.md skill/architecture.md skill/tooling.md S
+.lintenv/bin/python skill/checks.py skill/SKILL.md skill/architecture.md skill/tooling.md S --select NAR013 --select NAR014 --select NAR015 --select NAR016 --select NAR018
 ```
 
-`prose_as_comments.py` writes `SKILL.py` (prose and headings) and `SKILL_examples.py` (every comment
-example) for each document, keeping line numbers, so a finding at `SKILL.py:171` is line 171 of
-`skill/SKILL.md`.
+`agentverbs.py` and `checks.py` read the Markdown prose directly, through `skill/prose.py`.
+`prose_as_comments.py` writes `SKILL_examples.py`, every comment example of a document, keeping line
+numbers, so a finding at `SKILL_examples.py:769` is line 769 of `skill/SKILL.md`.
 
 Then the scripts, from a directory whose `pyproject.toml` is the skill's config:
 
 ```bash
 cp skill/pyproject-snippet.toml S/pyproject.toml
-cd S && PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skill/verify.py --venv <repo>/.lintenv <repo>/skill/verify.py <repo>/skill/checks.py <repo>/skill/agentverbs.py
+cd S && PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skill/verify.py --venv <repo>/.lintenv <repo>/skill/verify.py <repo>/skill/checks.py <repo>/skill/agentverbs.py <repo>/skill/prose.py
 ```
 
 All 7 checks must pass. Read the comment and docstring list it prints, and the scripts' error messages and `--help` text, through the steps of **Prose review** under **Procedures**.
@@ -50,7 +50,9 @@ All 7 checks must pass. Read the comment and docstring list it prints, and the s
 .lintenv/bin/python verify_docs.py
 ```
 
-The gold score must not drop. `verify_docs.py` must report 0 problems, including the README's
+The gold score must not drop. Held-out gold sets come from private artifacts and stay outside the
+repository, such as `~/.cache/narrative-agentverb-case/gold_gtnh.tsv`. Where one is present, score
+it with `--score` and report the score, and never tune a word list on it. `verify_docs.py` must report 0 problems, including the README's
 decision count.
 
 ## 3. What the checks miss

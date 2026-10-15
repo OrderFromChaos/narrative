@@ -1,0 +1,19 @@
+actions, in output order: delete assets; mkdir assets; copy assets/logo.svg; mkdir cache; copy cache/README.txt;
+  rename café.txt -> café.txt (from "caf" + U+00E9 to "cafe" + U+0301); update config.ini; mkdir empty; mkdir manual;
+  rename old/guide.txt -> manual-copy.txt; copy manual/guide.txt; delete obsolete.txt; mkdir src; mkdir src/build;
+  copy src/build/main.c; rmdir stale
+conflicts: Notes.txt case clash; bad\xff.txt undecodable name (in the JSON "bad\\xff.txt"); latest.csv symlink; notes.txt case clash. exit 1
+totals: copy 4, update 1, rename 2, delete 2, mkdir 6, rmdir 1, unchanged 4, conflicts 4
+not planned: README.md, data/2028.csv, docs/guide.txt, docs/2028/budget.txt (unchanged); app.log, build/, cache/blob.bin,
+  docs/notes.draft, docs/2028/plan.draft, old/trace.log (ignored); replica old/ and Notes.txt (left alone)
+after --apply (exit 1), a second plan has no actions, unchanged 11 and the same 4 conflicts
+traps:
+  ignore rules: !build/keep.txt has no effect because build/ is ignored and not read, while !cache/README.txt re-includes because cache/* ignores the entries in cache, not cache itself; /build/ is anchored, so src/build/main.c is copied; /docs/**/*.draft matches docs/notes.draft with no directory between (a translation that needs one copies it)
+  rename with identical copies: the guide content is in docs/guide.txt (unchanged), old/guide.txt (gone), manual-copy.txt and manual/guide.txt (new); only old/guide.txt can be the origin, and its target is manual-copy.txt because "-" (U+002D) sorts before "/" (U+002F); sorting by path components picks manual/guide.txt, and using the unchanged docs/guide.txt as the origin moves a file that must stay
+  file replaced by a directory: replica file assets becomes delete assets, mkdir assets, copy assets/logo.svg; planning "update assets" or copying into the file fails
+  symlink: latest.csv -> data/2028.csv is a conflict and is not copied; Path.is_file() follows the link and copies it as a regular file
+  case clash: Notes.txt and notes.txt are both conflicts and replica Notes.txt is neither updated nor deleted; syncing both on a case-insensitive replica makes one overwrite the other
+  names as bytes: the NFC replica name and the NFD source name are different paths with equal content, so a rename; normalising names reports the file unchanged; bad\xff.txt read as a str name becomes "bad\udcff.txt", which is copied like any file and makes json.dumps(..., ensure_ascii=False) output fail with UnicodeEncodeError
+  directories: empty/ needs a mkdir though it holds no file; stale/ is removed; old/ is kept because it holds the ignored trace.log (shutil.rmtree on old/ deletes it)
+  same size, same modification time, different content: config.ini is an update; comparing size and mtime skips it
+Checked with a throwaway reference implementation run on the extracted tar (plan, then --apply, then a second plan), and by hand against the rules in TASK.md.

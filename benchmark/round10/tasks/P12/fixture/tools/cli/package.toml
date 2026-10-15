@@ -1,0 +1,3 @@
+name = "cli"
+dependencies = ["config"]
+sources = ["bin/*.py"]

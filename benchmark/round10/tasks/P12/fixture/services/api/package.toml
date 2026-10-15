@@ -1,0 +1,3 @@
+name = "api"
+dependencies = ["core", "config"]
+sources = ["src/**/*.py"]

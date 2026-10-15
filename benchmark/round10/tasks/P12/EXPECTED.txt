@@ -1,0 +1,17 @@
+stale: api dependency rebuilt; app dependency rebuilt; core sources changed [src/core/store.py]; docs sources changed [guide/old-setup.md]; net-http sources changed [client.c]; styles sources changed [theme.css]; ui dependency rebuilt
+stages: [core, docs, net-http, styles], [api, ui], [app]
+cycles: [codegen], [eta, zeta, theta], [fmt, lint]
+missing: report -> charts
+blocked: codegen, dashboard, eta, fmt, lint, report, theta, zeta
+not stale: config, cli, net. exit 1
+traps:
+  diamond app -> ui, api -> core: core and app each appear once; a per-path walk stages core or app twice
+  cycle eta -> zeta -> theta: rotated, not sorted; sorting the members gives [eta, theta, zeta], and an unrotated walk reports it from zeta or theta, or several times
+  two independent cycles: stopping at the first cycle found misses [fmt, lint]
+  codegen depends on itself: a one-package cycle; skipping self-edges stages codegen instead of blocking it
+  report depends on undeclared charts: a dict lookup crashes with KeyError, and ignoring it leaves report and dashboard out of blocked with exit 0
+  net-http nested in libs/net, whose **/*.c also matches plugins/http/client.c: the outer net then counts it, becomes stale with [plugins/http/client.c], and net-http drops to stage 2
+  styles/theme.css differs from the recorded bytes only by CRLF line endings: hashing in text mode finds no change and leaves styles fresh
+  config has no sources and is recorded as {}: treating the empty map as "not built" makes config new and cli stale by dependency
+  docs/guide/old-setup.md is recorded but deleted: comparing only the files on disk misses it and leaves docs fresh
+Computed by hand and checked against a separate reference implementation; the fixture holds CRLF bytes, so it must not be committed through a line-ending filter.

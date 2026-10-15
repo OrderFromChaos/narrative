@@ -147,73 +147,80 @@ Re-run the extraction with:
 ## Claudish: Claude's comments against human ones
 
 `sessions` is a fourth source, kept outside the repository because it contains the user's private code:
-every comment line Claude added through Edit, Write or MultiEdit across the user's Claude Code
-transcripts, 29 projects. Only tool inputs were read. The baseline is professional, almost entirely
-pre-LLM Python: the CPython 3.14 standard library (without `encodings/` and `idlelib/`) and the mypy,
-pylint and astroid sources.
+every comment line Claude wrote into a file before 2026-10-01 21:11 UTC, across the user's Claude
+Code transcripts, 20 projects. It covers Edit, Write and MultiEdit, and Bash commands that write a
+file: heredocs, the `replace()` and `write_text()` literals of inline Python scripts, `sed -i`,
+`perl -pi` and patches. A Bash command that also edits Markdown, GDScript or another file type
+outside the list is left out. Each tool call counts once, because a resumed or forked session copies
+earlier tool calls into a new transcript. Only tool inputs were read. The baseline is professional,
+almost entirely pre-LLM Python: the CPython 3.14 standard library (without `encodings/` and
+`idlelib/`) and the mypy, pylint and astroid sources.
 
-Rates are per 100 comment blocks. `Claude #` is Python, shell and config files only. `Claude all`
-adds `//` languages, mostly Java and TypeScript.
+Rates are per 100 comment blocks: the share of blocks with at least one match. The container-verb row
+counts a match only when spaCy (`en_core_web_md`) tags the word as a verb, because `names` and
+`states` are mostly nouns in human code. `Claude #` is Python, shell and config files only.
+`Claude all` adds `//` languages, mostly Java and TypeScript.
 
 | feature | Claude # | Claude all | human | ratio |
 |---|---|---|---|---|
-| blocks | 2,578 | 6,305 | 22,891 | |
-| median words | 24 | 31 | 9 | |
-| p90 words | 83 | 101 | 29 | |
-| blocks of more than one sentence | 45% | 56% | 15% | 3.1 |
-| `, not` contrast | 10.7 | 10.0 | 0.4 | 24 |
-| dash (` -- ` or `—`) | 23.9 | 34.4 | 1.0 | 23 |
-| absolutes: every, never, whole, exactly | 31.1 | 46.5 | 1.6 | 19 |
-| `the one` / `one place` | 2.2 | 2.8 | 0.1 | 18 |
-| deliberately, on purpose, by design | 2.1 | 3.1 | 0.1 | 17 |
-| `rather than` / `instead of` | 18.2 | 21.4 | 1.1 | 16 |
-| `, so` joining clauses | 32.9 | 42.3 | 3.3 | 10 |
-| semicolon | 18.5 | 27.5 | 2.5 | 7 |
-| agentive verb: finds, knows, wants, sees, asks, decides, owns | 2.3 | 4.9 | 0.3 | 7 |
-| container verb: holds, carries, lives, keeps, names, states | 11.3 | 13.1 | 2.0 | 6 |
-| intensifier: genuine, real, actually, really, truly | 8.3 | 11.2 | 1.5 | 6 |
-| article before a backticked identifier | 2.8 | 1.3 | 0.6 | 5 |
-| `because` | 9.2 | 10.2 | 2.4 | 4 |
-| passive (`is`/`are`/`was`/`be` + `-ed`) | 26.0 | 35.5 | 14.7 | 1.8 |
-| changelog: now, no longer, used to, the old | 2.9 | 4.9 | 2.7 | 1.1 |
-| hedge: usually, likely, probably, might, seems | 0.3 | 0.5 | 2.4 | 0.1 |
-| first person: we, our, us, I | 2.0 | 3.6 | 22.8 | 0.1 |
-| TODO, NOTE, FIXME, XXX, HACK | 0.1 | 0.1 | 3.7 | 0.03 |
+| blocks | 2,962 | 6,556 | 21,977 | |
+| median words | 22 | 30 | 9 | |
+| p90 words | 79 | 94 | 29 | |
+| blocks of more than one sentence | 42% | 49% | 15% | 2.8 |
+| container verb, tagged as a verb: holds, carries, lives, keeps, names, states | 7.9 | 8.7 | 0.2 | 38 |
+| possessive `own` | 7.2 | 10.6 | 0.2 | 34 |
+| deliberately, on purpose, by design | 1.9 | 2.9 | 0.1 | 28 |
+| `the one` / `one place` | 2.3 | 2.6 | 0.1 | 19 |
+| dash (` -- ` or `—`) | 17.5 | 18.2 | 1.0 | 18 |
+| `, not` contrast | 7.9 | 8.2 | 0.4 | 18 |
+| absolutes: every, never, whole, exactly | 22.0 | 28.0 | 1.5 | 14 |
+| `rather than` / `instead of` | 14.0 | 17.2 | 1.1 | 13 |
+| `, so` joining clauses | 24.4 | 29.8 | 2.9 | 8.5 |
+| agentive verb: finds, knows, wants, sees, asks, decides, owns | 2.2 | 4.2 | 0.3 | 8.0 |
+| semicolon | 15.7 | 19.3 | 2.3 | 6.9 |
+| article before a backticked identifier | 2.3 | 1.1 | 0.5 | 4.4 |
+| intensifier: genuine, real, actually, really, truly | 6.3 | 9.1 | 1.4 | 4.3 |
+| `because` | 7.8 | 8.5 | 2.3 | 3.4 |
+| passive (`is`/`are`/`was`/`be` + `-ed`) | 17.3 | 22.7 | 12.5 | 1.4 |
+| changelog: now, no longer, used to, the old | 2.7 | 4.0 | 2.4 | 1.1 |
+| hedge: usually, likely, probably, might, seems | 0.3 | 0.3 | 2.0 | 0.1 |
+| TODO, NOTE, FIXME, XXX, HACK | 0.3 | 0.2 | 3.6 | 0.09 |
+| first person: we, our, us, I | 1.0 | 1.6 | 16.4 | 0.06 |
 
 The same features after round 10, per 100 comment blocks, with 95% intervals in brackets: Wilson
 intervals for rates, and intervals from binomial order statistics for the word-count percentiles.
-`human` is recomputed from the same sources (21,977 blocks against 22,891; first person comes out at
-16.4 against 22.8, the other rows within 0.4). `Claude, no skill` is `Claude #` above, with its
-interval derived from the published rate and block count, because the transcripts are private.
-`this skill, cycles 7 to 13` is every `#` comment block in the review files of those cycles
-(`cycles/`). `cycle 13` is ten runs of `skill/` as shipped, one per task P1 to P10. The semicolon
-rows before cycle 12 predate R10-no-semicolon. `cycles/claudish_table.py` recomputes the table.
+`Claude, no skill` is `Claude #` above, with its interval derived from its rate and block count,
+because the transcripts are private. `this skill, cycles 7 to 13` is every `#` comment block in the
+review files of those cycles (`cycles/`). `cycle 13` is ten runs of `skill/` as shipped, one per
+task P1 to P10. `cycles 14 and 15` is twenty runs of `skill/` at commit 9efdfe9, one per task P1 to
+P20. The semicolon rows before cycle 12 predate R10-no-semicolon.
+`cycles/claudish_table.py 7-13 13-13 14-15` recomputes the table.
 
-| feature | Claude, no skill | human | this skill, cycles 7 to 13 | cycle 13 |
-|---|---|---|---|---|
-| blocks | 2,578 | 21,977 | 185 | 84 |
-| median words | 24 | 9 [9, 9] | 11 [10, 11] | 11 [10, 11] |
-| p90 words | 83 | 29 [28, 29] | 17 [15, 20] | 17 [15, 20] |
-| blocks of more than one sentence (%) | 45.0 [43.1, 46.9] | 14.8 [14.3, 15.3] | 4.3 [2.2, 8.3] | 8.3 [4.1, 16.2] |
-| `, not` contrast | 10.7 [9.6, 12.0] | 0.4 [0.4, 0.5] | 0.5 [0.1, 3.0] | 1.2 [0.2, 6.4] |
-| dash (` -- ` or `—`) | 23.9 [22.3, 25.6] | 1.0 [0.8, 1.1] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] |
-| absolutes: every, never, whole, exactly | 31.1 [29.4, 32.9] | 1.5 [1.4, 1.7] | 7.0 [4.2, 11.7] | 6.0 [2.6, 13.2] |
-| `the one` / `one place` | 2.2 [1.7, 2.9] | 0.1 [0.1, 0.2] | 0.5 [0.1, 3.0] | 1.2 [0.2, 6.4] |
-| deliberately, on purpose, by design | 2.1 [1.6, 2.7] | 0.1 [0.0, 0.1] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] |
-| `rather than` / `instead of` | 18.2 [16.8, 19.7] | 1.1 [0.9, 1.2] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] |
-| `, so` joining clauses | 32.9 [31.1, 34.7] | 2.9 [2.7, 3.1] | 14.6 [10.2, 20.4] | 14.3 [8.4, 23.3] |
-| semicolon | 18.5 [17.1, 20.0] | 2.3 [2.1, 2.5] | 3.2 [1.5, 6.9] | 0.0 [0.0, 4.4] |
-| agentive verb: finds, knows, wants, sees, asks, decides, owns | 2.3 [1.8, 2.9] | 0.3 [0.2, 0.4] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] |
-| container verb: holds, carries, lives, keeps, names, states | 11.3 [10.1, 12.6] | 1.8 [1.7, 2.0] | 1.6 [0.6, 4.7] | 0.0 [0.0, 4.4] |
-| intensifier: genuine, real, actually, really, truly | 8.3 [7.3, 9.4] | 1.4 [1.3, 1.6] | 0.5 [0.1, 3.0] | 0.0 [0.0, 4.4] |
-| article before a backticked identifier | 2.8 [2.2, 3.5] | 0.5 [0.4, 0.6] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] |
-| `because` | 9.2 [8.1, 10.4] | 2.3 [2.1, 2.5] | 0.5 [0.1, 3.0] | 1.2 [0.2, 6.4] |
-| passive (`is`/`are`/`was`/`be` + `-ed`) | 26.0 [24.3, 27.7] | 12.5 [12.0, 12.9] | 4.9 [2.6, 9.0] | 8.3 [4.1, 16.2] |
-| changelog: now, no longer, used to, the old | 2.9 [2.3, 3.6] | 2.4 [2.2, 2.6] | 0.5 [0.1, 3.0] | 0.0 [0.0, 4.4] |
-| hedge: usually, likely, probably, might, seems | 0.3 [0.2, 0.6] | 2.0 [1.8, 2.2] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] |
-| first person: we, our, us, I | 2.0 [1.5, 2.6] | 16.4 [15.9, 16.9] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] |
-| TODO, NOTE, FIXME, XXX, HACK | 0.1 [0.0, 0.3] | 3.6 [3.3, 3.8] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] |
-| possessive `own` |  | 0.2 [0.2, 0.3] | 0.5 [0.1, 3.0] | 0.0 [0.0, 4.4] |
+| feature | Claude, no skill | human | this skill, cycles 7 to 13 | cycle 13 | cycles 14 and 15 |
+|---|---|---|---|---|---|
+| blocks | 2,962 | 21,977 | 185 | 84 | 201 |
+| median words | 22 | 9 [9, 9] | 11 [10, 11] | 11 [10, 11] | 12 [10, 13] |
+| p90 words | 79 | 29 [28, 29] | 17 [15, 20] | 17 [15, 20] | 20 [18, 27] |
+| blocks of more than one sentence (%) | 41.6 [39.8, 43.4] | 14.8 [14.3, 15.3] | 4.3 [2.2, 8.3] | 8.3 [4.1, 16.2] | 36.8 [30.5, 43.7] |
+| `, not` contrast | 7.9 [7.0, 8.9] | 0.4 [0.4, 0.5] | 0.5 [0.1, 3.0] | 1.2 [0.2, 6.4] | 0.5 [0.1, 2.8] |
+| dash (` -- ` or `—`) | 17.5 [16.2, 18.9] | 1.0 [0.8, 1.1] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| absolutes: every, never, whole, exactly | 22.0 [20.6, 23.5] | 1.5 [1.4, 1.7] | 7.0 [4.2, 11.7] | 6.0 [2.6, 13.2] | 6.0 [3.4, 10.1] |
+| `the one` / `one place` | 2.3 [1.8, 2.9] | 0.1 [0.1, 0.2] | 0.5 [0.1, 3.0] | 1.2 [0.2, 6.4] | 0.0 [0.0, 1.9] |
+| deliberately, on purpose, by design | 1.9 [1.5, 2.4] | 0.1 [0.0, 0.1] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| `rather than` / `instead of` | 14.0 [12.8, 15.3] | 1.1 [0.9, 1.2] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| `, so` joining clauses | 24.4 [22.9, 26.0] | 2.9 [2.7, 3.1] | 14.6 [10.2, 20.4] | 14.3 [8.4, 23.3] | 4.0 [2.0, 7.7] |
+| semicolon | 15.7 [14.4, 17.1] | 2.3 [2.1, 2.5] | 3.2 [1.5, 6.9] | 0.0 [0.0, 4.4] | 0.5 [0.1, 2.8] |
+| agentive verb: finds, knows, wants, sees, asks, decides, owns | 2.2 [1.7, 2.8] | 0.3 [0.2, 0.4] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| container verb, tagged as a verb: holds, carries, lives, keeps, names, states | 7.9 [7.0, 8.9] | 0.2 [0.2, 0.3] | 0.5 [0.1, 3.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| intensifier: genuine, real, actually, really, truly | 6.3 [5.5, 7.2] | 1.4 [1.3, 1.6] | 0.5 [0.1, 3.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| article before a backticked identifier | 2.3 [1.8, 2.9] | 0.5 [0.4, 0.6] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| `because` | 7.8 [6.9, 8.8] | 2.3 [2.1, 2.5] | 0.5 [0.1, 3.0] | 1.2 [0.2, 6.4] | 0.0 [0.0, 1.9] |
+| passive (`is`/`are`/`was`/`be` + `-ed`) | 17.3 [16.0, 18.7] | 12.5 [12.0, 12.9] | 4.9 [2.6, 9.0] | 8.3 [4.1, 16.2] | 7.5 [4.6, 11.9] |
+| changelog: now, no longer, used to, the old | 2.7 [2.2, 3.3] | 2.4 [2.2, 2.6] | 0.5 [0.1, 3.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| hedge: usually, likely, probably, might, seems | 0.3 [0.2, 0.6] | 2.0 [1.8, 2.2] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| first person: we, our, us, I | 1.0 [0.7, 1.4] | 16.4 [15.9, 16.9] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| TODO, NOTE, FIXME, XXX, HACK | 0.3 [0.2, 0.6] | 3.6 [3.3, 3.8] | 0.0 [0.0, 2.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
+| possessive `own` | 7.2 [6.3, 8.2] | 0.2 [0.2, 0.3] | 0.5 [0.1, 3.0] | 0.0 [0.0, 4.4] | 0.0 [0.0, 1.9] |
 
 **Words and pairs Claude overuses most**, by Dunning log-likelihood: `rather than`, `so the`,
 `is the`, `is what`, `its own`, `which is`, `reads as`, `the whole`, `what makes`, `does not`,
@@ -664,6 +671,35 @@ blocks to 3. Eight blocks copy a skill example word for word: the NamedTuple fen
 `bool subclasses Python int. Reject it too` three times, and the `read_bytes()` example of
 R10-fence-alternative once. The one semicolon is inside a regex sample. No block has a dash, an
 agent verb or a container verb. Review file: `cycles/cycle14_review.md`.
+
+### Cycle 15
+
+Ten runs of the same skill copy as cycle 14, on ten new tasks. One agent wrote each task's
+`TASK.md`, fixture and `EXPECTED.txt` (`tasks/P11/` to `tasks/P20/`) and checked the expected
+values against a separate reference implementation:
+- P11: an access log analyser over rotated and gzip files, with local hours across a clock change.
+- P12: an incremental build planner with parallel stages, cycles and nested packages.
+- P13: iCalendar recurrence expansion (a subset of RRULE, EXDATE, RECURRENCE-ID) across clock
+  changes.
+- P14: a one-way directory sync with gitignore patterns, rename detection and atomic writes.
+- P15: a spreadsheet formula library with exact decimals, error values and cycles.
+- P16: GPX activity statistics: distance, moving time, elevation gain and kilometre splits.
+- P17: a SQLite migration runner with checksums and one transaction per migration.
+- P18: a merge of contact lists in three encodings, with Unicode matching and union-find.
+- P19: a SemVer and npm range library with a backtracking resolver.
+- P20: a change request (a yearly rule, pinned snapshots, a deletion limit) against the cycle 14
+  P3 package.
+
+All ten matched `EXPECTED.txt` and passed `verify.py`. Five wrote a test file. The runs wrote 93
+`#` comment blocks (P20: the 4 it added). 31 are more than one sentence. Four copy a skill example
+word for word: the `isdigit()` fence twice, the bool fence once and the NamedTuple fence once. One
+run removed a `;`-containing SQL sample from a docstring because `NAR013` flags it. One run renamed
+the public parameters the specification fixes (`a`, `b`, `versionRange`) to pass the naming rules.
+Review file: `cycles/cycle15_review.md`.
+
+Over cycles 14 and 15, 201 blocks (`claudish_table.py 14`): median 12 words, p90 20, more than one
+sentence 36.8%, `, so` 4.0%, passive 7.5%. No block has a dash, an agent verb, `rather than` or
+`because`.
 
 ## Open
 

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.0" creator="OldWatch 1" xmlns="http://www.topografix.com/GPX/1/0">
+  <time>2026-05-02T09:00:00Z</time>
+  <trk><name>Morning loop</name>
+    <trkseg>
+      <trkpt lat="59.9500000" lon="10.7500000"><ele>100.0</ele><time>2026-05-02T06:00:00Z</time></trkpt>
+      <trkpt lat="59.9503000" lon="10.7500000"><ele>101.0</ele><time>2026-05-02T06:00:10Z</time></trkpt>
+      <trkpt lat="59.9506000" lon="10.7500000"><ele>102.0</ele><time>2026-05-02T06:00:20Z</time></trkpt>
+      <trkpt lat="59.9509000" lon="10.7500000"><ele>103.0</ele><time>2026-05-02T06:00:30Z</time></trkpt>
+      <trkpt lat="59.9512000" lon="10.7500000"><ele>104.0</ele><time>2026-05-02T06:00:40Z</time></trkpt>
+      <trkpt lat="59.9515000" lon="10.7500000"><ele>105.0</ele><time>2026-05-02T06:00:50Z</time></trkpt>
+      <trkpt lat="59.9518000" lon="10.7500000"><ele>106.0</ele><time>2026-05-02T06:01:00Z</time></trkpt>
+      <trkpt lat="59.9521000" lon="10.7500000"><ele>107.0</ele><time>2026-05-02T06:01:10Z</time></trkpt>
+      <trkpt lat="59.9524000" lon="10.7500000"><ele>108.0</ele><time>2026-05-02T06:01:20Z</time></trkpt>
+      <trkpt lat="59.9527000" lon="10.7500000"><ele>109.0</ele><time>2026-05-02T06:01:30Z</time></trkpt>
+      <trkpt lat="59.9530000" lon="10.7500000"><ele>110.0</ele><time>2026-05-02T06:01:40Z</time></trkpt>
+      <trkpt lat="59.9533000" lon="10.7500000"><ele>111.0</ele><time>2026-05-02T06:01:50Z</time></trkpt>
+      <trkpt lat="59.9536000" lon="10.7500000"><ele>112.0</ele><time>2026-05-02T06:02:00Z</time></trkpt>
+      <trkpt lat="59.9539000" lon="10.7500000"><ele>113.0</ele><time>2026-05-02T06:02:10Z</time></trkpt>
+      <trkpt lat="59.9542000" lon="10.7500000"><ele>114.0</ele><time>2026-05-02T06:02:20Z</time></trkpt>
+      <trkpt lat="59.9545000" lon="10.7500000"><ele>115.0</ele><time>2026-05-02T06:02:30Z</time></trkpt>
+      <trkpt lat="59.9548000" lon="10.7500000"><ele>116.0</ele><time>2026-05-02T06:02:40Z</time></trkpt>
+      <trkpt lat="59.9551000" lon="10.7500000"><ele>117.0</ele><time>2026-05-02T06:02:50Z</time></trkpt>
+      <trkpt lat="59.9554000" lon="10.7500000"><ele>118.0</ele><time>2026-05-02T06:03:00Z</time></trkpt>
+      <trkpt lat="59.9557000" lon="10.7500000"><ele>119.0</ele><time>2026-05-02T06:03:10Z</time></trkpt>
+      <trkpt lat="59.9560000" lon="10.7500000"><ele>120.0</ele><time>2026-05-02T06:03:20Z</time></trkpt>
+      <trkpt lat="59.9563000" lon="10.7500000"><ele>121.0</ele><time>2026-05-02T06:03:30Z</time></trkpt>
+      <trkpt lat="59.9566000" lon="10.7500000"><ele>122.0</ele><time>2026-05-02T06:03:40Z</time></trkpt>
+      <trkpt lat="59.9569000" lon="10.7500000"><ele>123.0</ele><time>2026-05-02T06:03:50Z</time></trkpt>
+      <trkpt lat="59.9572000" lon="10.7500000"><ele>124.0</ele><time>2026-05-02T06:04:00Z</time></trkpt>
+      <trkpt lat="59.9575000" lon="10.7500000"><ele>125.0</ele><time>2026-05-02T06:04:10Z</time></trkpt>
+      <trkpt lat="59.9578000" lon="10.7500000"><ele>126.0</ele><time>2026-05-02T06:04:20Z</time></trkpt>
+      <trkpt lat="59.9581000" lon="10.7500000"><ele>127.0</ele><time>2026-05-02T06:04:30Z</time></trkpt>
+      <trkpt lat="59.9584000" lon="10.7500000"><ele>128.0</ele><time>2026-05-02T06:04:40Z</time></trkpt>
+      <trkpt lat="59.9587000" lon="10.7500000"><ele>129.0</ele><time>2026-05-02T06:04:50Z</time></trkpt>
+      <trkpt lat="59.9590000" lon="10.7500000"><ele>130.0</ele><time>2026-05-02T06:05:00Z</time></trkpt>
+      <trkpt lat="59.9593000" lon="10.7500000"><ele>131.0</ele><time>2026-05-02T06:05:10Z</time></trkpt>
+      <trkpt lat="59.9596000" lon="10.7500000"><ele>132.0</ele><time>2026-05-02T06:05:20Z</time></trkpt>
+      <trkpt lat="59.9599000" lon="10.7500000"><ele>133.0</ele><time>2026-05-02T06:05:30Z</time></trkpt>
+      <trkpt lat="59.9602000" lon="10.7500000"><ele>134.0</ele><time>2026-05-02T06:05:40Z</time></trkpt>
+      <trkpt lat="59.9605000" lon="10.7500000"><ele>135.0</ele><time>2026-05-02T06:05:50Z</time></trkpt>
+      <trkpt lat="59.9608000" lon="10.7500000"><ele>136.0</ele><time>2026-05-02T06:06:00Z</time></trkpt>
+      <trkpt lat="59.9611000" lon="10.7500000"><ele>137.0</ele><time>2026-05-02T06:06:10Z</time></trkpt>
+      <trkpt lat="59.9614000" lon="10.7500000"><ele>138.0</ele><time>2026-05-02T06:06:20Z</time></trkpt>
+      <trkpt lat="59.9617000" lon="10.7500000"><ele>139.0</ele><time>2026-05-02T06:06:30Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

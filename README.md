@@ -18,7 +18,7 @@ human-like comments.**
   experience, asking Claude to take the good parts of `/narrative` into another language works
   well.
 
-Rules come from 452 human-selected choices between real working programs.
+Rules come from 454 human-selected choices between real working programs.
 
 ⚠️ This skill has an opinionated ordering for code (`main()` first, then the steps it calls in call order, then the types). This does produce readable and pleasing code, but may lead to code differences between your PRs and the rest of your codebase. It will not force migrate the rest of your codebase to this style unless you tell it to.
 
@@ -197,6 +197,12 @@ It checks every Python file below the path. It runs `ruff check --fix`, `ruff fo
 `mypy --strict`, `checks.py`, `vermin` and `agentverbs.py`, in that order, because that order
 converges. When a tool fails, it prints that tool's output.
 
+Name a Markdown or HTML file, such as a README Claude wrote, and it gets the prose checks only:
+
+```bash
+python3 ~/.claude/skills/narrative/verify.py README.md docs/report.html
+```
+
 | exit | meaning |
 |---|---|
 | 0 | every tool passed |
@@ -233,7 +239,7 @@ After a passing run, `verify.py` prints every comment and docstring summary, so 
 | `NAR014` | `deliberately`, `on purpose`, `by design` or `intentionally` in a comment or docstring |
 | `NAR015` | changelog wording in a comment or docstring: `no longer`, `previously`, `it used to` |
 | `NAR016` | `holds`, `carries` and their forms in a comment or docstring |
-| `NAR017` | an agent verb on a subject that cannot act: `a period ranks`, `the report names it` |
+| `NAR017` | an agent verb on a subject that cannot act: `a period ranks`, `the report names it`, `the default config sends the job` |
 | `NAR018` | a possessive `own` in a comment or docstring |
 | `NAR019` | a return contract written as a comment at the top of a function body |
 | `NAR020` | a clause with its subject cut before `, so`: `Named, so a recreated container gets it back` |
@@ -247,7 +253,7 @@ After a passing run, `verify.py` prints every comment and docstring summary, so 
 | `skill/` | the nine files of the skill. `architecture.md` has the multi-module rules |
 | `install.sh` | the list of files in the skill, and the installer |
 | `verify_docs.py` | checks that every decision id and rule code in the documents exists |
-| `benchmark/decisions.jsonl` | all 452 decisions, each with its reasoning and evidence |
+| `benchmark/decisions.jsonl` | all 454 decisions, each with its reasoning and evidence |
 | `benchmark/round1/` to `round10/` | the rounds that produced the decisions. `benchmark/README.md` describes each |
 | `benchmark/GAPS.md` | gaps found by writing real programs against the skill, and the rule each one became |
 | `validation/` | held-out tasks, in three arms each: no guidance, the earlier style doc, the skill |

@@ -6,7 +6,9 @@ resolves every tool to an absolute path and exits 2 if any one of them is absent
 means the tools ran.
 
 This is the whole pipeline. Give it any path, and every Python file below it is checked, so no
-workflow is chosen at run time.
+workflow is chosen at run time. A Markdown, HTML or plain text file named on the command line, such
+as a README or a published page, gets the two prose checks only: the wording checks of checks.py and
+agentverbs.py. pyproject.toml is required only when Python files are checked.
 
 Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other.
 
@@ -15,6 +17,7 @@ Usage:
     $ python3 verify.py src/loader.py src/report.py
     $ python3 verify.py . --no-fix           # report only, change nothing
     $ python3 verify.py . --venv .lintenv    # a venv other than the shared one (SHARED_VENV)
+    $ python3 verify.py README.md docs/report.html
 
 Exit codes:
     0  every tool passed
@@ -33,6 +36,8 @@ import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+
+from prose import PROSE_SUFFIXES
 
 
 TOOLS = ('ruff', 'pylint', 'mypy', 'vermin')
@@ -75,50 +80,26 @@ def main() -> int:
         print(f'  fix: uv venv --python {PYTHON_FLOOR} {args.venv} && {install}', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
-    # Presence is not enough. Every real project already has a pyproject.toml, so present-but-wrong
-    # is the usual state. A tool with no Narrative section runs with its defaults, and then double
-    # quotes and snake_case functions pass.
-    snippet = Path(__file__).resolve().parent / 'pyproject-snippet.toml'
-    # ruff reads any other file name as a ruff.toml, with its keys at the top level instead of under [tool.ruff]
-    if args.config.name != 'pyproject.toml':
-        print(f'config at {args.config} is not named pyproject.toml', file=sys.stderr)
-        print(f'  fix: copy or merge {snippet} into a file named pyproject.toml', file=sys.stderr)
-        return EXIT_NO_TOOLCHAIN
-
-    absent = missingConfigSections(args.config)
-    if absent:
-        print(f'config at {args.config} is not a Narrative config', file=sys.stderr)
-        print(f'  missing: {", ".join(absent)}', file=sys.stderr)
-        print('  the tools would fall back to their defaults and report a clean run', file=sys.stderr)
-        print(f'  fix: merge {snippet} into {args.config}', file=sys.stderr)
-
-        return EXIT_NO_TOOLCHAIN
-
     code = discoverPython(args.paths)
-    if not code:
-        print('nothing to check: no .py files found', file=sys.stderr)
+    pages = [target for target in args.paths if target.is_file() and target.suffix.lower() in PROSE_SUFFIXES]
+    if not code and not pages:
+        print('nothing to check: no .py files found, and no .md, .html or .txt file named', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
-    targets = [str(p) for p in code]
-    checker = Path(__file__).resolve().parent / 'checks.py'
     results: list[Result] = []
+    if code:
+        if (config_problem := checkConfig(args.config)) is not None:
+            return config_problem
+        results.extend(runCodeTools(toolchain, args.config, [str(p) for p in code], fix=not args.no_fix))
 
-    if not args.no_fix:
-        run([toolchain.paths['ruff'], 'check', '--config', str(args.config), '--fix', '-q', *targets])
-        run([toolchain.paths['ruff'], 'format', '--config', str(args.config), '-q', *targets])
-
-    ruff_config = ['--config', str(args.config)]
-    check_cmd = [toolchain.paths['ruff'], 'check', *ruff_config, '--output-format=concise']
-    results.append(gradeRuffCheck(run([*check_cmd, *targets])))
-    results.append(gradeFormat(run([toolchain.paths['ruff'], 'format', *ruff_config, '--check', *targets])))
-    results.append(gradePylint(run([toolchain.paths['pylint'], f'--rcfile={args.config}', *targets])))
-    mypy_cmd = [toolchain.paths['mypy'], '--config-file', str(args.config), '--strict', '--no-error-summary']
-    results.append(gradeMypy(run([*mypy_cmd, *targets])))
-    results.append(gradeChecks(run([sys.executable, str(checker), *targets])))
-    vermin_cmd = [toolchain.paths['vermin'], '--no-tips', f'-t={PYTHON_FLOOR}-', '--violations']
-    results.append(gradeVermin(run([*vermin_cmd, *targets])))
+    checker = Path(__file__).resolve().parent / 'checks.py'
+    prose_targets = [str(p) for p in [*code, *pages]]
+    results.append(gradeChecks(run([sys.executable, str(checker), *prose_targets])))
+    if code:
+        vermin_cmd = [toolchain.paths['vermin'], '--no-tips', f'-t={PYTHON_FLOOR}-', '--violations']
+        results.append(gradeVermin(run([*vermin_cmd, *[str(p) for p in code]])))
     agent_verbs = Path(__file__).resolve().parent / 'agentverbs.py'
-    results.append(gradeAgentVerbs(run([toolchain.python, str(agent_verbs), *targets])))
+    results.append(gradeAgentVerbs(run([toolchain.python, str(agent_verbs), *prose_targets])))
 
     width = max(len(r.tool) for r in results)
     for result in results:
@@ -135,10 +116,65 @@ def main() -> int:
         return EXIT_FINDINGS
 
     print(f'\nall {len(results)} checks passed')
-    inventory = run([sys.executable, str(checker), '--prose', *targets])
-    print('\n--- every comment and docstring summary: read each against SKILL.md, Comments ---')
-    print(inventory.text.rstrip() or '(none)')
+    print('A pass is no evidence about the rules that no check implements. Read the lists below.')
+    if code:
+        inventory = run([sys.executable, str(checker), '--prose', *[str(p) for p in code]])
+        print('\n--- every comment and docstring summary: read each against SKILL.md, Comments ---')
+        print(inventory.text.rstrip() or '(none)')
+    review = run([toolchain.python, str(agent_verbs), '--review', *prose_targets])
+    print('\n--- every subject that cannot act, with its verb: can that subject perform that verb? ---')
+    print(review.text.rstrip() or '(none)')
     return EXIT_SUCCESS
+
+
+def checkConfig(config: Path) -> int | None:
+    """Check that the config is a pyproject.toml with every Narrative section, and print the fix if not.
+
+    Presence is not enough. Every real project already has a pyproject.toml, so present-but-wrong is
+    the usual state. A tool with no Narrative section runs with its defaults, and then double quotes
+    and snake_case functions pass.
+
+    Returns:
+        None when the config is usable, otherwise the exit code for a missing toolchain.
+    """
+    snippet = Path(__file__).resolve().parent / 'pyproject-snippet.toml'
+    # ruff reads any other file name as a ruff.toml, with its keys at the top level instead of under [tool.ruff]
+    if config.name != 'pyproject.toml':
+        print(f'config at {config} is not named pyproject.toml', file=sys.stderr)
+        print(f'  fix: copy or merge {snippet} into a file named pyproject.toml', file=sys.stderr)
+        return EXIT_NO_TOOLCHAIN
+
+    absent = missingConfigSections(config)
+    if absent:
+        print(f'config at {config} is not a Narrative config', file=sys.stderr)
+        print(f'  missing: {", ".join(absent)}', file=sys.stderr)
+        print('  the tools would fall back to their defaults and report a clean run', file=sys.stderr)
+        print(f'  fix: merge {snippet} into {config}', file=sys.stderr)
+        return EXIT_NO_TOOLCHAIN
+    return None
+
+
+def runCodeTools(toolchain: Toolchain, config: Path, targets: list[str], *, fix: bool) -> list[Result]:
+    """Fix and format the Python files unless told not to, then run ruff, pylint and mypy.
+
+    Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other.
+
+    Returns:
+        One result per tool, in the order they ran.
+    """
+    if fix:
+        run([toolchain.paths['ruff'], 'check', '--config', str(config), '--fix', '-q', *targets])
+        run([toolchain.paths['ruff'], 'format', '--config', str(config), '-q', *targets])
+
+    ruff_config = ['--config', str(config)]
+    check_cmd = [toolchain.paths['ruff'], 'check', *ruff_config, '--output-format=concise']
+    mypy_cmd = [toolchain.paths['mypy'], '--config-file', str(config), '--strict', '--no-error-summary']
+    return [
+        gradeRuffCheck(run([*check_cmd, *targets])),
+        gradeFormat(run([toolchain.paths['ruff'], 'format', *ruff_config, '--check', *targets])),
+        gradePylint(run([toolchain.paths['pylint'], f'--rcfile={config}', *targets])),
+        gradeMypy(run([*mypy_cmd, *targets])),
+    ]
 
 
 def discoverPython(paths: list[Path]) -> list[Path]:
@@ -234,7 +270,8 @@ def run(command: list[str]) -> Output:
 
 
 def countFindingLines(output: Output) -> int:
-    return sum(1 for line in output.text.splitlines() if '.py:' in line)
+    suffixes = ('.py', *PROSE_SUFFIXES)
+    return sum(1 for line in output.text.splitlines() if any(f'{suffix}:' in line for suffix in suffixes))
 
 
 def gradeRuffCheck(output: Output) -> Result:
@@ -267,7 +304,7 @@ def gradeAgentVerbs(output: Output) -> Result:
 
 
 def gradeVermin(output: Output) -> Result:
-    # Vermin fails a file it cannot date unless given `--violations`. A file with no version-specific
+    # Vermin fails a file with no minimum version unless given `--violations`. A file with no version-specific
     # syntax shows as `~2, ~3` and counts as target-not-met.
     if output.code == 0:
         return Result('vermin', True, f'{PYTHON_FLOOR} or lower', output.text)

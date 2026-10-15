@@ -1,0 +1,3 @@
+name = "ui"
+dependencies = ["core"]
+sources = ["src/**/*.ts"]

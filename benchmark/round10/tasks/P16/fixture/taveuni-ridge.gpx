@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Fieldwatch 3" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Taveuni ridge</name><time>2026-06-21T02:00:00Z</time></metadata>
+  <trk><name>Taveuni ridge</name>
+    <trkseg>
+      <trkpt lat="-16.8000000" lon="179.9950000"><ele>20.0</ele><time>2026-06-20T19:05:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9953523"><ele>22.5</ele><time>2026-06-20T19:05:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9957046"><ele>24.0</ele><time>2026-06-20T19:06:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9960568"><ele>23.0</ele><time>2026-06-20T19:06:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9964091"><ele>27.5</ele><time>2026-06-20T19:07:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9967614"><ele>31.0</ele><time>2026-06-20T19:07:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9971137"><ele>35.0</ele><time>2026-06-20T19:08:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9974660"><ele>33.5</ele><time>2026-06-20T19:08:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9978182"><ele>38.0</ele><time>2026-06-20T19:09:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9981705"><ele>42.0</ele><time>2026-06-20T19:09:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9985228"><ele>46.0</ele><time>2026-06-20T19:10:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9988751"><ele>49.0</ele><time>2026-06-20T19:10:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9992274"><time>2026-06-20T19:11:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9995796"><ele>56.0</ele><time>2026-06-20T19:11:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="179.9999319"><ele>60.0</ele><time>2026-06-20T19:12:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9997158"><ele>57.0</ele><time>2026-06-20T19:12:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9993635"><ele>58.5</ele><time>2026-06-20T19:13:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9990112"><ele>63.0</ele><time>2026-06-20T19:13:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9986589"><ele>67.0</ele><time>2026-06-20T19:14:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9983067"><ele>71.0</ele><time>2026-06-20T19:14:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9979544"><ele>75.0</ele><time>2026-06-20T19:15:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9976021"><ele>72.0</ele><time>2026-06-20T19:15:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9972498"><ele>68.0</ele><time>2026-06-20T19:16:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9968975"><ele>65.0</ele><time>2026-06-20T19:16:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9965453"><ele>62.0</ele><time>2026-06-20T19:17:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9961930"><ele>64.5</ele><time>2026-06-20T19:17:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9958407"><ele>63.5</ele><time>2026-06-20T19:18:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9954884"><ele>67.0</ele><time>2026-06-20T19:18:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9951361"><ele>71.0</ele><time>2026-06-20T19:19:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9947839"><ele>74.5</ele><time>2026-06-20T19:19:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9944316"><ele>78.0</ele><time>2026-06-20T19:20:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9940793"><ele>80.0</ele><time>2026-06-20T19:20:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9937270"><ele>78.5</ele><time>2026-06-20T19:21:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9933747"><ele>79.5</ele><time>2026-06-20T19:21:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9930225"><ele>77.0</ele><time>2026-06-20T19:22:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9926702"><ele>79.0</ele><time>2026-06-20T19:22:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9923179"><ele>78.0</ele><time>2026-06-20T19:23:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9919656"><ele>76.5</ele><time>2026-06-20T19:23:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9916133"><ele>78.0</ele><time>2026-06-20T19:24:00Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9912611"><ele>77.5</ele><time>2026-06-20T19:24:30Z</time></trkpt>
+      <trkpt lat="-16.8000000" lon="-179.9909088"><ele>77.0</ele><time>2026-06-20T19:25:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

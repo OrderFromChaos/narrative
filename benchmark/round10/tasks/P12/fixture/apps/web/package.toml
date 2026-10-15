@@ -1,0 +1,3 @@
+name = "app"
+dependencies = ["ui", "api"]
+sources = ["src/**/*.ts"]

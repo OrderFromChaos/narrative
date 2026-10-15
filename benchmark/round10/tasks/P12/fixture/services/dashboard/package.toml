@@ -1,0 +1,3 @@
+name = "dashboard"
+dependencies = ["report"]
+sources = ["*.py"]

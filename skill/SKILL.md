@@ -888,10 +888,12 @@ sentence usually gives data an agent verb, so reword it. Silence a false positiv
 `# noqa: NARxxx`. (R10-lint, R10-skill-gaps, R10-list-dash, R10-nar015-scope, R10-nar016, R10-nar018)
 
 `NAR017` is an agent verb on a subject that cannot act, meaning a noun that is not a person, with a verb for
-something only a mind does (`a period ranks`, `the report names it`, `a policy can judge`).
-Documents get no exception. Write `named in the report`. It comes from `agentverbs.py`, the seventh
-check in `verify.py`. The check parses each sentence, and some noun compounds and participles are
-flagged by mistake. Silence those with `# noqa: NAR017`. (R10-agentverb-check)
+something only a person does: thought or speech (`a period ranks`, `the report names it`, `a policy
+can judge`), or, with an object, a deliberate act (`the default config sends the job to a queue`,
+`the fallback places the file`). Documents get no exception. Write `named in the report`. It comes
+from `agentverbs.py`, the seventh check in `verify.py`. The check parses each sentence, and some
+noun compounds and participles are flagged by mistake. Silence those with `# noqa: NAR017`.
+(R10-agentverb-check, R10-agentverb-agency)
 
 `NAR020`, from the same check, is a clause with no subject before `, so`: `Named, so a recreated
 container gets it back`. Only that form is flagged. Check every other clause against the subject and
@@ -901,7 +903,7 @@ verb rule in **Sentence form** by hand. (R10-subject-verb, R10-nar020)
 
 Take these in order. **Setup** happens once per machine and once per project. **Writing a comment**
 applies to each comment as you write it. **Verify** and **Prose review** follow once the code is
-written. (R10-procedures)
+written. **Published prose** applies to each page you write, such as a README. (R10-procedures)
 
 ### Setup
 
@@ -982,11 +984,13 @@ and loses type narrowing. Read `tooling.md` before you change config.
 
 ### Prose review
 
-**After a passing `verify.py` run, read the list it prints, plus every error message and `--help`
-string.** The list has every comment and docstring summary in the code. Take these
-steps for each sentence. (R10-prose-inventory, R10-closing-review)
+**After a passing `verify.py` run, read the lists it prints, plus every error message and `--help`
+string.** The first list has every comment and docstring summary in the code. The second has each
+subject that cannot act, paired with its verb, for every verb that is neither a `NAR017` finding nor
+an operation of code. Take these steps for each sentence. (R10-prose-inventory, R10-closing-review)
 
-1. Name the subject and the verb. Can that subject perform that verb?
+1. Name the subject and the verb. Can that subject perform that verb? Most pairs are in the second
+   list. A subject that is misread in the parse is not in it.
 2. For each noun phrase, name the variable, function, file or value it refers to. If none fits, or
    two do, rewrite.
 3. List the code paths that reach the line: each branch, each caller, each failure. Check the claim
@@ -1000,3 +1004,19 @@ For `# an expired item is removed on lookup`:
 - The rewrite: `# an expired item is removed on lookup, or before any eviction`.
 
 Fix what fails and run `verify.py` again.
+
+### Published prose
+
+A README, a doc page or an HTML report that you write follows the prose rules of this skill, as a
+comment does. When you rewrite part of a page, the rules cover the section you changed. If the
+rest of the page is clearly written by an LLM, suggest cleaning it, and do not change it unasked.
+A page that a person wrote and you did not change is left as it is, unless the user asks for it to
+be checked. Name each page to `verify.py`:
+
+```bash
+python3 verify.py README.md docs/report.html
+```
+
+Only the wording checks and `agentverbs.py` run on a page. Take the steps of **Prose review** for
+each sentence you wrote. Silence a false positive with `<!-- noqa: NAR017 -->` on its line.
+(R10-published-prose)

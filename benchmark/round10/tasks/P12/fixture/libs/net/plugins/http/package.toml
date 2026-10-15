@@ -1,0 +1,3 @@
+name = "net-http"
+dependencies = ["net"]
+sources = ["*.c"]

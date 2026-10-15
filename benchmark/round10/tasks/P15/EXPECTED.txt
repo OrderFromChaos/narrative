@@ -1,0 +1,17 @@
+fixture/expected.json is itself the expected result; fixture/invalid_sheet.json raises ValueError (key "b2").
+precedence: A1 -4; A2 512; A3 0.25; A4 -18; A5 3; A6 6.5
+numbers: B1 0.3; B2 TRUE; B3 -3; B4 2.68; B5 1200; B6 0; B7 2; B8 0.3333333333333333333333333333 (28 digits)
+strings: C1 TRUE; C2 TRUE; C3 TRUE; C4 "x0.3"; C5 "[]"; C6 'Say "hi"'; C7 #VALUE!; C8 #VALUE!
+functions: E1 10.5; E3 4; F1 18.5; F2 -1; F3 0; F4 1; F5 #VALUE!; F6 6; F7 #REF!; F8 #VALUE!
+errors: G1 G2 #DIV/0!; G3 "safe"; G4 "yes"; G5 FALSE; G6 #DIV/0!; G7 #NAME?; G8 #REF!; G9 #NAME?; G10 #VALUE!; G11 #DIV/0!
+cycles: H1 H3 H5 H6 H7 #CYCLE!; H2 5; H4 10; H8 15
+traps:
+  -2^2 and 2*-3^2: unary minus taken tighter than ^ (the Excel rule) gives 4 and 18; left-associative ^ makes 2^3^2 64
+  binary floats: 0.1+0.2 gives 0.30000000000000004 and B2 FALSE; ROUND(2.675, 2) gives 2.67
+  Python round(): ROUND(-2.5, 0) gives -2 (half to even); ROUND(-0.4, 0) shown as "-0"
+  number text: str() of a normalized Decimal shows B5 as "1.2E+3", and without normalizing B7 is "2.0" and E1 "10.50"
+  string case: plain comparison makes C1 FALSE and "apple"<"Banana" FALSE; lower() instead of casefold() makes C3 FALSE; C5 "[0]" when an empty cell is 0 in &, and C4 #VALUE! when & binds tighter than + ("x0.1"+0.2)
+  backwards range: E3:D1 read as empty gives F1 0; counting the string D2 gives #VALUE!; MAX over only a string giving #VALUE! or an empty value instead of 0
+  IF evaluating both branches: G3 and G4 become #DIV/0!; detecting cycles only along evaluated paths gives H7 7, and marking every cell that H1's range covers gives H2 and H4, and through them H8, #CYCLE!
+  cycle through a range: following only single references misses H1->H3 and gives H1 a number or a recursion error
+Computed by a separate reference implementation and checked by hand for every cell listed above.

@@ -20,11 +20,16 @@ directly. (R10-uv)
 | `mypy --strict` | type correctness |
 | `checks.py` | the residual rules no tool implements |
 | `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, and `NAR020`, a clause with no subject before `, so`, from a spaCy parse |
+| `prose.py` | the passages of a Markdown, HTML or plain text file, for `checks.py` and `agentverbs.py` |
 | `verify.py` | running all of the above correctly, with the toolchain and config guards |
 
 Run order matters: `ruff check --fix`, then `ruff format`, then `pylint`, `mypy`, `checks.py`,
 `vermin`, `agentverbs.py`.
 `verify.py` runs them in that order, so use it rather than reproducing the sequence.
+
+A Markdown, HTML or plain text file named to `verify.py` gets the wording checks of `checks.py` and
+`agentverbs.py` only. A directory expands to its Python files. In a page, `<!-- noqa: NAR017 -->`
+silences a code on its line.
 
 ## The config
 

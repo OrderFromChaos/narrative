@@ -1,0 +1,361 @@
+{
+  "compare": [
+    {
+      "a": "1.0.0-alpha.10",
+      "b": "1.0.0-alpha.2",
+      "result": 1
+    },
+    {
+      "a": "1.0.0-rc.1",
+      "b": "1.0.0-rc.1.0",
+      "result": -1
+    },
+    {
+      "a": "1.0.0-alpha.1",
+      "b": "1.0.0-alpha.beta",
+      "result": -1
+    },
+    {
+      "a": "1.0.0-beta.11",
+      "b": "1.0.0-rc.1",
+      "result": -1
+    },
+    {
+      "a": "1.0.0-rc.1",
+      "b": "1.0.0",
+      "result": -1
+    },
+    {
+      "a": "1.2.10",
+      "b": "1.2.9",
+      "result": 1
+    },
+    {
+      "a": "1.2.3+build.5",
+      "b": "1.2.3+build.9",
+      "result": 0
+    },
+    {
+      "a": "1.0.0-Beta",
+      "b": "1.0.0-alpha",
+      "result": -1
+    },
+    {
+      "a": "2.0.0",
+      "b": "10.0.0",
+      "result": -1
+    },
+    {
+      "a": "01.2.3",
+      "b": "1.2.3",
+      "raises": "ValueError"
+    },
+    {
+      "a": "1.2.3-alpha.01",
+      "b": "1.2.3",
+      "raises": "ValueError"
+    },
+    {
+      "a": "1.2.3+build.007",
+      "b": "1.2.3",
+      "result": 0
+    },
+    {
+      "a": "1.2",
+      "b": "1.2.0",
+      "raises": "ValueError"
+    },
+    {
+      "a": "v1.2.3",
+      "b": "1.2.3",
+      "raises": "ValueError"
+    },
+    {
+      "a": "1.2.3-",
+      "b": "1.2.3",
+      "raises": "ValueError"
+    }
+  ],
+  "satisfies": [
+    {
+      "version": "0.2.9",
+      "range": "^0.2.3",
+      "result": true
+    },
+    {
+      "version": "0.3.0",
+      "range": "^0.2.3",
+      "result": false
+    },
+    {
+      "version": "0.0.3",
+      "range": "^0.0.3",
+      "result": true
+    },
+    {
+      "version": "0.0.4",
+      "range": "^0.0.3",
+      "result": false
+    },
+    {
+      "version": "0.0.9",
+      "range": "^0.0",
+      "result": true
+    },
+    {
+      "version": "0.1.0",
+      "range": "^0.0",
+      "result": false
+    },
+    {
+      "version": "1.9.0",
+      "range": "^1.2.3",
+      "result": true
+    },
+    {
+      "version": "2.0.0",
+      "range": "^1.2.3",
+      "result": false
+    },
+    {
+      "version": "1.2.3-beta",
+      "range": "^1.2.0",
+      "result": false
+    },
+    {
+      "version": "1.2.3-beta",
+      "range": "^1.2.3-alpha",
+      "result": true
+    },
+    {
+      "version": "1.2.4-beta",
+      "range": "^1.2.3-alpha",
+      "result": false
+    },
+    {
+      "version": "1.2.3-beta",
+      "range": ">=1.2.3-alpha <1.3.0",
+      "result": true
+    },
+    {
+      "version": "1.2.5-beta",
+      "range": "1.2.3-alpha || ^1.2.0",
+      "result": false
+    },
+    {
+      "version": "1.2.5-beta",
+      "range": "^1.2.0 || ~1.2.5-alpha",
+      "result": true
+    },
+    {
+      "version": "2.0.0-rc.1",
+      "range": "^1.0.0",
+      "result": false
+    },
+    {
+      "version": "1.3.0",
+      "range": "~1.2.3",
+      "result": false
+    },
+    {
+      "version": "1.2.99",
+      "range": "~1.2.3",
+      "result": true
+    },
+    {
+      "version": "1.9.0",
+      "range": "~1",
+      "result": true
+    },
+    {
+      "version": "1.2.3+exp.7",
+      "range": "1.2.3",
+      "result": true
+    },
+    {
+      "version": "1.2.3+exp.7",
+      "range": "<=1.2.3",
+      "result": true
+    },
+    {
+      "version": "1.2.3",
+      "range": ">1.2.3+zzz",
+      "result": false
+    },
+    {
+      "version": "2.3.9",
+      "range": "1.2.3 - 2.3",
+      "result": true
+    },
+    {
+      "version": "2.4.0",
+      "range": "1.2.3 - 2.3",
+      "result": false
+    },
+    {
+      "version": "1.2.0",
+      "range": "1.2 - 2.3.4",
+      "result": true
+    },
+    {
+      "version": "2.3.5",
+      "range": "1.2 - 2.3.4",
+      "result": false
+    },
+    {
+      "version": "1.2.9",
+      "range": "<=1.2",
+      "result": true
+    },
+    {
+      "version": "1.2.9",
+      "range": ">1.2",
+      "result": false
+    },
+    {
+      "version": "1.3.0",
+      "range": ">1.2",
+      "result": true
+    },
+    {
+      "version": "1.1.9",
+      "range": "<1.2",
+      "result": true
+    },
+    {
+      "version": "2.4.0",
+      "range": "1.x || >=2.5.0",
+      "result": false
+    },
+    {
+      "version": "1.7.2",
+      "range": "1.x || >=2.5.0",
+      "result": true
+    },
+    {
+      "version": "3.0.0",
+      "range": "*",
+      "result": true
+    },
+    {
+      "version": "3.0.0-alpha",
+      "range": "*",
+      "result": false
+    },
+    {
+      "version": "3.0.0",
+      "range": "",
+      "result": true
+    },
+    {
+      "version": "1.5.0",
+      "range": ">=1.2.0 <1.5.0",
+      "result": false
+    },
+    {
+      "version": "1.2.3",
+      "range": "^01.2.3",
+      "raises": "ValueError"
+    },
+    {
+      "version": "1.2.3",
+      "range": "1.2.3.4",
+      "raises": "ValueError"
+    },
+    {
+      "version": "1.2.3",
+      "range": "^1.2.3 ||",
+      "raises": "ValueError"
+    },
+    {
+      "version": "1.2.3",
+      "range": ">=*",
+      "raises": "ValueError"
+    },
+    {
+      "version": "1.2.3",
+      "range": "1.x.3",
+      "raises": "ValueError"
+    }
+  ],
+  "maxSatisfying": [
+    {
+      "versions": [
+        "1.2.3",
+        "1.2.10",
+        "1.2.9",
+        "1.3.0-beta.1"
+      ],
+      "range": "~1.2.0",
+      "result": "1.2.10"
+    },
+    {
+      "versions": [
+        "1.9.9",
+        "2.0.0-rc.1",
+        "2.0.0-rc.0"
+      ],
+      "range": "^1.0.0 || >=2.0.0-rc.0",
+      "result": "2.0.0-rc.1"
+    },
+    {
+      "versions": [
+        "1.4.0",
+        "1.6.0-beta.2"
+      ],
+      "range": "^1.2.0",
+      "result": "1.4.0"
+    },
+    {
+      "versions": [
+        "1.2.3+build.2",
+        "1.2.3+build.10"
+      ],
+      "range": "1.2.3",
+      "result": "1.2.3+build.2"
+    },
+    {
+      "versions": [
+        "0.3.0",
+        "0.3.1"
+      ],
+      "range": "^0.2.3",
+      "result": null
+    }
+  ],
+  "resolve": [
+    {
+      "requirements": {
+        "webkit": "^2.0.0"
+      },
+      "result": {
+        "httpcore": "2.6.1",
+        "logline": "1.5.0",
+        "webkit": "2.0.0"
+      }
+    },
+    {
+      "requirements": {
+        "webkit": "^2.1.0",
+        "logline": "<1.4.0"
+      },
+      "raises": "ResolutionError"
+    },
+    {
+      "requirements": {
+        "cli": "*"
+      },
+      "result": {
+        "cli": "1.0.0+build.7",
+        "core": "1.1.0"
+      }
+    },
+    {
+      "requirements": {
+        "webkit": "~2.0.0",
+        "missing": "^1.0.0"
+      },
+      "raises": "ResolutionError"
+    }
+  ]
+}

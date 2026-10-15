@@ -1,0 +1,17 @@
+status on start.sql: 0001 0002 applied; 0003 0005 0006 0007 0008 pending; problems []. exit 0
+up on start.sql: applied [0003_settings, 0005_compact, 0006_orders]; failed 0007_audit_log.sql "table customers has no column named nickname"; pending [0007_audit_log, 0008_customer_notes]; exit 1
+  afterwards: tables customers, orders, schema_migrations, settings (no audit_log); versions 0001 0002 0003 0005 0006
+  settings: banner "Welcome; please sign in", footer "Open 9-17; closed Sundays"; orders row 1: total_cents 4300, updated_at "changed"
+up --target 0004 on start.sql: applied [0003_settings]; failed null; pending [0005, 0006, 0007, 0008]; exit 0; no orders table
+up on start-edited.sql: problems [0002_add_email.sql checksum changed]; applied []; pending [0003, 0005, 0006, 0007, 0008]; exit 2; database unchanged
+up on start-removed.sql: problems [0004_drop_legacy.sql file missing]; applied []; pending [0005, 0006, 0007, 0008]; exit 2; database unchanged
+up with duplicate-migrations on an empty database: problems [0001_create_labels.sql, 0001_create_tags.sql duplicate number]; applied []; pending [0002_seed_tags.sql]; exit 2; no tags or labels table
+traps:
+  0001 has CRLF line endings: a checksum over text read with newline translation is 5d8c32ea..., not the recorded 0e90e4f7..., so every run on start.sql is refused with 0001 "checksum changed"
+  splitting on ";": the literal 'Welcome; please sign in' gives "unrecognized token", and the trigger in 0006 gives "incomplete input"
+  0005 VACUUM wrapped in a transaction fails with "cannot VACUUM from within a transaction", so the run stops at 0005 with only 0003 applied
+  0007 fails on its third statement: under sqlite3's default transaction handling the CREATE TABLE commits on its own (or executescript commits first), so audit_log survives the rollback
+  a failure discarding the whole run: 0003, 0005 and 0006 must stay applied and recorded, and 0008 must not run
+  gap at 0004: --target 0004 must apply 0003 alone; requiring the target to name a file, or numbering files by position, refuses it or reports 0004 missing
+  an edited, a deleted and a duplicated file are each refused before anything runs; applying 0003 first, or keeping one of the two 0001 files, is wrong
+Computed by hand and checked against a separate reference implementation run on each case; each trap's wrong result was reproduced with sqlite3 on Python 3.14.

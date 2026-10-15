@@ -1,12 +1,18 @@
 """Recompute the Claudish feature table, per 100 comment blocks, with 95% intervals in brackets.
 
+A rate is the share of blocks with at least one match, in every column. Each argument is a range of
+cycles and adds one column of skill runs.
+
 Usage:
-    $ python3 claudish_table.py 7     # cycles 7 and later
+    $ python3 claudish_table.py 7-13 14-15
 """
 
 import io
+import json
 import math
+import os
 import re
+import subprocess
 import sys
 import sysconfig
 import tokenize
@@ -14,6 +20,15 @@ from pathlib import Path
 
 
 REPO = Path(__file__).resolve().parents[3]
+# the shared venv of SKILL.md, Setup. Its Python has spaCy and en_core_web_md
+DATA_HOME = Path(os.environ.get('LOCALAPPDATA') or os.environ.get('XDG_DATA_HOME') or Path.home() / '.local' / 'share')
+TAGGER_PYTHON = DATA_HOME / 'narrative' / 'lintenv' / ('Scripts/python.exe' if sys.platform == 'win32' else 'bin/python')
+TAGGER = '''import json, sys, spacy
+nlp = spacy.load('en_core_web_md')
+words = set(sys.argv[1:])
+texts = json.load(sys.stdin)
+print(json.dumps([any(t.lower_ in words and t.pos_ in ('VERB', 'AUX') for t in doc) for doc in nlp.pipe(texts)]))
+'''
 SITE = next((REPO / '.lintenv/lib').glob('python3*/site-packages'))
 PRAGMA = re.compile(r'#\s*(?:noqa|type:|pylint:|pragma|fmt:|ruff:|mypy:)|#!|#\s*-\*-')
 DIVIDER = re.compile(r'^#\s*[-=#~*]{4,}')
@@ -31,7 +46,10 @@ FEATURES = [
         'agentive verb: finds, knows, wants, sees, asks, decides, owns',
         r'\b(?:finds|knows|wants|sees|asks|decides|owns)\b',
     ),
-    ('container verb: holds, carries, lives, keeps, names, states', r'\b(?:holds|carries|lives|keeps|names|states)\b'),
+    (
+        'container verb, tagged as a verb: holds, carries, lives, keeps, names, states',
+        r'\b(?:holds|carries|lives|keeps|names|states)\b',
+    ),
     ('intensifier: genuine, real, actually, really, truly', r'\b(?:genuine|genuinely|real|actually|really|truly)\b'),
     ('article before a backticked identifier', r'\b(?:the|a|an)\s+`'),
     ('`because`', r'\bbecause\b'),
@@ -43,49 +61,71 @@ FEATURES = [
     ('possessive `own`', r"\b(?:its|their|\w+'s) own\b"),
 ]
 CASE_SENSITIVE = {'TODO, NOTE, FIXME, XXX, HACK', 'first person: we, our, us, I'}
+# a match counts only when spaCy tags the word VERB or AUX. Most of these words are also nouns
+VERB_ONLY = {
+    'container verb, tagged as a verb: holds, carries, lives, keeps, names, states': (
+        'holds', 'carries', 'lives', 'keeps', 'names', 'states'
+    ),
+}
 Z = 1.96
-# `Claude #` of the README's Claudish section: Claude's comments from the user's private transcripts
-CLAUDE_BLOCKS = 2578
+# `Claude #` of the round 10 README's Claudish section. These are the comment blocks Claude wrote
+# into `#` files before 2026-10-01 21:11 UTC, from the user's private transcripts, counted as above
+CLAUDE_BLOCKS = 2962
 CLAUDE_RATES = {
-    'median words': 24,
-    'p90 words': 83,
-    'blocks of more than one sentence': 45,
-    '`, not` contrast': 10.7,
-    'dash (` -- ` or `—`)': 23.9,
-    'absolutes: every, never, whole, exactly': 31.1,
-    '`the one` / `one place`': 2.2,
-    'deliberately, on purpose, by design': 2.1,
-    '`rather than` / `instead of`': 18.2,
-    '`, so` joining clauses': 32.9,
-    'semicolon': 18.5,
-    'agentive verb: finds, knows, wants, sees, asks, decides, owns': 2.3,
-    'container verb: holds, carries, lives, keeps, names, states': 11.3,
-    'intensifier: genuine, real, actually, really, truly': 8.3,
-    'article before a backticked identifier': 2.8,
-    '`because`': 9.2,
-    'passive (`is`/`are`/`was`/`be` + `-ed`)': 26.0,
-    'changelog: now, no longer, used to, the old': 2.9,
+    'median words': 22,
+    'p90 words': 79,
+    'blocks of more than one sentence': 41.6,
+    '`, not` contrast': 7.9,
+    'dash (` -- ` or `—`)': 17.5,
+    'absolutes: every, never, whole, exactly': 22.0,
+    '`the one` / `one place`': 2.3,
+    'deliberately, on purpose, by design': 1.9,
+    '`rather than` / `instead of`': 14.0,
+    '`, so` joining clauses': 24.4,
+    'semicolon': 15.7,
+    'agentive verb: finds, knows, wants, sees, asks, decides, owns': 2.2,
+    'container verb, tagged as a verb: holds, carries, lives, keeps, names, states': 7.9,
+    'intensifier: genuine, real, actually, really, truly': 6.3,
+    'article before a backticked identifier': 2.3,
+    '`because`': 7.8,
+    'passive (`is`/`are`/`was`/`be` + `-ed`)': 17.3,
+    'changelog: now, no longer, used to, the old': 2.7,
     'hedge: usually, likely, probably, might, seems': 0.3,
-    'first person: we, our, us, I': 2.0,
-    'TODO, NOTE, FIXME, XXX, HACK': 0.1,
+    'first person: we, our, us, I': 1.0,
+    'TODO, NOTE, FIXME, XXX, HACK': 0.3,
+    'possessive `own`': 7.2,
 }
 
 
 def main() -> None:
-    human = humanBlocks()
-    recent = recentBlocks()
-    print('| feature | Claude, no skill | human | Claude, this skill |\n|---|---|---|---|')
-    print(f'| blocks | {CLAUDE_BLOCKS:,} | {len(human):,} | {len(recent)} |')
+    ranges = [tuple(int(n) for n in arg.split('-')) for arg in sys.argv[1:]]
+    columns = [humanBlocks()] + [recentBlocks(first, last) for first, last in ranges]
+    names = ' | '.join(f'cycles {arg}' for arg in sys.argv[1:])
+    print(f'| feature | Claude, no skill | human | {names} |\n|---' + '|---' * (len(columns) + 1) + '|')
+    print(f'| blocks | {CLAUDE_BLOCKS:,} | ' + ' | '.join(f'{len(s):,}' for s in columns) + ' |')
     for label, quantile in (('median words', 0.5), ('p90 words', 0.9)):
-        cells = [quantileCell(sorted(len(b.split()) for b in s), quantile) for s in (human, recent)]
-        print(f'| {label} | {CLAUDE_RATES[label]:g} | {cells[0]} | {cells[1]} |')
+        cells = [quantileCell(sorted(len(b.split()) for b in s), quantile) for s in columns]
+        print(f'| {label} | {CLAUDE_RATES[label]:g} | ' + ' | '.join(cells) + ' |')
     label = 'blocks of more than one sentence'
-    cells = [rateCell(sum(sentenceCount(b) > 1 for b in s), len(s)) for s in (human, recent)]
-    print(f'| {label} (%) | {claudeCell(label)} | {cells[0]} | {cells[1]} |')
+    cells = [rateCell(sum(sentenceCount(b) > 1 for b in s), len(s)) for s in columns]
+    print(f'| {label} (%) | {claudeCell(label)} | ' + ' | '.join(cells) + ' |')
     for label, pattern in FEATURES:
         rx = re.compile(pattern) if label in CASE_SENSITIVE else re.compile(pattern, re.IGNORECASE)
-        cells = [rateCell(sum(bool(rx.search(b)) for b in s), len(s)) for s in (human, recent)]
-        print(f'| {label} | {claudeCell(label)} | {cells[0]} | {cells[1]} |')
+        if label in VERB_ONLY:
+            cells = [rateCell(countVerbs([b for b in s if rx.search(b)], VERB_ONLY[label]), len(s)) for s in columns]
+        else:
+            cells = [rateCell(sum(bool(rx.search(b)) for b in s), len(s)) for s in columns]
+        print(f'| {label} | {claudeCell(label)} | ' + ' | '.join(cells) + ' |')
+
+
+def countVerbs(blocks: list[str], words: tuple[str, ...]) -> int:
+    """Count the blocks in which one of the words is tagged as a verb, with the spaCy of the shared venv."""
+    if not blocks:
+        return 0
+    tagged = subprocess.run(
+        [str(TAGGER_PYTHON), '-c', TAGGER, *words], input=json.dumps(blocks), capture_output=True, text=True, check=True
+    )
+    return sum(json.loads(tagged.stdout))
 
 
 def wilson(hits: int, total: int) -> tuple[float, float]:
@@ -156,10 +196,10 @@ def humanBlocks() -> list[str]:
     return blocks
 
 
-def recentBlocks() -> list[str]:
+def recentBlocks(first: int, last: int) -> list[str]:
     blocks: list[str] = []
     for path in sorted((REPO / 'benchmark/round10/cycles').glob('cycle*_review.md')):
-        if int(path.name.removeprefix('cycle').split('_')[0]) < int(sys.argv[1]):
+        if not first <= int(path.name.removeprefix('cycle').split('_')[0]) <= last:
             continue
         for item in re.split(r'\n### ', path.read_text())[1:]:
             code = re.search(r'```python\n(.*?)```', item, re.S)

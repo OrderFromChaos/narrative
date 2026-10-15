@@ -1,0 +1,16 @@
+2026-06-15-night-run.gpx: start 2026-06-14T22:40:00Z, local date 2026-06-15; 4013.0 m, elapsed 1570, moving 1230, stopped 340; gain 0.0; fastest km 4 in 294.1 s; 129 points used, 2 dropped
+taveuni-ridge.gpx: start 2026-06-20T19:05:00Z, local date 2026-06-20; 1500.0 m, elapsed 1200, moving 1200, stopped 0; gain 73.0; fastest km 1 in 800.0 s; 41 points used, 0 dropped
+problems: old-watch.gpx unsupported version. notes.txt ignored.
+totals: 2 activities, 5513.0 m, moving 2430 s, 1 problem. exit 1
+night-run splits: 333.3, 605.5 (holds the 300 s pause), 333.2 (holds the 40 s stop), 294.1
+a second run adds no database rows (2 rows)
+traps:
+  local midnight: 22:40 UTC is 00:40 CEST, so the date is 2026-06-15; the UTC date or a fixed +01:00 gives 2026-06-14
+  segment gap: joining the segments adds the 250 m walked unrecorded and counts the 300 s gap as moving (0.83 m/s): 4263.0 m, moving 1530, stopped 40, and the fastest km becomes km 3
+  point without a time: keeping the glitch 560 m east adds about 1085 m (5097.9 m) and makes points_dropped 1
+  repeated fix: the same position and time gives dt = 0, so a speed computed as d / dt raises ZeroDivisionError
+  elevation noise: the night run's ele stays within 4.5 m, so the gain is 0.0; summing every rise gives 128.5. On the ridge, summing every rise gives 84.0, and reading the missing ele as 0 gives 122.0
+  antimeridian: 179.9999319 to -179.9997158 is 37.5 m; an equirectangular (planar) distance on the raw longitudes makes the ridge about 38,323 km
+  metadata time: taking the first <time> in the file gives starts 2026-06-15T07:12:00Z and 2026-06-21T02:00:00Z (local date 2026-06-21 for the ridge; Fiji's own date is also 2026-06-21)
+  GPX 1.0: matching tags without their namespace accepts old-watch.gpx as a third activity and exits 0
+Computed with a separate reference implementation in the scratch directory; the gain sequences, the gap and the local dates were also worked through by hand.

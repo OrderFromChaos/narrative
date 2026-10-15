@@ -1,0 +1,22 @@
+C1 Kittredge Okafor | Harbour & Finch Ltd | kit.okafor@harbourfinch.example, k.okafor@mailbox.example | +447700900412 | phonebook:1 crm:1 newsletter:1
+C2 JONAS WEISS | Tallow Works | j.weiss@tallow.example | +441134960274 | phonebook:2 crm:2
+C3 Zoë Lindqvist (NFC, U+00EB) | null | zoe@lindqvist.example | +447700900733 | phonebook:3 crm:4
+C4 Lena Brandt | null | - | +441134960123 | phonebook:4
+C5 Ruth Achebe | null | - | +447700900158 | phonebook:5
+C6 Ada Fenwick | Quarry Lane Press | ada.fenwick@quarry.example | - | crm:3
+C7 Tomas Brandt | null | tomas.brandt@brandt.example | +441134960123 | crm:6
+C8 Priya Raman | Ostler Bank | priya.raman@ostlerbank.example | +442079460321 | crm:7 newsletter:3
+C9 Ada Fenwick | null | Ada.Fenwick@quarry.example | - | newsletter:2
+C10 Dara O’Neill | null | - | +441134960555 | newsletter:4
+rejected: crm.csv row 5 invalid phone; newsletter.csv row 5 invalid email; newsletter.csv row 6 no email or phone
+totals: sources 3, rows 18, contacts 10, rejected 3. exit 1
+traps:
+  domain case + chain: comparing whole emails case-sensitively leaves crm:1 (Kit Okafor) as its own contact (11 contacts); taking sources in basename order instead of merge.json order names C1 "Kit Okafor" and C2 "Jonas Weiß"
+  local-part case: lowercasing the whole email merges C6 and C9 into one Ada Fenwick (9 contacts)
+  Weiß vs WEISS: str.lower() gives "jonas weiß" and "jonas weiss", so phonebook:2 and crm:2 stay apart (11 contacts)
+  NFD vs NFC: comparing names without NFKC leaves phonebook:3 and crm:4 apart; skipping NFC on output writes "Zoe" + U+0308 in C3
+  extension: keeping "x214" makes newsletter:3 an invalid phone (4 rejected, C8 loses its email), or, with its digits kept, a different number that splits Priya Raman in two (11 contacts)
+  family phone: matching on phone alone merges Lena and Tomas Brandt into one contact (9 contacts)
+  empty email: keying on the raw email puts every record without one (phonebook:2-5, crm:7, newsletter:4), and all they match, in one contact
+  quoted newline: counting physical lines reports Bram Holt as crm.csv row 6 (or line 7) instead of row 5; splitting on newlines breaks crm:3
+Computed by hand and checked against a separate reference implementation; with lower() for names and no domain casefold, the reference gives 12 contacts.

@@ -6,32 +6,56 @@ persist when a container is recreated`.
 
 `a period ranks by its newest snapshot` makes a period rank, and `the report names it` makes a
 report speak. A subject acts when it is a person, an animal, a role such as `caller`, or a pronoun
-for one. A verb counts as mental when its most frequent WordNet sense is cognition,
-communication or perception, or when it is on MIND_EXTRA. Verbs on LITERAL never count.
+for one. A noun made from a verb with no person sense in common use, such as `solver`, is the name
+of a program and cannot act. A verb counts as mental when its most frequent WordNet sense is
+cognition, communication or perception, or when it is on MIND_EXTRA. A verb counts as an agent verb
+when VerbNet puts its most frequent sense in a class in which each frame has an animate subject:
+`the default config sends the job`, `the fallback places the file`. Verbs on LITERAL never count. A British spelling is
+read as the American one that the word lists use: `honour` as `honor`.
 
-There are four ways to read a subject and its verb, because the parse of a terse comment is often
+There are six ways to read a subject and its verb, because the parse of a terse comment is often
 wrong on words that are both noun and verb (`a plan marks`):
 - the dependency parse: a nominal subject of a verb, with `that` and `which` read as the noun
   their clause attaches to
 - a coordinated verb takes the subject of its clause: `the file is malformed, or names a zone`
+- a verb joined by `and` or `or` to a verb of the same form takes its subject: `the scan can stop
+  early and list no files`
+- an `-ing` modifier with an object takes the noun before it as subject: `a policy deciding it`
 - agreement: after a singular determiner, a noun followed by an `-s` word makes that word a verb
 - a modal: `a policy can judge`
+The coordination and agreement readings take mental verbs only. They read an `-s` word as a verb
+without the parse, and agent verbs such as `bill` and `rule` are also nouns. A passive verb with
+`by` and a verb such as `pick` in `tries to pick` are not read: on the test corpus, most such pairs
+are verbs that code performs, such as `keyed by resource id`.
 
 It imports spaCy and loads its `en_core_web_md` model, both pinned in requirements-lock.txt.
 verify.py runs it with the interpreter of the lint venv.
 
+A directory expands to its Python files. A Markdown, HTML or plain text file is checked when it is
+named, through prose.py.
+
 Usage, with the shared lint venv of SKILL.md (Scripts\python.exe in place of bin/python on Windows):
-    $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py src/
+    $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py src/ README.md docs/report.html
     src/join.py:73: NAR017 'period ranks': agent verb on a subject that cannot act
     src/store.py:12: NAR020 'Named': clause with no subject before ", so"
+    README.md:40: NAR017 'table shows': agent verb on a subject that cannot act
+    $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --review src/ README.md
+    src/join.py:40: 'path breaks'
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --lines sample.txt
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --score gold.tsv
     precision 1.00, recall 0.91 (29 of 32 found, 0 false)
 
-A line with `# noqa: NAR017`, `# noqa: NAR020` or a bare `# noqa` is skipped for that code.
+A line with `# noqa: NAR017`, `# noqa: NAR020` or a bare `# noqa` is skipped for that code. In a page,
+the comment is `<!-- noqa: NAR017 -->`.
+
+`--review` lists every other subject that cannot act, with its verb, for the manual prose review:
+a verb outside LITERAL that is not stative, such as `breaks` or `stays`. An `-s` word that the parse
+reads as a noun after another noun, where only a verb fits, is on the list too: `the path breaks`.
+A reader decides whether the subject can perform the verb. The list is no finding, and the exit code
+is 0.
 
 Exit codes:
-    0  nothing flagged
+    0  nothing flagged, or a review list printed
     1  at least one line flagged
 """
 
@@ -47,7 +71,9 @@ import tokenize
 from dataclasses import dataclass
 from pathlib import Path
 
+import prose
 import spacy
+from prose import Passage
 from spacy.language import Language
 from spacy.tokens import Doc, Token
 
@@ -60,18 +86,15 @@ WORDS_PATH = Path(__file__).resolve().parent / 'words.json'
 MODEL = 'en_core_web_md'
 
 # verbs whose most frequent WordNet sense is not a mind class, but which make their subject a mind
-MIND_EXTRA = frozenset({
-    'keep', 'hold', 'carry', 'own', 'know', 'decide', 'want', 'need', 'see', 'find', 'judge', 'rank',
-    'mark', 'name', 'state', 'say', 'tell', 'list', 'assume', 'expect', 'consider', 'treat', 'care',
-    'trust', 'promise', 'insist', 'refuse',
-})  # fmt: skip
+MIND_EXTRA = frozenset({'keep', 'hold', 'carry', 'own', 'want', 'need', 'find', 'mark', 'treat', 'care'})
 # what code does, and stative verbs for a relation rather than an act
 LITERAL = frozenset({
     'return', 'raise', 'read', 'write', 'call', 'skip', 'parse', 'yield', 'print', 'log', 'match',
     'compare', 'accept', 'reject', 'contain', 'count', 'sort', 'map', 'have', 'be', 'fail', 'admit',
     'split', 'follow', 'drop', 'stop', 'start', 'run', 'pass', 'take', 'mean', 'imply', 'indicate',
     'look', 'seem', 'appear', 'specify', 'require', 'signal', 'point', 'check', 'will', 'decode',
-    'encode', 'subtract', 'refer', 'resolve', 'iterate', 'compute', 'rewrite',
+    'encode', 'subtract', 'refer', 'resolve', 'iterate', 'compute', 'rewrite', 'use', 'open', 'close',
+    'copy', 'shadow', 'nest', 'implement', 'put', 'import', 'reach', 'remove', 'collect', 'load',
 })  # fmt: skip
 ROLES = frozenset({
     'i', 'you', 'we', 'he', 'she', 'they', 'who', 'someone', 'nobody', 'everyone', 'user', 'caller',
@@ -87,6 +110,8 @@ PROGRAMS = frozenset({
 SINGULAR_DETERMINERS = frozenset({'a', 'an', 'each', 'every', 'this', 'its', 'one'})
 # a container verb counts only with an object: `a file holds whole bytes`, not `the invariant holds`  # noqa: NAR016
 CONTAINER_VERBS = frozenset({'hold', 'keep', 'carry', 'own'})
+# an object or clause that makes a verb take the VerbNet frame with an animate subject
+AGENT_OBJECTS = frozenset({'dobj', 'iobj', 'dative', 'ccomp', 'xcomp', 'prt'})
 MODALS = frozenset({'can', 'cannot', 'could', 'would', 'will', 'may', 'might', 'must', 'should'})
 # matches:
 # `raw_at`
@@ -108,6 +133,8 @@ NOQA = re.compile(r'#\s*noqa(?::\s*(?P<codes>[A-Z0-9, ]+))?')
 # `don't`
 QUOTED = re.compile(r"`[^`]*`|(?<!\w)'[^'\n]+'(?!\w)")
 AGREEMENT_WINDOW = 5
+# British spellings, and the American ones that WordNet lists: `honour`, `recognise`, `analyse`
+SPELLINGS = (('our', 'or'), ('ise', 'ize'), ('yse', 'yze'))
 SO_JOIN = re.compile(r',\s+so\b')
 # the parse of a longer clause before `, so` is unreliable
 FRAGMENT_MAX_WORDS = 8
@@ -116,20 +143,26 @@ SECTION_HEADER = re.compile(r'(?:Args|Arguments|Returns|Yields|Raises|Attributes
 
 
 def main() -> int:
-    """Check the paths given, or flag or score a text file.
+    """Check the paths given, list their subject and verb pairs for review, or flag or score a text file.
 
     Returns:
-        1 when a line is flagged, otherwise 0. Scoring always returns 0.
+        1 when a line is flagged, otherwise 0. Scoring and the review list always return 0.
     """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('paths', nargs='*', type=Path)
     parser.add_argument('--lines', type=Path, help='flag each line of a plain text file')
     parser.add_argument('--score', type=Path, help='score against a label<TAB>text file')
+    parser.add_argument('--review', action='store_true', help='list every other subject that cannot act, with its verb')
     args = parser.parse_args()
 
     reader = SentenceReader.load(WORDS_PATH)
     if args.score:
         return scoreLabels(reader, args.score)
+    if args.review:
+        for checked_file in discoverFiles(args.paths):
+            for line, pair in reviewFile(reader, checked_file):
+                print(f'{checked_file}:{line}: {pair!r}')
+        return 0
     if args.lines:
         flagged = 0
         for text in args.lines.read_text(encoding='utf-8').splitlines():
@@ -139,7 +172,7 @@ def main() -> int:
         return 1 if flagged else 0
 
     findings: list[Finding] = []
-    for checked_file in discoverPython(args.paths):
+    for checked_file in discoverFiles(args.paths):
         findings.extend(checkFile(reader, checked_file))
     for finding in findings:
         message = MESSAGE if finding.code == CODE else FRAGMENT_MESSAGE
@@ -173,7 +206,15 @@ def scoreLabels(reader: SentenceReader, labels_path: Path) -> int:
     return 0
 
 
-def discoverPython(paths: list[Path]) -> list[Path]:
+def discoverFiles(paths: list[Path]) -> list[Path]:
+    """Expand each directory to the Python files below it, and keep each file named.
+
+    A page below a directory is left out, so a run over `src/` does not check every README and
+    vendored HTML file in it.
+
+    Returns:
+        The files to check, in the order given.
+    """
     files: list[Path] = []
     for target in paths:
         files.extend(sorted(target.rglob('*.py')) if target.is_dir() else [target])
@@ -181,18 +222,42 @@ def discoverPython(paths: list[Path]) -> list[Path]:
 
 
 def checkFile(reader: SentenceReader, checked_file: Path) -> list[Finding]:
-    """Flag every comment and docstring passage of one file, skipping codes silenced with noqa.
+    """Flag every comment and docstring passage of a Python file, or every passage of a page.
 
-    A passage is checked as one text, so a sentence wrapped over several lines is parsed whole. A
-    noqa on any line of a passage silences that code for the whole passage.
+    A passage is checked as one text, so a sentence wrapped over several lines is parsed whole. In a
+    Python file, a noqa on any line of a passage silences that code for the whole passage. In a page,
+    where a paragraph can run to many sentences, a noqa silences only the findings on the line of the comment.
 
     Returns:
         One finding per agent verb and per clause with no subject, on the line of its last word.
     """
     source = checked_file.read_text(encoding='utf-8')
+    if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
+        suppressed = prose.suppressedCodes(source)
+        findings = passageFindings(reader, checked_file, prose.readPassages(checked_file), set(), set())
+        return [f for f in findings if not (suppressed.get(f.line, set()) & {f.code, 'ALL'})]
     passages = [*commentPassages(source), *docstringPassages(ast.parse(source))]
-    agent_silenced = silencedLines(source, CODE)
-    fragment_silenced = silencedLines(source, FRAGMENT_CODE)
+    return passageFindings(
+        reader,
+        checked_file,
+        passages,
+        silencedLines(source, CODE),
+        silencedLines(source, FRAGMENT_CODE),
+    )
+
+
+def passageFindings(
+    reader: SentenceReader,
+    checked_file: Path,
+    passages: list[Passage],
+    agent_silenced: set[int],
+    fragment_silenced: set[int],
+) -> list[Finding]:
+    """Flag each passage, leaving out a code for every passage with a line in its silenced set.
+
+    Returns:
+        The findings in passage order.
+    """
     findings: list[Finding] = []
     for passage in sorted(passages, key=lambda passage: passage.lines[0]):
         if not agent_silenced & set(passage.lines):
@@ -202,6 +267,31 @@ def checkFile(reader: SentenceReader, checked_file: Path) -> list[Finding]:
             for head in reader.fragments(passage.text):
                 findings.append(Finding(checked_file, passage.lineOf(head), FRAGMENT_CODE, head))
     return findings
+
+
+def reviewFile(reader: SentenceReader, checked_file: Path) -> list[tuple[int, str]]:
+    """List the subject and verb pairs of one file for review, leaving out what a NAR017 noqa silences.
+
+    Returns:
+        The line and the `subject verb` of each pair, in passage order.
+    """
+    source = checked_file.read_text(encoding='utf-8')
+    page = checked_file.suffix.lower() in prose.PROSE_SUFFIXES
+    if page:
+        passages = prose.readPassages(checked_file)
+        silenced = {number for number, codes in prose.suppressedCodes(source).items() if codes & {CODE, 'ALL'}}
+    else:
+        passages = [*commentPassages(source), *docstringPassages(ast.parse(source))]
+        silenced = silencedLines(source, CODE)
+    pairs: list[tuple[int, str]] = []
+    for passage in sorted(passages, key=lambda passage: passage.lines[0]):
+        # in a Python file a noqa covers the whole passage, as in checkFile()
+        if not page and silenced & set(passage.lines):
+            continue
+        for pair in reader.reviewPairs(passage.text):
+            if (line := passage.lineOf(pair)) not in silenced:
+                pairs.append((line, pair))
+    return pairs
 
 
 def silencedLines(source: str, code: str) -> set[int]:
@@ -287,34 +377,19 @@ def proseLines(docstring: str) -> list[tuple[int, str]]:
     return picked
 
 
+def americanSpelling(word: str, verbs: frozenset[str]) -> str:
+    """Give the American spelling of a British verb. VerbNet lists `honor`, and WordNet lists both.
+
+    Returns:
+        The American spelling when it is a verb, otherwise the word.
+    """
+    for british, american in SPELLINGS:
+        if british in word and (spelled := word.replace(british, american)) in verbs:
+            return spelled
+    return word
+
+
 ### vocabulary #########################################################################################
-
-
-@dataclass(frozen=True)
-class Passage:
-    """Consecutive lines of comment or docstring prose, read as one text."""
-
-    lines: tuple[int, ...]
-    texts: tuple[str, ...]
-
-    @property
-    def text(self) -> str:
-        return ' '.join(self.texts)
-
-    def extendedBy(self, number: int, text: str) -> Passage:
-        return Passage((*self.lines, number), (*self.texts, text))
-
-    def lineOf(self, hit: str) -> int:
-        """Find the line with the last word of a hit, or the first line when no line has it.
-
-        Returns:
-            A line number of the file.
-        """
-        last_word = hit.split()[-1]
-        for number, text in zip(self.lines, self.texts, strict=True):
-            if re.search(rf'\b{re.escape(last_word)}\b', text):
-                return number
-        return self.lines[0]
 
 
 @dataclass(frozen=True)
@@ -332,17 +407,21 @@ class SentenceReader:
     nlp: Language
     animate_nouns: frozenset[str]
     mind_verbs: frozenset[str]
+    agent_verbs: frozenset[str]
+    stative_verbs: frozenset[str]
     verbs: frozenset[str]
 
     @classmethod
     def load(cls, words_path: Path) -> SentenceReader:
         words = json.loads(words_path.read_text(encoding='utf-8'))
         mind = (frozenset(words['mind_verbs']) | MIND_EXTRA) - LITERAL
+        agent = frozenset(words['agent_verbs']) - LITERAL
         animate = (frozenset(words['animate_nouns']) | ROLES) - PROGRAMS
-        return cls(spacy.load(MODEL), animate, mind, frozenset(words['verbs']))
+        stative = frozenset(words['stative_verbs'])
+        return cls(spacy.load(MODEL), animate, mind, agent, stative, frozenset(words['verbs']))
 
     def agentVerbs(self, text: str) -> list[str]:
-        """Find each subject that cannot act, paired with a verb for a mental act.
+        """Find each subject that cannot act, paired with a verb for a mental act or an agent's act.
 
         Returns:
             One `subject verb` string per hit, in sentence order.
@@ -350,11 +429,65 @@ class SentenceReader:
         doc = self.nlp(QUOTED.sub('value', text))
         hits = {
             **self._parsedSubjects(doc),
+            **self._sharedSubjects(doc),
+            **self._participleSubjects(doc),
             **self._coordinatedSubjects(doc),
             **self._agreeingSubjects(doc),
             **self._modalSubjects(doc),
         }
         return [hits[index] for index in sorted(hits)]
+
+    def reviewPairs(self, text: str) -> list[str]:
+        """Find each subject that cannot act with a verb that is neither literal nor stative.
+
+        A pair that agentVerbs() flags is left out, because it is already a finding.
+
+        Returns:
+            One `subject verb` string per pair, in sentence order.
+        """
+        doc = self.nlp(QUOTED.sub('value', text))
+        flagged = set(self.agentVerbs(text))
+        pairs: list[str] = []
+        for token in doc:
+            if token.dep_ != 'nsubj' or token.head.pos_ != 'VERB':
+                continue
+            verb = token.head
+            lemma = self._lemma(verb)
+            if lemma in LITERAL or lemma in self.stative_verbs or self._misreadSubject(token, verb):
+                continue
+            if not self._canAct(token) and (pair := f'{token.text} {verb.text}') not in flagged:
+                pairs.append(pair)
+        for subject, verb in self._compoundMisreadings(doc):
+            if (pair := f'{subject.text} {verb.text}') not in flagged and not self._canAct(subject):
+                pairs.append(pair)
+        return pairs
+
+    def _compoundMisreadings(self, doc: Doc) -> list[tuple[Token, Token]]:
+        """Find a noun and an `-s` word that the parse reads as one compound noun: `the path breaks`.
+
+        In `a config value steers, but nothing else does`, the parse makes `steers` a noun with
+        `value` as its modifier. After a determiner, with nothing after it that the `-s` word could
+        modify, it is a verb.
+
+        Returns:
+            Each subject and verb, for a verb that is neither literal nor stative.
+        """
+        pairs: list[tuple[Token, Token]] = []
+        for word in doc:
+            if not word.lower_.endswith('s') or word.tag_ not in ('NNS', 'VBZ') or word.i == 0:
+                continue
+            stem = self._stem(word)
+            if stem not in self.verbs or stem in LITERAL or stem in self.stative_verbs:
+                continue
+            noun = doc[word.i - 1]
+            determined = any(t.dep_ in ('det', 'poss') for t in doc[word.left_edge.i : noun.i])
+            ends_phrase = word.dep_ in ('ROOT', 'conj', 'advcl', 'ccomp') or word.i == len(doc) - 1
+            # `the moves of its main line`: a word before `of` is a noun
+            before_of = word.i + 1 < len(doc) and doc[word.i + 1].lower_ == 'of'
+            compound = noun.dep_ in ('compound', 'amod') and noun.pos_ in ('NOUN', 'PROPN') and noun.head == word
+            if compound and determined and ends_phrase and not before_of:
+                pairs.append((noun, word))
+        return pairs
 
     def fragments(self, text: str) -> list[str]:
         """Find each clause before `, so` that has no subject and is not a noun phrase or a command.
@@ -394,12 +527,78 @@ class SentenceReader:
                 hits[verb.i] = f'{token.text} {verb.text}'
         return hits
 
+    def _sharedSubjects(self, doc: Doc) -> dict[int, str]:
+        """Read a verb with no subject as taking the subject of the verb it is joined to.
+
+        In `the scan can stop early and list no files`, `list` has the subject `scan`. When the
+        subject is a clause such as `parsing the file`, the subject is an event, which cannot act.
+
+        Returns:
+            Verb index to `subject verb`.
+        """
+        hits: dict[int, str] = {}
+        for verb in doc:
+            # a participle is passive or shares an auxiliary, and `value` stands in for quoted code
+            if verb.dep_ != 'conj' or verb.pos_ != 'VERB' or verb.tag_ == 'VBN' or verb.lower_ == 'value':
+                continue
+            if any(c.dep_ in ('nsubj', 'nsubjpass', 'csubj', 'expl') for c in verb.children):
+                continue
+            head = verb.head
+            # `and` or `or` joins two verbs of the same form: `can stop and list`, `kept and showed`.
+            # A parse that joins `scanned` to `report`, or clauses with no conjunction, is a misreading
+            joined = verb.tag_ == head.tag_ and any(
+                t.dep_ == 'cc' and t.head in (head, verb) for t in doc[head.i + 1 : verb.i]
+            )
+            while head.dep_ == 'conj' and head.head.i != head.i:
+                head = head.head
+            subject = next((c for c in head.children if c.dep_ in ('nsubj', 'nsubjpass', 'csubj')), None)
+            # an imperative has no subject. Its parse sometimes takes the object for one
+            imperative = head.tag_ == 'VB' and not any(c.dep_ in ('aux', 'auxpass') for c in head.children)
+            if not joined or imperative or subject is None or not self._needsMind(verb):
+                continue
+            if subject.dep_ == 'csubj' and subject.tag_ != 'VBG':
+                continue
+            if subject.dep_ != 'csubj' and (self._misreadSubject(subject, head) or self._canAct(subject)):
+                continue
+            hits[verb.i] = f'{subject.text} {verb.text}'
+        return hits
+
+    def _participleSubjects(self, doc: Doc) -> dict[int, str]:
+        """Read the noun before an `-ing` modifier as its subject: `a policy deciding which files stay`.
+
+        A modifier with no object, such as `missing` in `the sections missing from this file`, is an
+        adjective and is left out.
+
+        Returns:
+            Verb index to `subject verb`.
+        """
+        hits: dict[int, str] = {}
+        for verb in doc:
+            if verb.dep_ != 'acl' or verb.tag_ != 'VBG' or self._canAct(verb.head) or not self._needsMind(verb):
+                continue
+            if not any(c.dep_ in AGENT_OBJECTS for c in verb.children):
+                continue
+            # in `the escape hatch: marking the parameters`, the colon ends the noun phrase
+            if not any(t.is_punct for t in doc[verb.head.i + 1 : verb.i]):
+                hits[verb.i] = f'{verb.head.text} {verb.text}'
+        return hits
+
+    def _lemma(self, verb: Token) -> str:
+        return americanSpelling(verb.lemma_.lower(), self.verbs)
+
+    def _stem(self, word: Token) -> str:
+        """Read an `-s` word as a verb: `names` as `name`, `recognises` as `recognize`."""
+        return americanSpelling(word.lower_[:-1], self.verbs)
+
     def _needsMind(self, verb: Token) -> bool:
-        lemma = verb.lemma_.lower()
+        lemma = self._lemma(verb)
         if lemma in CONTAINER_VERBS:
             # in `the periods its rule keeps`, the object stands before the relative clause
             return verb.dep_ in ('relcl', 'ccomp') or any(c.dep_ in ('dobj', 'attr') for c in verb.children)
-        return lemma in self.mind_verbs
+        if lemma in self.mind_verbs:
+            return True
+        # in VerbNet, the animate subject belongs to the sense with an object: `a rule applies` is not `apply a rule`
+        return lemma in self.agent_verbs and any(c.dep_ in AGENT_OBJECTS for c in verb.children)
 
     def _misreadSubject(self, subject: Token, verb: Token) -> bool:
         """Recognise a parse whose subject and verb are not a subject and a verb.
@@ -459,7 +658,7 @@ class SentenceReader:
     def _coordinatedSubjects(self, doc: Doc) -> dict[int, str]:
         hits: dict[int, str] = {}
         for token in doc:
-            if token.dep_ != 'conj' or not token.lower_.endswith('s') or token.lower_[:-1] not in self.mind_verbs:
+            if token.dep_ != 'conj' or not token.lower_.endswith('s') or self._stem(token) not in self.mind_verbs:
                 continue
             # a verb takes an object: `names an unknown timezone`, not `fractions of a cent`
             if token.i + 1 >= len(doc) or doc[token.i + 1].pos_ not in ('DET', 'ADJ', 'NOUN', 'PROPN', 'NUM'):
@@ -488,7 +687,7 @@ class SentenceReader:
             if not token.lower_.endswith('s') or left.lower_.endswith('s') or left.pos_ == 'DET':
                 continue
             # `the Move it names`: after `it`, an `-s` word is a verb
-            if left.lower_ == 'it' and token.lower_[:-1] in self.mind_verbs:
+            if left.lower_ == 'it' and self._stem(token) in self.mind_verbs:
                 hits[token.i] = f'{left.text} {token.text}'
                 continue
             if left.pos_ not in ('NOUN', 'PROPN', 'ADJ', 'NUM', 'X') or self._canAct(left):
@@ -505,7 +704,7 @@ class SentenceReader:
             relative = the_index is not None and the_index > 0 and doc[the_index - 1].pos_ in ('NOUN', 'PROPN')
             singular = singular or (relative and left.tag_ in ('NN', 'NNP'))
             reduced_relative = IDENTIFIER.search(left.text) and left.i > 0 and doc[left.i - 1].pos_ in ('NOUN', 'DET')
-            if (singular or reduced_relative) and token.lower_[:-1] in self.mind_verbs:
+            if (singular or reduced_relative) and self._stem(token) in self.mind_verbs:
                 hits[token.i] = f'{left.text} {token.text}'
         return hits
 
@@ -515,7 +714,7 @@ class SentenceReader:
             left, verb = doc[token.i - 1], doc[token.i + 1]
             if token.lower_ not in MODALS or left.pos_ not in ('NOUN', 'PROPN') or self._canAct(left):
                 continue
-            if verb.lemma_.lower() in self.mind_verbs:
+            if self._needsMind(verb):
                 hits[token.i] = f'{left.text} {token.text} {verb.text}'
         return hits
 

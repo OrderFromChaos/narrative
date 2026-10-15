@@ -1,0 +1,7 @@
+# Harbourline sync: never copy logs, build output or drafts
+*.log
+/build/
+!build/keep.txt
+cache/*
+!cache/README.txt
+/docs/**/*.draft

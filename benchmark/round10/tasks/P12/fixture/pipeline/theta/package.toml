@@ -1,0 +1,3 @@
+name = "theta"
+dependencies = ["eta"]
+sources = ["*.py"]

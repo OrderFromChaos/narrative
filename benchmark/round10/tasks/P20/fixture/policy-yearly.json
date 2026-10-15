@@ -1,0 +1,4 @@
+{
+  "timezone": "America/New_York",
+  "keep": {"hourly": 0, "daily": 0, "weekly": 0, "monthly": 2, "yearly": 3}
+}

@@ -1,0 +1,37 @@
+{
+  "default_country_code": "44",
+  "sources": [
+    {
+      "file": "phonebook.csv",
+      "encoding": "utf-16",
+      "delimiter": ";",
+      "name": [
+        "First",
+        "Last"
+      ],
+      "email": "Email",
+      "phone": "Mobile"
+    },
+    {
+      "file": "crm.csv",
+      "encoding": "utf-8-sig",
+      "delimiter": ",",
+      "name": [
+        "Full Name"
+      ],
+      "email": "E-mail",
+      "phone": "Phone",
+      "company": "Company"
+    },
+    {
+      "file": "newsletter.csv",
+      "encoding": "cp1252",
+      "delimiter": ",",
+      "name": [
+        "display_name"
+      ],
+      "email": "email",
+      "phone": "phone"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+fixture/snapshots, policy.json, --now 2028-11-05T08:00:00Z, no new option: unchanged from tasks/P3/EXPECTED.txt (6 kept, 7 to delete, 2 problems, 4 ignored, exit 1; no rule is yearly or pinned).
+  --apply --max-delete 6: refused, nothing deleted, "applied": false, exit 3.  --apply --max-delete 7: the 7 deleted, "applied": true, exit 1.
+fixture/archive, policy-yearly.json, --now 2030-02-15T12:00:00Z, local times in America/New_York, no new option:
+  keep: 20300214T120000Z [monthly yearly newest]; 20300110T120000Z [monthly]; 20291231T120000Z [yearly pinned] (local 2029-12-31 07:00); 20290101T040000Z [yearly] (local 2028-12-31 23:00); 20270701T120000Z [pinned]; 20260615T120000Z [pinned]
+  delete: 20281231T120000Z, 20280601T120000Z, 20271231T120000Z, 20270101T120000Z, 20270101T030000Z, 20261231T120000Z
+  problems: db-20250301T000000Z.tar.zst bad-pin; db-20280101T000000Z.tar.zst bad-pin (symbolic link); db-20300301T000000Z.tar.zst future (pinned, still only a problem)
+  6 kept, 6 to delete, 3 problems, 2 ignored (pins.txt and the link), exit 1
+  --apply --max-delete 5: refused, nothing deleted, "applied": false, exit 3.  --apply --max-delete 6: the 6 deleted, "applied": true, exit 1.
+  --max-delete 0 without --apply: same as the dry run, exit 1.  --max-delete -1: exit 2.
+traps:
+  "yearly" made required: fixture/policy.json is rejected with exit 2
+  UTC years: 20290101T040000Z falls in 2029, so the 2028 pick is 20281231T120000Z instead
+  ISO years (the weekly key copied): 20291231 is in ISO 2030 and ISO 2029 has no snapshot, so 20271231T120000Z is kept and 20291231T120000Z shows only [pinned]
+  byte order mark kept on line 1: 20260615T120000Z is deleted and the BOM-prefixed name of 20260615T120000Z becomes a bad pin
+  only full-line comments: 20270701T120000Z is deleted and "db-20270701T120000Z.tar.zst   # restore drill" becomes a bad pin
+  pins checked with exists() or is_file() following links: the symbolic link is accepted and no bad pin is reported for it; pinning the future snapshot puts it in keep or reports it as a bad pin
+  repeated pin or a pin of a rule-kept snapshot: "pinned" twice, or "pinned" before "yearly", in 20291231T120000Z's rules
+  --max-delete compared with >= refuses exactly 6 on the archive; a refused run that returns 1 because there are problems instead of 3
+Checked with a reference implementation (the package copied to a scratch directory, changed, and run on copies of both fixtures, each option above), which matched a hand count of the periods.

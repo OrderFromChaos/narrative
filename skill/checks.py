@@ -6,11 +6,15 @@ complexity. NAR007 covers boolean grouping. NAR010 covers FIXME reachability. NA
 and NAR018 cover the wording of comments and docstrings. NAR019 covers a return contract written
 as a comment.
 
+A Markdown, HTML or plain text file named on the command line gets the wording checks only, on the
+passages that prose.py reads from it. A directory expands to its Python files.
+
 See tooling.md for what the other tools own.
 
 Usage:
     $ python3 checks.py src/
     $ python3 checks.py src/loader.py src/report.py
+    $ python3 checks.py README.md docs/report.html
     $ python3 checks.py src/ --select NAR001 --select NAR006
 
 Exit codes:
@@ -28,6 +32,8 @@ import sys
 import tokenize
 from dataclasses import dataclass
 from pathlib import Path
+
+import prose
 
 
 ### standard library only. checks.py runs wherever python3 does
@@ -57,7 +63,7 @@ RULES = {
     'NAR000': 'file could not be read or parsed',
 }
 
-### withdrawn codes. They stay listed so a document citing one still resolves, and are never reported
+### withdrawn codes. They stay listed so a code cited in a document still resolves, and are never reported
 
 RETIRED = {
     'NAR008': 'withdrawn: blank lines inside a function are review judgement',
@@ -84,7 +90,8 @@ def main() -> int:
         targets.extend(sorted(discoverPython(target)) if target.is_dir() else [target])
 
     if args.prose:
-        for checked_file in targets:
+        # a page is prose throughout, so the inventory covers code only
+        for checked_file in (target for target in targets if target.suffix.lower() not in prose.PROSE_SUFFIXES):
             shown = checked_file.relative_to(Path.cwd()) if checked_file.is_relative_to(Path.cwd()) else checked_file
             for number, text in proseInventory(checked_file):
                 print(f'{shown}:{number}: {text}')
@@ -674,7 +681,40 @@ def checkFixmeReachability(tree: ast.Module, source: str, checked_file: Path) ->
 
 
 def checkProseWording(tree: ast.Module, source: str, checked_file: Path) -> list[Finding]:
-    """Flag six kinds of wording that no comment or docstring needs.
+    """Flag the wording faults of `wordingFindings()` in every comment and docstring line.
+
+    Returns:
+        One finding per rule and line.
+    """
+    prose_lines = [*commentLines(source), *docstringLines(tree)]
+    list_items = {number for number, text in prose_lines if re.match(r'[*-]\s', text)}
+    return wordingFindings(prose_lines, list_items, checked_file)
+
+
+def checkPage(checked_file: Path) -> list[Finding]:
+    """Run the wording checks over the passages of a Markdown, HTML or plain text file.
+
+    Returns:
+        Every finding not silenced by a `<!-- noqa -->` comment, or a single NAR000 if the file
+        could not be read.
+    """
+    try:
+        source = checked_file.read_text(encoding='utf-8')
+    except OSError as exc:
+        return [Finding(checked_file, 0, 'NAR000', f'unreadable: {exc.strerror}')]
+    except UnicodeDecodeError as exc:
+        return [Finding(checked_file, 0, 'NAR000', f'not UTF-8: {exc.reason}')]
+
+    passages = prose.readPassages(checked_file)
+    prose_lines = [line for passage in passages for line in zip(passage.lines, passage.texts, strict=True)]
+    list_items = {passage.lines[0] for passage in passages if passage.list_item}
+    suppressed = prose.suppressedCodes(source)
+    findings = wordingFindings(prose_lines, list_items, checked_file)
+    return [f for f in findings if not (suppressed.get(f.line, set()) & {f.code, 'ALL'})]
+
+
+def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], checked_file: Path) -> list[Finding]:
+    """Flag six kinds of wording that no comment, docstring or published page needs.
 
     - NAR012: a decision id, unresolvable outside the repository that recorded it
     - NAR013: a dash or a semicolon joining clauses, outside backticked code
@@ -687,6 +727,11 @@ def checkProseWording(tree: ast.Module, source: str, checked_file: Path) -> list
     employed for. A bare `now` is not flagged. `now that X` and `until now` are common in correct
     prose. A dash after a list-item term is a separator, not a clause join. Pragmas, section dividers
     and pasted usage lines (`$`, `>>>`) are skipped.
+
+    Args:
+        prose_lines: line number and text of each line of prose
+        list_items: the lines that open a list item, where a dash after the term is allowed
+        checked_file: the file the lines come from
 
     Returns:
         One finding per rule and line.
@@ -722,12 +767,10 @@ def checkProseWording(tree: ast.Module, source: str, checked_file: Path) -> list
     # rejects:
     # `a;b`
     SEMICOLON = re.compile(r';(?:\s|$)')
-    prose = [*commentLines(source), *docstringLines(tree)]
     findings: list[Finding] = []
-    for number, text in prose:
-        list_item = re.match(r'[*-]\s', text)
+    for number, text in prose_lines:
         for code, pattern in WORDING.items():
-            if code == 'NAR013' and list_item:
+            if code == 'NAR013' and number in list_items:
                 continue
             if found := pattern.search(text):
                 findings.append(Finding(checked_file, number, code, repr(found.group(0).strip())))
@@ -856,6 +899,8 @@ def checkFile(checked_file: Path) -> list[Finding]:
     Returns:
         Every finding for this file, or a single NAR000 if it could not be read or parsed.
     """
+    if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
+        return checkPage(checked_file)
     try:
         source = checked_file.read_text(encoding='utf-8')
     except OSError as exc:

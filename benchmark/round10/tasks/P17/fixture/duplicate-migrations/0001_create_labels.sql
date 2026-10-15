@@ -1,0 +1,1 @@
+CREATE TABLE labels (name TEXT PRIMARY KEY);

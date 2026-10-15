@@ -21,6 +21,7 @@ FILES=(
     checks.py
     verify.py
     agentverbs.py
+    prose.py
     words.json
     requirements-lock.txt
     pyproject-snippet.toml
