@@ -10,8 +10,9 @@ for one. A noun made from a verb with no person sense in common use, such as `so
 of a program and cannot act. A verb counts as mental when its most frequent WordNet sense is
 cognition, communication or perception, or when it is on MIND_EXTRA. A verb counts as an agent verb
 when VerbNet puts its most frequent sense in a class in which each frame has an animate subject:
-`the default config sends the job`, `the fallback places the file`. Verbs on LITERAL never count. A British spelling is
-read as the American one that the word lists use: `honour` as `honor`.
+`the default config sends the job`, `the fallback places the file`. Verbs on LITERAL never count,
+and `show` is fine after a noun on PAGE_PARTS: `the table below shows the totals`. A British
+spelling is read as the American one that the word lists use: `honour` as `honor`.
 
 There are six ways to read a subject and its verb, because the parse of a terse comment is often
 wrong on words that are both noun and verb (`a plan marks`):
@@ -95,6 +96,7 @@ LITERAL = frozenset({
     'look', 'seem', 'appear', 'specify', 'require', 'signal', 'point', 'check', 'will', 'decode',
     'encode', 'subtract', 'refer', 'resolve', 'iterate', 'compute', 'rewrite', 'use', 'open', 'close',
     'copy', 'shadow', 'nest', 'implement', 'put', 'import', 'reach', 'remove', 'collect', 'load',
+    'feed', 'receive',
 })  # fmt: skip
 ROLES = frozenset({
     'i', 'you', 'we', 'he', 'she', 'they', 'who', 'someone', 'nobody', 'everyone', 'user', 'caller',
@@ -133,6 +135,11 @@ NOQA = re.compile(r'#\s*noqa(?::\s*(?P<codes>[A-Z0-9, ]+))?')
 # `don't`
 QUOTED = re.compile(r"`[^`]*`|(?<!\w)'[^'\n]+'(?!\w)")
 AGREEMENT_WINDOW = 5
+# nouns for a part of the page, which may take `show`: `the table below shows the totals`
+PAGE_PARTS = frozenset({
+    'table', 'figure', 'diagram', 'graph', 'chart', 'plot', 'image', 'screenshot', 'example',
+    'comparison', 'illustration',
+})  # fmt: skip
 # British spellings, and the American ones that WordNet lists: `honour`, `recognise`, `analyse`
 SPELLINGS = (('our', 'or'), ('ise', 'ize'), ('yse', 'yze'))
 SO_JOIN = re.compile(r',\s+so\b')
@@ -435,7 +442,20 @@ class SentenceReader:
             **self._agreeingSubjects(doc),
             **self._modalSubjects(doc),
         }
-        return [hits[index] for index in sorted(hits)]
+        return [hits[index] for index in sorted(hits) if not self._pagePartShows(doc, index, hits[index])]
+
+    def _pagePartShows(self, doc: Doc, index: int, hit: str) -> bool:
+        """Tell whether a hit is a part of the page that shows what is in it: `the table shows`.
+
+        Returns:
+            True when the verb is `show` and the subject is on PAGE_PARTS.
+        """
+        words = hit.split()
+        verb = next((t for t in doc[index:] if t.text == words[-1]), None)
+        subject = next((t for t in reversed(doc[: index + 1]) if t.text == words[0]), None)
+        if verb is None or subject is None:
+            return False
+        return self._lemma(verb) == 'show' and subject.lemma_.lower() in PAGE_PARTS
 
     def reviewPairs(self, text: str) -> list[str]:
         """Find each subject that cannot act with a verb that is neither literal nor stative.
@@ -455,9 +475,12 @@ class SentenceReader:
             lemma = self._lemma(verb)
             if lemma in LITERAL or lemma in self.stative_verbs or self._misreadSubject(token, verb):
                 continue
-            if not self._canAct(token) and (pair := f'{token.text} {verb.text}') not in flagged:
+            page_part = lemma == 'show' and token.lemma_.lower() in PAGE_PARTS
+            if not page_part and not self._canAct(token) and (pair := f'{token.text} {verb.text}') not in flagged:
                 pairs.append(pair)
         for subject, verb in self._compoundMisreadings(doc):
+            if self._stem(verb) == 'show' and subject.lemma_.lower() in PAGE_PARTS:
+                continue
             if (pair := f'{subject.text} {verb.text}') not in flagged and not self._canAct(subject):
                 pairs.append(pair)
         return pairs

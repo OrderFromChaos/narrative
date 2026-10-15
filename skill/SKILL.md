@@ -12,7 +12,7 @@ Four near-identical lines that differ in one token make the reader compare them 
 every comparison is a chance to miss the difference. One parameterised call removes the comparison.
 
 This is the root of DRY, of one-name-for-one-thing, of consistent ordering, and of the ban on
-gratuitous variation. When two rules conflict, the rule that spares the reader diffing wins.
+gratuitous variation. When two rules conflict, follow the rule under which the reader diffs less.
 
 Second principle, for representation choices: **prefer what the type checker and IDE can follow**,
 even when a looser form is more flexible. State in a `dict[str, Any]` passes `mypy --strict` only
@@ -20,13 +20,13 @@ with a `cast()` or a key lookup at every use. Typed attributes pass with neither
 
 **The steps to run while writing and before you finish are in Procedures, the last section.**
 
-**This document governs every file, however many there are.** Naming, layout, types, errors and
+**This document applies to every file, however many there are.** Naming, layout, types, errors and
 docstrings apply to each module of a package exactly as they apply to a single-file program.
 
 `architecture.md` adds what happens **between** files: which module may import which, where a shared
-type belongs, when one file becomes several, and what a third-party dependency may touch. Read it when
-the program spans more than one module or imports a third-party package. Skip it for a single-file
-program, where none of it applies.
+type belongs, when one file becomes several, and which modules may import a third-party dependency.
+Read it when the program spans more than one module or imports a third-party package. Skip it for a
+single-file program, where none of it applies.
 
 The reason for each rule is in its text, so read the rule and not the id after it. The ids are
 provenance. They resolve in `benchmark/decisions.jsonl` in the source repository,
@@ -165,7 +165,8 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
 
 - Merge branches that share a body **only where the type checker narrows the merged branch the same
   way.** If you merge two `isinstance` branches, even with parentheses, mypy widens the subject back
-  to a union and loses the narrowing. Two explicit branches beat one clever condition. (R2b-B5)
+  to a union and loses the narrowing. Two explicit branches are better than one clever condition.
+  (R2b-B5)
 
 - Collection literals get one item per line **wherever `ruff format` explodes them**. That is any
   literal it cannot fit on one line. This is the output of `ruff format`, not a further rule. A
@@ -180,15 +181,15 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
 
 - Spell names out. No `img_arr`, `cfg`, `idx`. (Q11)
 
-- **A function name leads with a verb, and the verb's object is what the function returns.**
+- **A function name starts with a verb, and the verb's object is what the function returns.**
   `parsePolicy`, `readManifest`, `extractPackagesFromLockfileText`, `computeDeletionCutoff`. Not
   `policyIn`, not `cutoffFor`. A name built from a preposition is about the input instead.
   (R9-03)
 
-- **A name stands alone**, and the module qualifier does not count toward it. A reader who has
-  never opened the module must understand the name. `requirements_lock.packagesIn` is clear at the call
-  site and unclear at the definition, and nothing stops a second module declaring a second
-  `packagesIn`. **Two functions in one package do not share a name.** (R9-03, R7-B06)
+- **A name is clear without its module**, and the module qualifier does not count toward it. A
+  reader who has never opened the module must understand the name. `requirements_lock.packagesIn` is
+  clear at the call site and unclear at the definition, and nothing stops a second module declaring
+  a second `packagesIn`. **Two functions in one package do not share a name.** (R9-03, R7-B06)
 
   **Length is not the defect.** Where the clear name is the longer one, write the longer one.
 
@@ -364,7 +365,7 @@ silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum`
   string costs a second `json.loads` downstream, makes it unaddressable by `jq`, and forces the
   reader back through `Any`. (R4-04)
 
-  This creates two traps:
+  A remainder field has two traps:
 
   - **Never splat the remainder into an output record.** `{'source': path, **entry.extra}` lets an
     untrusted log line with a `source` key **forge its provenance in your report**.
@@ -377,11 +378,11 @@ silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum`
   that the database already does.** The cost is per row and per request, and worst on a hot path,
   such as an endpoint that returns database values. SQLAlchemy, peewee, Piccolo and Django models
   run no validation on write or on read. `TID251` bans the ORMs that do: SQLModel, ormar, Tortoise,
-  Pony and SQLObject. A migration, a healing script or a one-off backfill can still use one:
-  declare `# ruff: noqa: TID251` in that module. There is no `per-file-ignores` list. An exception
-  is a property of the module, not of a glob that drifts from the tree it matches. Conformance owes
-  no explanation, so the suppression stands bare. (Q17, R6-03, R6-07, R7-D04, R7-D04-generalised,
-  R10-orm-validation)
+  Pony and SQLObject. A migration, a healing script or a one-off backfill can still use one: declare
+  `# ruff: noqa: TID251` in that module. There is no `per-file-ignores` list. An exception is a
+  property of the module, not of a glob that drifts from the tree it matches. Do not explain a
+  suppression that follows this rule. Leave the suppression without a comment. (Q17, R6-03, R6-07,
+  R7-D04, R7-D04-generalised, R10-orm-validation)
 
 ## Errors
 
@@ -504,7 +505,7 @@ asyncio is the default for I/O-bound work. (R2-04)
 
 - **Real dependencies**: a real socket on loopback, a real temp SQLite file, a real temp directory.
   A test double is a last resort for something you cannot run. Flag each one as a known
-  gap. A fake transport produces tests that pass while production fails. (R2-02, Q16)
+  gap. With a fake transport, tests pass while production fails. (R2-02, Q16)
 
 - **Property-based tests (hypothesis) wherever there is an invariant**: round-trips, ordering,
   conservation, numeric range. Example-based tests cover specific regressions on top. A very slow
@@ -580,7 +581,7 @@ outcome, and no repeats. The reader needs every shape the module can emit and ne
 **A sample goes stale and no tool checks it.** Keep it small, and re-paste it when the output
 changes.
 
-**Expect it to cost lines.** The sample buys exactness, not brevity. A reader learns
+**Expect it to cost lines.** The sample is there for exactness, not brevity. A reader learns
 the column order, the units and the alignment from three rows of a table and cannot learn them from
 a sentence about the table having columns.
 
@@ -705,7 +706,7 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 
 ## Comments
 
-**Test: what information does this comment provide over the code itself?** (R10-Q25)
+**Test: what information is in this comment and not in the code?** (R10-Q25)
 
 These rules cover docstring prose, error messages and `--help` text too. `verify.py` lists comments
 and docstrings only, so read messages and help text by hand. (R10-docstrings, R10-message-scope)
@@ -736,7 +737,7 @@ fits.** (R10-cleanup-rewrite)
 - **Fence**: code that looks unusual, where the obvious simplification silently breaks it. Test: name
   the simplification a smart, experienced developer would make, and the defect it causes: a wrong
   result, a crash, a security hole or a performance collapse. A cosmetic difference doesn't count,
-  and neither does adding a feature. Say what the fact forces in the code.
+  and neither does adding a feature. Name the step the code takes because of the fact.
   (R10-Q20, R10-Q42, R10-Q44, R10-Q45, R10-Q50, R10-Q53, R10-Q55, R10-fence-consequence)
   - `# bool subclasses Python int. Reject it too`, not `# bool subclasses Python int`
   - `# constant-time comparison to avoid timing attacks`
@@ -822,7 +823,12 @@ R10-depth-example, R10-period-join)
   - the referent is gone or ambiguous: `tz=None leaves TOML local times without one` → `without a
     UTC offset`. A pronoun at the start of a sentence can refer to the subject of either sentence
     before it, so repeat the noun
+  - a stand-in such as `the one`, `it` or `that` takes the place of a noun that fits: `follow the
+    one under which the reader diffs less` → `follow the rule under which the reader diffs less`.
+    Repeat the noun (R10-stand-in)
   (R10-referent)
+- the concrete thing, not `what the X does to the Y`: `Say what the fact requires of the code` →
+  `Name the step the code takes because of the fact` (R10-nominal-chain)
 - a claim is true in every case that reaches it. Otherwise, name the case in the sentence. List the
   paths that reach the sentence:
   - `# an expired item is removed on lookup` → `# an expired item is removed on lookup, or before
@@ -861,13 +867,13 @@ R10-depth-example, R10-period-join)
 - a worked example matches what the code does for every case in it: not `with a->b and b->c,
   a and c compare unequal` when a and b also compare unequal (R10-worked-example)
 - no semicolon and no dash. Write two sentences (R10-no-semicolon, `NAR013`)
-- a Fence is the fact the code depends on, and what it forces: `# bool subclasses Python int.
-  Reject it too`, `# isdigit() admits non-ASCII digits such as '²'. Check isascii() too`. Write
-  `X would` only when X is an alternative the code does not use, such as `read_text()` when the code
-  calls `read_bytes()`. When the code under the comment does X, state the problem X is there for:
-  `# without the retry, the first request after idle time fails` → `# the endpoint drops the first
-  request after idle time. Retry once`. The `X would` form in full (R10-fence-form, R10-fence-fact,
-  R10-fence-alternative):
+- a Fence is the fact the code depends on, then the step the code takes because of that fact:
+  `# bool subclasses Python int. Reject it too`, `# isdigit() admits non-ASCII digits such as '²'.
+  Check isascii() too`. Write `X would` only when X is an alternative the code does not use, such as
+  `read_text()` when the code calls `read_bytes()`. When the code under the comment does X, state
+  the problem X is there for: `# without the retry, the first request after idle time fails` →
+  `# the endpoint drops the first request after idle time. Retry once`. The `X would` form in full
+  (R10-fence-form, R10-fence-fact, R10-fence-alternative):
   ```python
   # Here read_bytes() is used. The alternative, read_text(), would turn \r\n and \r into \n, even
   # inside a quoted CSV field.
@@ -888,12 +894,13 @@ data. Such a sentence usually has data as the subject of an agent verb, so rewor
 false positive with `# noqa: NARxxx`. (R10-lint, R10-skill-gaps, R10-list-dash, R10-nar015-scope,
 R10-nar016, R10-nar018)
 
-`NAR017` is an agent verb on a subject that cannot act, meaning a noun that is not a person, with a verb for
-something only a person does: thought or speech (`a period ranks`, `the report names it`, `a policy
-can judge`), or, with an object, a deliberate act (`the default config sends the job to a queue`,
-`the fallback places the file`). Documents get no exception. Write `named in the report`. It comes
-from `agentverbs.py`, the seventh check in `verify.py`. The check parses each sentence, and some
-noun compounds and participles are flagged by mistake. Silence those with `# noqa: NAR017`.
+`NAR017` is an agent verb on a subject that cannot act, meaning a noun that is not a person, with a
+verb for something only a person does: thought or speech (`a period ranks`, `the report names it`,
+`a policy can judge`), or, with an object, a deliberate act (`the default config sends the job to a
+queue`, `the fallback places the file`). Documents get no exception. Write `named in the report`. A
+table, figure or example on the page can show what is in it: `the table below shows the totals`.
+It comes from `agentverbs.py`, the seventh check in `verify.py`. The check parses each sentence, and
+some noun compounds and participles are flagged by mistake. Silence those with `# noqa: NAR017`.
 (R10-agentverb-check, R10-agentverb-agency)
 
 `NAR020`, from the same check, is a clause with no subject before `, so`: `Named, so a recreated

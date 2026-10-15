@@ -1,6 +1,6 @@
 # Narrative Python architecture
 
-`SKILL.md` governs one file. This governs several.
+`SKILL.md` applies to one file. This document applies to several.
 
 Read this when the program spans more than one module, or imports a third-party package. Do not read
 it for a single-file program. None of it applies, and reading it is pure context cost.
@@ -56,12 +56,12 @@ rule:
   consumed inside one function is a step, not a type. The three values a `struct.unpack` produces
   stay unnamed.
 
-  **Every type in a signature that leaves the module centralises**, with no exception for a type
-  that only one other module reads. (`R8-D19-resolved`) A config record built in one module and read
-  in three crosses. A round report built in one module and returned to the entry point crosses. The
-  modules then contain functions and constants, and the glossary contains every type passed between
-  them. A module of types alone takes **no `### vocabulary` divider**, because the divider separates
-  types from the code above them and there is no code.
+  **Every type in a signature that other modules use goes in the shared vocabulary**, with no
+  exception for a type that only one other module reads. (`R8-D19-resolved`) A config record built
+  in one module and read in three crosses. A round report built in one module and returned to the
+  entry point crosses. The modules then contain functions and constants, and the glossary contains
+  every type passed between them. A module of types alone takes **no `### vocabulary` divider**,
+  because the divider separates types from the code above them and there is no code.
 
 - **A log field set belongs to whatever emits the record**, not to the formatter. A flat shared list
   is fine while one module produces the records, and is a smell once two producers need different
@@ -80,7 +80,7 @@ rule:
       return _NAME_SEPARATORS.sub('-', name.strip().lower())
   ```
 
-  These two settle the boundary, because only one token separates them:
+  These two examples show the boundary, because only one token separates them:
 
   ```python
   sorted(path for path in directory.iterdir() if path.is_file())                    # inline it
@@ -132,8 +132,9 @@ retention. `store.py` is storage. A `protocol.py` that also has `crc32Of` is "th
 **and** checksums", so the checksum leaves and gets a separate module. This is `R7-C05-naming` one
 level up. A group described only with "and" is two groups.
 
-**Split.** (`R7-B01`) Six modules of 40 to 90 lines beat one file of 340, because each module is a
-bucket a reader can put a group of functions into. Do not wait for a second program to use the code.
+**Split.** (`R7-B01`) Six modules of 40 to 90 lines are better than one file of 340, because each
+module is a bucket a reader can put a group of functions into. Do not wait for a second program to
+use the code.
 
 **There is no fixed split axis.** (`R7-B02`) Cut by technical role when the program has one of
 everything. Cut by subject when it has several vendors, several formats, or several sites. Apply the
@@ -225,19 +226,19 @@ file.
 consumers re-derive a local version, and each version is new surface. There is one config for the whole
 program, so unlike every other bundle it takes no class with behaviour around it.
 
-**It travels as a module-level singleton, not as a parameter.** (`R8-D09-resolved`) Parse it once at
-import into a frozen record and import that name where it is needed. A frozen config has nothing to
-close, so the singleton rule above already allows it. Not allowed under that rule: a *hardcoded
-default* invented in a module. A default belongs in the config file. The singleton is **assigned
-once and never rebound.** A function that reassigns it mutates module state and owes a `global`, and
-fails `NAR001`.
+**The config object is a module-level singleton, not a parameter.** (`R8-D09-resolved`) Parse the
+config once at import into a frozen record and import that name where it is needed. A frozen config
+has nothing to close, so the singleton rule above already allows it. Not allowed under that rule: a
+*hardcoded default* invented in a module. A default belongs in the config file. The singleton is
+**assigned once and never rebound.** A function that reassigns it mutates module state and owes a
+`global`, and fails `NAR001`.
 
 **Leaf modules import the constants they need**, when those constants exist at import time.
 (`R7-A07`) Thread the config object instead when the program resolves it at run time. *No tool
 checks this, and both forms work.*
 
-**A flag stops at the level that can act on it.** (`R7-C04`) It may travel further inside a named
-config.
+**Pass a flag no further down than the function that branches on it.** (`R7-C04`) A flag may
+go further inside a named config.
 
 **The clock goes inside the function that reads it.** (`R7-E04`) Test through the real clock and
 assert on ordering and bounds, not on an instant. Inject it only for a measured speedup on a hot
@@ -248,9 +249,9 @@ loop, and then justify it.
 Two steps, often mistaken for one.
 
 **Take the dependency when it is simpler at the call site.** (`R7-D02`) **The dependency must be
-simpler there.** `json`, `struct`, `sqlite3`, `pathlib` and `dataclasses` already read well, and
-no package improves on them. At equal ergonomics the standard library wins by costing nothing to install.
-(`R7-D02-stdlib`)
+simpler there.** `json`, `struct`, `sqlite3`, `pathlib` and `dataclasses` already read well, and no
+package improves on them. At equal ergonomics, use the standard library, because it costs nothing to
+install. (`R7-D02-stdlib`)
 
 **Then contain it.** (`R7-D03`, `R7-D01`) One module imports the library. Everything downstream gets
 a domain type.
