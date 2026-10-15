@@ -1,8 +1,5 @@
 # Narrative
-
-## Before and after
-
-**Before:**
+## Before
 
 ```python
 def nearest_enchant_dungeon(row):
@@ -24,10 +21,10 @@ def nearest_enchant_dungeon(row):
     return best
 ```
 
-**After:**
+## After
 
 ```python
-def find_nearest_enchant_table(sweep_row: Mapping[str, Any]) -> EnchantTable | None:
+def findNearestEnchantTable(sweep_row: Mapping[str, Any]) -> EnchantTable | None:
     """Find the enchant table nearest to spawn, in any Roguelike dungeon of the sweep row.
 
     For a row from a probe before 555df65b, None means no data, not that no table exists.
@@ -55,7 +52,7 @@ class EnchantTable(NamedTuple):
     tower: str | None
 ```
 
-A seed-search helper from [gtnh-determinism](https://github.com/OrderedSet86/gtnh-determinism/blob/6d12e3e/seedsearch/multi-criteria.py#L102-L117), at commit [`6d12e3e`](https://github.com/OrderedSet86/gtnh-determinism/commit/6d12e3e).
+(Taken from a [gtnh-determinism](https://github.com/OrderedSet86/gtnh-determinism/blob/6d12e3e/seedsearch/multi-criteria.py#L102-L117) seed-search helper, at commit [`6d12e3e`](https://github.com/OrderedSet86/gtnh-determinism/commit/6d12e3e). Original function was written with either Fable 5 or Opus 5.)
 
 ## Benefits
 
