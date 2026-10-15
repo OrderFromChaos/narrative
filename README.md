@@ -3,18 +3,19 @@
 
 ```python
 def nearest_enchant_dungeon(row):
-    """Closest Roguelike dungeon whose generated layout contains an enchantment table, with the
-    table's exact position. Requires rows from a sweep new enough to emit enchant_tables (probe >=
-    555df65b); older rows yield None everywhere, which reads as "no data", not "no dungeon"."""
+    """Closest Roguelike dungeon whose generated layout contains an enchantment table,
+    with the table's exact position. Requires rows from a sweep new enough to emit
+    enchant_tables (probe >= 555df65b); older rows yield None everywhere, which reads as
+    "no data", not "no dungeon"."""
     sx, _, sz = row["spawn"]
     best = None
     for d in row.get("dungeons") or []:
         for p in d.get("enchant_tables") or []:
-            # Distance to the TABLE BLOCK, not to its dungeon's trigger chunk. A dungeon sprawls, so
-            # the two differ by up to ~70 blocks: one seed reported "350 blocks" beside a tp for a
-            # table that is actually 279 away. The prefilter's own enchant gate measures table
-            # position, so ranking on the trigger also disagreed with which seeds the sweep had
-            # kept.
+            # Distance to the TABLE BLOCK, not to its dungeon's trigger chunk. A dungeon
+            # sprawls, so the two differ by up to ~70 blocks: one seed reported "350
+            # blocks" beside a tp for a table that is actually 279 away. The prefilter's
+            # own enchant gate measures table position, so ranking on the trigger also
+            # disagreed with which seeds the sweep had kept.
             dd = dist(sx, sz, p[0], p[2])
             if best is None or dd < best[0]:
                 best = (dd, p[0], p[1], p[2], d.get("tower"))
@@ -33,7 +34,8 @@ def findNearestEnchantTable(sweep_row: Mapping[str, Any]) -> EnchantTable | None
     tables = []
     for dungeon in sweep_row.get("dungeons") or []:
         for x, y, z in dungeon.get("enchant_tables") or []:
-            # a table can be up to ~70 blocks from its dungeon's trigger chunk. Measure to the table
+            # a table can be up to ~70 blocks from its dungeon's trigger chunk.
+            # Measure to the table
             distance = dist(spawn_x, spawn_z, x, z)
             tables.append(EnchantTable(distance, x, y, z, dungeon.get("tower")))
     return min(tables, key=lambda table: table.horizontal_distance_blocks, default=None)
@@ -64,10 +66,13 @@ I wanted a code skill that would make LLMs write Python like me. Tricks this ski
 4. An explicit double checking step. (There are enough rules here that even frontier models miss a few things on the first pass...)
 
 Some examples of (2):
-- `A malformed row costs its file a place in the report.` -> `A file with a malformed row is left out of the report.`
-- `--drop clears the collections the archive carries` -> `--drop clears the archive's collections`
-- `the middleware finds the fixture user and signs the request in` -> `In development, sign the request in as the fixture user.`
-- `a module holding one function` -> `a module has one function`
+
+| Before | After |
+|---|---|
+| `A malformed row costs its file a place in the report.` | `A file with a malformed row is left out of the report.` |
+| `--drop clears the collections the archive carries` | `--drop clears the archive's collections` |
+| `the middleware finds the fixture user and signs the request in` | `In development, sign the request in as the fixture user.` |
+| `a module holding one function` | `a module has one function` |
 
 ## Note
 
