@@ -97,37 +97,37 @@ load it when a task involves Python.
 
 # Details
 
-## Claude's comments, with and without the skill
+## Claudish Begone
 
-`human code` is the CPython standard library and the mypy, pylint and astroid sources. `Claude, with the skill` is twenty
-runs of the shipped skill, one on each of twenty tasks, with 95% CIs. Values indicate rate/100 comment blocks.
+Values indicate rate per 100 comment blocks, with 95% CIs.
 
-| | Claude, no skill | human code | Claude, with the skill |
-|---|---|---|---|
-| comment blocks (n=) | 2,962 | 21,977 | 201 |
-| median words | 22 | 9 | 12 [10, 13] |
-| p90 words | 79 | 29 | 20 [18, 27] |
-| more than one sentence (%) | 41.6 | 14.8 | 36.8 [30.5, 43.7] |
-| `, not` contrast | 7.9 | 0.4 | 0.5 [0.1, 2.8] |
-| dash | 17.5 | 1.0 | 0.0 [0.0, 1.9] |
-| `every`, `never`, `whole`, `exactly` | 22.0 | 1.5 | 6.0 [3.4, 10.1] |
-| `the one` / `one place` | 2.3 | 0.1 | 0.0 [0.0, 1.9] |
-| `deliberately`, `on purpose`, `by design` | 1.9 | 0.1 | 0.0 [0.0, 1.9] |
-| `rather than` / `instead of` | 14.0 | 1.1 | 0.0 [0.0, 1.9] |
-| `, so` between clauses | 24.4 | 2.9 | 4.0 [2.0, 7.7] |
-| semicolon | 15.7 | 2.3 | 0.5 [0.1, 2.8] |
-| agent verb: `finds`, `knows`, `wants`, `decides`, `owns` | 2.2 | 0.3 | 0.0 [0.0, 1.9] |
-| container verb: `holds`, `carries`, `keeps`, `names` | 7.9 | 0.2 | 0.0 [0.0, 1.9] |
-| intensifier: `genuine`, `actually`, `really`, `truly` | 6.3 | 1.4 | 0.0 [0.0, 1.9] |
-| article before an identifier: `the foo()` | 2.3 | 0.5 | 0.0 [0.0, 1.9] |
-| `because` | 7.8 | 2.3 | 0.0 [0.0, 1.9] |
-| passive voice | 17.3 | 12.5 | 7.5 [4.6, 11.9] |
-| changelog: `now`, `no longer`, `used to` | 2.7 | 2.4 | 0.0 [0.0, 1.9] |
-| hedge: `usually`, `probably`, `might` | 0.3 | 2.0 | 0.0 [0.0, 1.9] |
-| first person: `we`, `our`, `I` | 1.0 | 16.4 | 0.0 [0.0, 1.9] |
-| `TODO`, `NOTE`, `FIXME` | 0.3 | 3.6 | 0.0 [0.0, 1.9] |
+| | Claude, no skill | | /narrative Claude | Human code |
+|---|---|---|---|---|
+| comment blocks (n=) | 2,962 |  | 201 | 21,977 |
+| median words | 22 | → | 12 [10, 13] | 9 |
+| p90 words | 79 | → | 20 [18, 27] | 29 |
+| more than one sentence (%) | 41.6 | → | 36.8 [30.5, 43.7] | 14.8 |
+| `, not` contrast | 7.9 | → | 0.5 [0.1, 2.8] | 0.4 |
+| dash | 17.5 | → | 0.0 [0.0, 1.9] | 1.0 |
+| `every`, `never`, `whole`, `exactly` | 22.0 | → | 6.0 [3.4, 10.1] | 1.5 |
+| `the one` / `one place` | 2.3 | → | 0.0 [0.0, 1.9] | 0.1 |
+| `deliberately`, `on purpose`, `by design` | 1.9 | → | 0.0 [0.0, 1.9] | 0.1 |
+| `rather than` / `instead of` | 14.0 | → | 0.0 [0.0, 1.9] | 1.1 |
+| `, so` between clauses | 24.4 | → | 4.0 [2.0, 7.7] | 2.9 |
+| semicolon | 15.7 | → | 0.5 [0.1, 2.8] | 2.3 |
+| agent verb: `finds`, `knows`, `wants`, `decides`, `owns` | 2.2 | → | 0.0 [0.0, 1.9] | 0.3 |
+| container verb: `holds`, `carries`, `keeps`, `names` | 7.9 | → | 0.0 [0.0, 1.9] | 0.2 |
+| intensifier: `genuine`, `actually`, `really`, `truly` | 6.3 | → | 0.0 [0.0, 1.9] | 1.4 |
+| article before an identifier: `the foo()` | 2.3 | → | 0.0 [0.0, 1.9] | 0.5 |
+| `because` | 7.8 | → | 0.0 [0.0, 1.9] | 2.3 |
+| passive voice | 17.3 | → | 7.5 [4.6, 11.9] | 12.5 |
+| changelog: `now`, `no longer`, `used to` | 2.7 | → | 0.0 [0.0, 1.9] | 2.4 |
+| hedge: `usually`, `probably`, `might` | 0.3 | → | 0.0 [0.0, 1.9] | 2.0 |
+| first person: `we`, `our`, `I` | 1.0 | → | 0.0 [0.0, 1.9] | 16.4 |
+| `TODO`, `NOTE`, `FIXME` | 0.3 | → | 0.0 [0.0, 1.9] | 3.6 |
 
-The skill brings most rows to the human rate or below.
+- `human code` is the CPython stdlib and the mypy, pylint and astroid sources.
+- `/narrative Claude` is based on output from 20 different sample specs.
 
 ## Dependencies
 
