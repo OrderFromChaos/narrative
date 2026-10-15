@@ -24,70 +24,59 @@ Rules come from 456 human-selected choices between real working programs.
 
 ## Before and after
 
-The caption of a map preview card from [gtnh-seedlib](https://github.com/OrderedSet86/gtnh-seedlib/blob/a2e868884ac8e4bb4ab4eb5460bdd849e523fd1a/tools/make_preview.py#L68).
-Both versions draw the same image.
+A seed-search helper from [gtnh-determinism](https://github.com/OrderedSet86/gtnh-determinism/blob/6d12e3e/seedsearch/multi-criteria.py#L102-L117).
 
-**Without the skill:**
+**Before:**
 
 ```python
-def caption(card: Image.Image, title: str, subtitle: str) -> None:
-    """Draw the title block over a bottom-up gradient scrim.
-
-    The scrim is not decoration. The text sits over whatever terrain happens to be at the bottom
-    of the crop -- snow, desert, a village roof -- and light-on-light is unreadable on the one
-    surface where it matters most.
-    """
-    scrim_h = 240
-    scrim = Image.new("L", (1, scrim_h))
-    for y in range(scrim_h):
-        # Ramp to 94% rather than fully opaque: the map should still read through the darkest
-        # part. The exponent stays near-linear on purpose -- a steeper curve keeps the scrim
-        # nearly clear until it is level with the text, which is exactly where it is needed.
-        scrim.putpixel((0, y), int(240 * (y / (scrim_h - 1)) ** 1.15))
-    scrim = scrim.resize((CARD_W, scrim_h))
-    card.paste(Image.new("RGB", (CARD_W, scrim_h), BG), (0, CARD_H - scrim_h), scrim)
-
-    d = ImageDraw.Draw(card)
-    d.text((48, CARD_H - 118), title, font=_font("DejaVuSans-Bold.ttf", 46), fill=FG)
-    d.text((48, CARD_H - 58), subtitle, font=_font("DejaVuSans.ttf", 24), fill=DIM)
-    # A thin accent rule anchors the text block to the left edge so it does not float.
-    d.rectangle((48, CARD_H - 140, 48 + 76, CARD_H - 136), fill=ACCENT)
+def nearest_enchant_dungeon(row):
+    """Closest Roguelike dungeon whose generated layout contains an enchantment table, with the
+    table's exact position. Requires rows from a sweep new enough to emit enchant_tables (probe >=
+    555df65b); older rows yield None everywhere, which reads as "no data", not "no dungeon"."""
+    sx, _, sz = row["spawn"]
+    best = None
+    for d in row.get("dungeons") or []:
+        for p in d.get("enchant_tables") or []:
+            # Distance to the TABLE BLOCK, not to its dungeon's trigger chunk. A dungeon sprawls, so
+            # the two differ by up to ~70 blocks: one seed reported "350 blocks" beside a tp for a
+            # table that is actually 279 away. The prefilter's own enchant gate measures table
+            # position, so ranking on the trigger also disagreed with which seeds the sweep had
+            # kept.
+            dd = dist(sx, sz, p[0], p[2])
+            if best is None or dd < best[0]:
+                best = (dd, p[0], p[1], p[2], d.get("tower"))
+    return best
 ```
 
-**With the skill:**
+**After:**
 
 ```python
-def drawCaption(card: Image.Image, title: str, subtitle: str) -> None:
-    """Draw the title, the subtitle and an accent rule over a dark scrim along the bottom of the card."""
-    SCRIM_HEIGHT = 240
-    # the scrim's bottom row is 94% opaque. The map shows through it
-    SCRIM_MAX_ALPHA = 240
-    # a steeper curve would leave the scrim faint behind the title
-    SCRIM_EXPONENT = 1.15
-    TEXT_LEFT = 48
-    TITLE_TOP = CARD_HEIGHT - 118
-    TITLE_FONT_SIZE = 46
-    SUBTITLE_TOP = CARD_HEIGHT - 58
-    SUBTITLE_FONT_SIZE = 24
-    ACCENT_RULE_TOP = CARD_HEIGHT - 140
-    ACCENT_RULE_BOTTOM = CARD_HEIGHT - 136
-    ACCENT_RULE_WIDTH = 76
+def find_nearest_enchant_table(sweep_row: Mapping[str, Any]) -> EnchantTable | None:
+    """Find the enchant table nearest to spawn, in any Roguelike dungeon of the sweep row.
 
-    # The caption sits over the terrain at the bottom of the crop, such as snow, desert or a roof.
-    # Without the scrim, light text over light terrain is unreadable.
-    ramp = Image.new('L', (1, SCRIM_HEIGHT))
-    ramp.putdata([int(SCRIM_MAX_ALPHA * (row / (SCRIM_HEIGHT - 1)) ** SCRIM_EXPONENT) for row in range(SCRIM_HEIGHT)])
-    scrim_mask = ramp.resize((CARD_WIDTH, SCRIM_HEIGHT))
-    scrim = Image.new('RGB', (CARD_WIDTH, SCRIM_HEIGHT), BACKGROUND_RGB)
-    card.paste(scrim, (0, CARD_HEIGHT - SCRIM_HEIGHT), scrim_mask)
+    For a row from a probe before 555df65b, None means no data, not that no table exists.
+    """
+    spawn_x, _, spawn_z = sweep_row["spawn"]
+    tables = []
+    for dungeon in sweep_row.get("dungeons") or []:
+        for x, y, z in dungeon.get("enchant_tables") or []:
+            # a table can be up to ~70 blocks from its dungeon's trigger chunk. Measure to the table
+            distance = dist(spawn_x, spawn_z, x, z)
+            tables.append(EnchantTable(distance, x, y, z, dungeon.get("tower")))
+    return min(tables, key=lambda table: table.horizontal_distance_blocks, default=None)
 
-    title_font = loadFont('DejaVuSans-Bold.ttf', TITLE_FONT_SIZE)
-    subtitle_font = loadFont('DejaVuSans.ttf', SUBTITLE_FONT_SIZE)
-    draw = ImageDraw.Draw(card)
-    draw.text((TEXT_LEFT, TITLE_TOP), title, font=title_font, fill=TEXT_RGB)
-    draw.text((TEXT_LEFT, SUBTITLE_TOP), subtitle, font=subtitle_font, fill=DIM_TEXT_RGB)
-    accent_rule = (TEXT_LEFT, ACCENT_RULE_TOP, TEXT_LEFT + ACCENT_RULE_WIDTH, ACCENT_RULE_BOTTOM)
-    draw.rectangle(accent_rule, fill=ACCENT_RGB)
+
+### vocabulary #########################################################################
+
+
+# json.dump() rejects a dataclass, and a NamedTuple is written as a JSON list.
+# Field order is part of the summary file's format.
+class EnchantTable(NamedTuple):
+    horizontal_distance_blocks: float
+    x: int
+    y: int
+    z: int
+    tower: str | None
 ```
 
 ## Claude's comments, with and without the skill
