@@ -6,7 +6,7 @@ human-like comments.**
 ## What you get
 
 - ✂️ **A third less code to review.** Programs Claude writes (based on a realistic spec) with the skill have
-  33% fewer executable lines. With a highly detailed output spec contract, the savings are 9%.
+  33% fewer executable lines. Against a highly detailed output contract, the savings are 9%.
 - ✅ **Passes mypy --strict.** Contains an opinionated linting pipeline including ruff, pylint, `mypy --strict`, 17 custom AST checks, and NLP checks for inanimate agent verbs and cut subjects.
 - 🎯 **No loss in spec correctness.** Guided and unguided programs pass the same blind conformance tests.
 - 💬 **Comments a reviewer wants.** Most of Claude's writing tics fall to the human rate or below, and comments are added for good reasons only.
@@ -133,7 +133,7 @@ cd narrative-python
 ./install.sh
 ```
 
-`install.sh` copies the skill's nine files to `~/.claude/skills/narrative`, or to a path you give
+`install.sh` copies the skill's ten files to `~/.claude/skills/narrative`, or to a path you give
 it. Invoke the skill as `/narrative`, or let Claude
 load it when a task involves Python.
 
@@ -164,7 +164,7 @@ uv venv $env:LOCALAPPDATA\narrative\lintenv --python 3.11
 uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -r $HOME\.claude\skills\narrative\requirements-lock.txt
 ```
 
-When an update changes requirements-lock.txt, run the `uv pip install` line again. (`install.sh` only copies the new lock file.) On Windows, use `py` or `python` where the commands below say `python3`.
+When an update changes requirements-lock.txt, run the `uv pip install` line again. (`install.sh` only copies the new lock file.) On Windows, use `py` or `python` in place of `python3` in the commands below.
 
 | package | version | job |
 |---|---|---|
@@ -211,7 +211,7 @@ python3 ~/.claude/skills/narrative/verify.py README.md docs/report.html
 
 ## Comments and docstrings
 
-Comments and docstrings are written for a smart, experienced developer with the file open. Skill uses trade vocabulary when appropriate.
+Comments and docstrings are written for a smart, experienced developer with the file open, in the vocabulary of the trade: `idempotent`, `tuple`, `API`.
 
 By default, Claude's comments tend to record the reasoning behind the code: edge cases, alternatives and spec
 gaps. `SKILL.md` instead starts with a test: what information does this comment give over
@@ -220,7 +220,7 @@ that a professional reader would get from the code below it is cut.
 
 After a passing run, `verify.py` prints every comment and docstring summary, so the agent double checks its work.
 
-## The nineteen lint custom rules
+## The nineteen custom lint rules
 
 | rule | finding |
 |---|---|
@@ -250,7 +250,7 @@ After a passing run, `verify.py` prints every comment and docstring summary, so 
 
 | path | contents |
 |---|---|
-| `skill/` | the nine files of the skill. `architecture.md` has the multi-module rules |
+| `skill/` | the ten files of the skill. `architecture.md` has the multi-module rules |
 | `install.sh` | the list of files in the skill, and the installer |
 | `verify_docs.py` | checks that every decision id and rule code in the documents exists |
 | `benchmark/decisions.jsonl` | all 456 decisions, each with its reasoning and evidence |
@@ -270,8 +270,9 @@ The style has four goals. Three of them are measurable with an agent harness.
 | 3. doesn't create future tech debt | **fewer lines, more files.** A two-step change costs 329 lines against 365, over 14 files against 12. This is an acceptable null result - one of these files is `vocabulary.py` |
 | 4. no worse against the spec | **yes, on twenty blind tests.** Both arms pass 20 of 20 |
 
-The test task is a billing reconciler. In the table below, V5 names the outputs and does not specify them (aka realistic spec). V6 fixes the report schema, the ordering, the exit codes and the join to the byte,
-so the remaining difference is style.
+The test task is a billing reconciler, with two specs in the table below. In V5 the outputs are
+named but not specified (a realistic spec). In V6 the report schema, the ordering, the exit codes
+and the join are fixed to the byte, so the remaining difference is style.
 
 | | modules | lines | code lines | ruff | format | pylint | mypy | checks |
 |---|---|---|---|---|---|---|---|---|
@@ -280,11 +281,10 @@ so the remaining difference is style.
 | V6 `base` | 14 | 1380 | 831 | 93 | FAIL | 32 | 2 | 2 |
 | V6 **`full`** | 14 | **1316** | **752** | **0** | **ok** | **0** | **0** | **0** |
 
-**33% below unguided** is what the skill gives on typical specs. **9% below unguided** for unrealistically specific specs. The rest comes from the guided agent choosing a narrower report. In V5, `full`'s report has
+With the skill, code is **33% shorter** than unguided code on typical specs, and **9% shorter** on unrealistically specific specs. The gap between the two comes from the guided agent choosing a narrower report. In V5, `full`'s report has
 three top-level keys and `base`'s has eight, and both are correct readings of the spec. (I would count this as a YAGNI win - not pre-emptively designing unasked features.)
 
-**Bugs.** A conformance suite written by a blinded agent scores
-both arms **20 of 20**.
+**Bugs.** Both arms pass **20 of 20** tests in a conformance suite written by a blinded agent.
 
 **Tech debt.** Five change requests, each at a different seam, were applied to
 each arm by an agent that saw only that arm and that change.
@@ -298,7 +298,7 @@ each arm by an agent that saw only that arm and that change.
 | C3: a new rules field | **2 / 48** | 4 / 59 |
 | C4: a new column in three outputs | **5 / 90** | 6 / 92 |
 
-At C1 the guided agent extracted a shared parser, and paid more lines for it at the time. At C5 the
+At C1 the guided agent extracted a shared parser, which cost more lines at the time. At C5 the
 unguided agent reached the same design, because the spec requires identical rejection messages
 across formats. Both pay about 95 lines for a fifth format. The guided arm touches more files in
 three of the five changes, the same number in one, and fewer in one. In C1, C3 and C5, some of its
@@ -306,5 +306,5 @@ files changed only to re-paste a stale docstring sample (required by rule `R9-08
 
 ## License
 
-Apache-2.0. See `LICENSE`. `skill/words.json` has word lists derived from WordNet 3.0, under the
-WordNet license, whose text is in the file.
+Apache-2.0. See `LICENSE`. `skill/words.json` has word lists derived from WordNet 3.0 and VerbNet 3,
+under their licenses. The text of both licenses is in the `license` field of `skill/words.json`.
