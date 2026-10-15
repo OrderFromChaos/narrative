@@ -92,33 +92,33 @@ def drawCaption(card: Image.Image, title: str, subtitle: str) -> None:
 
 ## Claude's comments, with and without the skill
 
-`human code` is the CPython standard library and the mypy, pylint and astroid sources. `Claude, with the skill` is ten
-runs of the shipped skill, one on each of ten tasks, with 95% CIs. Values indicate rate/100 comment blocks.
+`human code` is the CPython standard library and the mypy, pylint and astroid sources. `Claude, with the skill` is twenty
+runs of the shipped skill, one on each of twenty tasks, with 95% CIs. Values indicate rate/100 comment blocks.
 
 | | Claude, no skill | human code | Claude, with the skill |
 |---|---|---|---|
-| comment blocks (n=) | 2,578 | 21,977 | 108 |
-| median words | 24 | 9 | 11 [9, 13] |
-| p90 words | 83 | 29 | 19 [18, 27] |
-| more than one sentence (%) | 45.0 | 14.8 | 39.8 [31.1, 49.2] |
-| `, not` contrast | 10.7 | 0.4 | 0.0 [0.0, 3.4] |
-| dash | 23.9 | 1.0 | 0.0 [0.0, 3.4] |
-| `every`, `never`, `whole`, `exactly` | 31.1 | 1.5 | 3.7 [1.4, 9.1] |
-| `the one` / `one place` | 2.2 | 0.1 | 0.0 [0.0, 3.4] |
-| `deliberately`, `on purpose`, `by design` | 2.1 | 0.1 | 0.0 [0.0, 3.4] |
-| `rather than` / `instead of` | 18.2 | 1.1 | 0.0 [0.0, 3.4] |
-| `, so` between clauses | 32.9 | 2.9 | 2.8 [0.9, 7.9] |
-| semicolon | 18.5 | 2.3 | 0.9 [0.2, 5.1] |
-| agent verb: `finds`, `knows`, `wants`, `decides`, `owns` | 2.3 | 0.3 | 0.0 [0.0, 3.4] |
-| container verb: `holds`, `carries`, `keeps`, `names` | 11.3 | 1.8 | 0.0 [0.0, 3.4] |
-| intensifier: `genuine`, `actually`, `really`, `truly` | 8.3 | 1.4 | 0.0 [0.0, 3.4] |
-| article before an identifier: `the foo()` | 2.8 | 0.5 | 0.0 [0.0, 3.4] |
-| `because` | 9.2 | 2.3 | 0.0 [0.0, 3.4] |
-| passive voice | 26.0 | 12.5 | 8.3 [4.4, 15.1] |
-| changelog: `now`, `no longer`, `used to` | 2.9 | 2.4 | 0.0 [0.0, 3.4] |
-| hedge: `usually`, `probably`, `might` | 0.3 | 2.0 | 0.0 [0.0, 3.4] |
-| first person: `we`, `our`, `I` | 2.0 | 16.4 | 0.0 [0.0, 3.4] |
-| `TODO`, `NOTE`, `FIXME` | 0.0 | 3.6 | 0.0 [0.0, 3.4] |
+| comment blocks (n=) | 2,962 | 21,977 | 201 |
+| median words | 22 | 9 | 12 [10, 13] |
+| p90 words | 79 | 29 | 20 [18, 27] |
+| more than one sentence (%) | 41.6 | 14.8 | 36.8 [30.5, 43.7] |
+| `, not` contrast | 7.9 | 0.4 | 0.5 [0.1, 2.8] |
+| dash | 17.5 | 1.0 | 0.0 [0.0, 1.9] |
+| `every`, `never`, `whole`, `exactly` | 22.0 | 1.5 | 6.0 [3.4, 10.1] |
+| `the one` / `one place` | 2.3 | 0.1 | 0.0 [0.0, 1.9] |
+| `deliberately`, `on purpose`, `by design` | 1.9 | 0.1 | 0.0 [0.0, 1.9] |
+| `rather than` / `instead of` | 14.0 | 1.1 | 0.0 [0.0, 1.9] |
+| `, so` between clauses | 24.4 | 2.9 | 4.0 [2.0, 7.7] |
+| semicolon | 15.7 | 2.3 | 0.5 [0.1, 2.8] |
+| agent verb: `finds`, `knows`, `wants`, `decides`, `owns` | 2.2 | 0.3 | 0.0 [0.0, 1.9] |
+| container verb: `holds`, `carries`, `keeps`, `names` | 7.9 | 0.2 | 0.0 [0.0, 1.9] |
+| intensifier: `genuine`, `actually`, `really`, `truly` | 6.3 | 1.4 | 0.0 [0.0, 1.9] |
+| article before an identifier: `the foo()` | 2.3 | 0.5 | 0.0 [0.0, 1.9] |
+| `because` | 7.8 | 2.3 | 0.0 [0.0, 1.9] |
+| passive voice | 17.3 | 12.5 | 7.5 [4.6, 11.9] |
+| changelog: `now`, `no longer`, `used to` | 2.7 | 2.4 | 0.0 [0.0, 1.9] |
+| hedge: `usually`, `probably`, `might` | 0.3 | 2.0 | 0.0 [0.0, 1.9] |
+| first person: `we`, `our`, `I` | 1.0 | 16.4 | 0.0 [0.0, 1.9] |
+| `TODO`, `NOTE`, `FIXME` | 0.3 | 3.6 | 0.0 [0.0, 1.9] |
 
 The skill brings most rows to the human rate or below.
 
