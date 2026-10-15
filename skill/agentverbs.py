@@ -101,7 +101,7 @@ LITERAL = frozenset({
 ROLES = frozenset({
     'i', 'you', 'we', 'he', 'she', 'they', 'who', 'someone', 'nobody', 'everyone', 'user', 'caller',
     'reader', 'developer', 'operator', 'customer', 'maintainer', 'reviewer', 'whoever', 'anyone',
-    'anybody', 'somebody', 'person', 'people',
+    'anybody', 'somebody', 'person', 'people', 'agent',
 })  # fmt: skip
 # noun.person in WordNet, but programs in code
 PROGRAMS = frozenset({
@@ -138,7 +138,7 @@ AGREEMENT_WINDOW = 5
 # nouns for a part of the page, which may take `show`: `the table below shows the totals`
 PAGE_PARTS = frozenset({
     'table', 'figure', 'diagram', 'graph', 'chart', 'plot', 'image', 'screenshot', 'example',
-    'comparison', 'illustration',
+    'comparison', 'illustration', 'page',
 })  # fmt: skip
 # British spellings, and the American ones that WordNet lists: `honour`, `recognise`, `analyse`
 SPELLINGS = (('our', 'or'), ('ise', 'ize'), ('yse', 'yze'))
@@ -445,7 +445,7 @@ class SentenceReader:
         return [hits[index] for index in sorted(hits) if not self._pagePartShows(doc, index, hits[index])]
 
     def _pagePartShows(self, doc: Doc, index: int, hit: str) -> bool:
-        """Tell whether a hit is a part of the page that shows what is in it: `the table shows`.
+        """Tell whether a hit is a page part, such as a table, with `show` as its verb: `the table shows`.
 
         Returns:
             True when the verb is `show` and the subject is on PAGE_PARTS.

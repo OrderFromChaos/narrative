@@ -54,24 +54,43 @@ class EnchantTable(NamedTuple):
 
 (Taken from a [gtnh-determinism](https://github.com/OrderedSet86/gtnh-determinism/blob/6d12e3e/seedsearch/multi-criteria.py#L102-L117) seed-search helper, at commit [`6d12e3e`](https://github.com/OrderedSet86/gtnh-determinism/commit/6d12e3e). Original function was written with either Fable 5 or Opus 5.)
 
-## Benefits
+## How??
 
-- **A third less code to review.** Programs Claude writes (based on a realistic spec) with the skill have
-  33% fewer executable lines. Against a highly detailed output contract, the savings are 9%.
-- **Passes mypy --strict.** Contains an opinionated linting pipeline including ruff, pylint, `mypy --strict`, 17 custom AST checks, and NLP checks for inanimate agent verbs and cut subjects.
-- **No loss in spec correctness.** Guided and unguided programs pass the same blind conformance tests.
-- **Comments a reviewer wants.** Most of Claude's writing tics fall to the human rate or below, and comments are added for good reasons only.
-- **Does not cause catastrophic tech debt problems.** Two consecutive change requests cost 329 changed lines with the
-  skill against 365 without it, over 14 files against 12.
-- **One command for the whole toolchain.** `verify.py` runs every tool in the right order, and
-  exits 2 when a tool is missing, so a missing tool never passes as a clean run.
-- **Transferrable to other languages.** The rules and checks are for Python, but the principles carry over. In my
-  experience, asking Claude to take the good parts of `/narrative` into another language works
-  well.
+I wanted a code skill that would make LLMs write Python like me. Tricks this skill uses:
 
-Rules come from 456 human-selected choices between real working programs.
+1. Over a few weekends, I rated hundreds of A/B examples of Python function design and architecture. This led to specific enough rules to lint and fix most code bugbears. (These are tracked in `benchmark/`.)
+2. LLMs tend to go wild with anthropomorphizing inanimate things, saying things like "*the manifest knows errors*". What does it mean to "know" an "error"? For this I use NLP (natural-language processing) to lint for inanimate subject + agency verb. Although this technique sounds less impressive than point (1), **I cannot overstate** how much this deslops LLM comments.
+3. Clear good comment metric: facts outside the code, simplification fences, decoding aids, and meta-level markers such as `TODO:`.
+4. An explicit double checking step. (There are enough rules here that even frontier models miss a few things on the first pass...)
 
-⚠️ This skill has an opinionated ordering for code (`main()` first, then the steps it calls in call order, then the types). This does produce readable and pleasing code, but may lead to code differences between your PRs and the rest of your codebase. It will not force migrate the rest of your codebase to this style unless you tell it to.
+Some examples of (2):
+- `A malformed row costs its file a place in the report.` -> `A file with a malformed row is left out of the report.`
+- `--drop clears the collections the archive carries` -> `--drop clears the archive's collections`
+- `the middleware finds the fixture user and signs the request in` -> `In development, sign the request in as the fixture user.`
+- `a module holding one function` -> `a module has one function`
+
+## Note
+
+⚠️ This skill has an opinionated unidirectional ordering for code (`main()` first, then the steps it calls in call order, then the types). This does produce readable and pleasing code, but may lead to stylistic differences between your PR and the rest of your codebase. **It will not force migrate the rest of your codebase to this style unless you tell it to.**
+
+## Install
+
+Clone the repository and run the installer:
+
+```bash
+git clone git@github.com:OrderFromChaos/narrative-python.git
+cd narrative-python
+
+./install.sh
+```
+
+`install.sh` copies the skill's ten files to `~/.claude/skills/narrative`, or to a path you give
+it. Invoke the skill as `/narrative`, or let Claude
+load it when a task involves Python.
+
+**To update, run `git pull && ./install.sh`.**
+
+# Details
 
 ## Claude's comments, with and without the skill
 
@@ -104,23 +123,6 @@ runs of the shipped skill, one on each of twenty tasks, with 95% CIs. Values ind
 | `TODO`, `NOTE`, `FIXME` | 0.3 | 3.6 | 0.0 [0.0, 1.9] |
 
 The skill brings most rows to the human rate or below.
-
-## Install
-
-Clone the repository and run the installer from its root:
-
-```bash
-git clone git@github.com:OrderFromChaos/narrative-python.git
-cd narrative-python
-
-./install.sh
-```
-
-`install.sh` copies the skill's ten files to `~/.claude/skills/narrative`, or to a path you give
-it. Invoke the skill as `/narrative`, or let Claude
-load it when a task involves Python.
-
-**To update, run `git pull && ./install.sh`.**
 
 ## Dependencies
 

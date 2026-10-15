@@ -1,6 +1,7 @@
 """Build skill/words.json, the word lists for skill/agentverbs.py, from WordNet 3.0 and VerbNet 3.
 
-A noun is animate when its first or second sense by frequency is a person or an animal. An agent
+A noun is animate when its most frequent sense is a person or an animal, or when its second sense is
+and SemCor tags it as a person or an animal at least half the time: `type` (7 of 143) is not. An agent
 noun made from a verb, such as `solver` or `selector`, is animate only when it has at least one
 SemCor tag in WordNet as a person or an animal. In code prose an untagged agent noun is the name of
 a program, and a tagged one such as `teacher` or `owner` is the name of a person. A verb counts as
@@ -18,7 +19,7 @@ package of VerbNet 3 has no license file.
 
 Usage:
     $ python3 build_words.py ~/nltk_data/corpora/wordnet ~/nltk_data/corpora/verbnet3 ../../../skill/words.json
-    animate nouns: 14946, mind verbs: 1919, agent verbs: 1484, stative verbs: 426
+    animate nouns: 14324, mind verbs: 1919, agent verbs: 1484, stative verbs: 426
 """
 
 from __future__ import annotations
@@ -33,7 +34,6 @@ from pathlib import Path
 ANIMATE_CLASSES = frozenset({'noun.person', 'noun.animal'})
 MIND_CLASSES = frozenset({'verb.cognition', 'verb.communication', 'verb.perception'})
 STATIVE_CLASS = 'verb.stative'
-NOUN_SENSES_READ = 2
 # a role restricted to one of these is a role only a person or a group of people fills
 ANIMATE_RESTRICTIONS = frozenset({'animate', 'organization', 'human'})
 # `-ant` and `-ent` are left out: they make `student` (from `stud`) and `parent` (from `par`) into programs
@@ -54,12 +54,11 @@ def main() -> None:
     first_senses = readFirstSenseKeys(wordnet_dir / 'index.sense')
     animate_subject_senses = readAnimateSubjectSenses(verbnet_dir)
     agent = sorted(lemma for lemma in verbs if first_senses.get(lemma) in animate_subject_senses)
-    tagged = readAnimateTagCounts(wordnet_dir / 'index.sense', noun_classes)
+    tags = readNounTagCounts(wordnet_dir / 'index.sense', noun_classes)
     animate = sorted(
         entry.lemma
         for entry in readIndex(wordnet_dir / 'index.noun')
-        if ANIMATE_CLASSES & {noun_classes[offset] for offset in entry.offsets[:NOUN_SENSES_READ]}
-        and (tagged.get(entry.lemma, 0) > 0 or not isAgentNoun(entry.lemma, frozenset(verbs)))
+        if isAnimateNoun(entry, noun_classes, tags.get(entry.lemma, NounTags(0, 0)), verbs=frozenset(verbs))
     )
 
     notices = [(directory / 'LICENSE').read_text(encoding='utf-8') for directory in (wordnet_dir, verbnet_dir)]
@@ -92,18 +91,35 @@ def isAgentNoun(lemma: str, verbs: frozenset[str]) -> bool:
     return bool({stem, stem + 'e', undoubled} & verbs)
 
 
-def readAnimateTagCounts(sense_index_path: Path, noun_classes: dict[str, str]) -> dict[str, int]:
-    """Count the SemCor tags of each noun as a person or an animal.
+def isAnimateNoun(entry: IndexEntry, noun_classes: dict[str, str], tags: NounTags, *, verbs: frozenset[str]) -> bool:
+    """Tell whether a noun is the name of a person or an animal in code prose.
 
     Returns:
-        Lemma to the number of tags, for each noun with a sense for a person or an animal.
+        True when its first sense is a person or an animal, or its second sense is and at least half
+        its SemCor tags are, and it is not an untagged agent noun made from a verb.
     """
-    counts: dict[str, int] = {}
+    classes = [noun_classes[offset] for offset in entry.offsets[:2]]
+    if classes[0] in ANIMATE_CLASSES:
+        animate_sense = True
+    else:
+        animate_sense = classes[1:] != [] and classes[1] in ANIMATE_CLASSES and 0 < tags.total <= 2 * tags.animate
+    return animate_sense and (tags.animate > 0 or not isAgentNoun(entry.lemma, verbs))
+
+
+def readNounTagCounts(sense_index_path: Path, noun_classes: dict[str, str]) -> dict[str, NounTags]:
+    """Count the SemCor tags of each noun: as a person or an animal, and in all.
+
+    Returns:
+        Lemma to its tag counts.
+    """
+    counts: dict[str, NounTags] = {}
     for line in sense_index_path.read_text(encoding='utf-8').splitlines():
         key, offset, _, tag_count = line.split()
         lemma, _, lexical = key.partition('%')
-        if lexical.startswith('1:') and noun_classes[offset] in ANIMATE_CLASSES:
-            counts[lemma] = counts.get(lemma, 0) + int(tag_count)
+        if lexical.startswith('1:'):
+            known = counts.get(lemma, NounTags(0, 0))
+            animate = int(tag_count) if noun_classes[offset] in ANIMATE_CLASSES else 0
+            counts[lemma] = NounTags(known.animate + animate, known.total + int(tag_count))
     return counts
 
 
@@ -216,6 +232,12 @@ def readIndex(index_path: Path) -> list[IndexEntry]:
 
 
 ### vocabulary #########################################################################################
+
+
+@dataclass(frozen=True)
+class NounTags:
+    animate: int
+    total: int
 
 
 @dataclass(frozen=True)

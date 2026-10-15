@@ -118,7 +118,7 @@ caller has to destructure the shared type.**
 **The qualifier is not part of the function name.** `store.insertReading` reads well because
 `insertReading` reads well without the prefix. Behind a module qualifier, a shorter and vaguer function
 name looks fine. That name breaks `SKILL.md`'s naming rules. The name must make sense to a reader who has never
-opened the module. Note also that the import burns the identifier `store` at module scope, so a
+opened the module. Note also that the import uses up the name `store` at module scope, so a
 local of that type becomes `results_store: Store`. (`R9-03`, `R8-B06-Q11`)
 
 ## Where the cuts go

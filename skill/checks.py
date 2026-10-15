@@ -53,7 +53,7 @@ RULES = {
     'NAR009': 'module docstring missing, or runnable module without a usage example',
     'NAR010': 'FIXME in reachable code. A merge blocker, not a danger sign',
     'NAR011': 'docstring body is entirely indented. `ruff format` will flatten the sample',
-    'NAR012': 'decision id in a comment or docstring. Unresolvable outside the repository that recorded it',
+    'NAR012': 'decision id in a comment or docstring. Unresolvable outside the repository where it was recorded',
     'NAR013': 'dash or semicolon joining clauses in a comment or docstring. Write two sentences',
     'NAR014': 'deliberately / on purpose / by design in a comment or docstring. Reassurance, no information',
     'NAR015': 'changelog wording in a comment or docstring. State the current code or data plainly',
@@ -425,7 +425,7 @@ def checkAnnotationComplexity(tree: ast.Module, checked_file: Path) -> list[Find
     The count is high for `dict[str, list[tuple[float, float]]]`, which is deep and narrow, and
     `tuple[a, b, c, d, e, f, g, h, i, j]`, which is one level deep and still unnameable.
 
-    The type decides the remedy. A callable becomes a Protocol, and anything else becomes a
+    The remedy depends on the type. A callable becomes a Protocol, and anything else becomes a
     dataclass.
 
     Returns:
@@ -716,7 +716,7 @@ def checkPage(checked_file: Path) -> list[Finding]:
 def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], checked_file: Path) -> list[Finding]:
     """Flag six kinds of wording that no comment, docstring or published page needs.
 
-    - NAR012: a decision id, unresolvable outside the repository that recorded it
+    - NAR012: a decision id, unresolvable outside the repository where it was recorded
     - NAR013: a dash or a semicolon joining clauses, outside backticked code
     - NAR014: reassurance words, listed in WORDING
     - NAR015: changelog wording about code that is gone
