@@ -933,12 +933,13 @@ uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -
 ```
 
 When an update of the skill changes `requirements-lock.txt`, run the `uv pip install` line again.
+`install.sh` copies the new lock file but installs nothing.
 `verify.py` uses this venv by default, and when the venv is missing it prints these two commands for
 the current machine. Pass `--venv` for a venv at another path. On Windows, run the scripts with `py`
 or `python` wherever `python3` appears in this document.
 
-Once per project, merge `pyproject-snippet.toml` into the project's `pyproject.toml`. The file must be
-named `pyproject.toml`. Ruff reads a config file with any other name as a `ruff.toml`, and
+Once per project, merge `pyproject-snippet.toml` into the project's `pyproject.toml`, or copy it as
+the `pyproject.toml` of a new project. The file must be named `pyproject.toml`. Ruff reads a config file with any other name as a `ruff.toml`, and
 `verify.py` exits 2.
 
 ### Writing a comment
@@ -970,7 +971,10 @@ Run `verify.py`. Do not call the tools by hand.
 python3 verify.py .
 ```
 
-Pass `verify.py` any path. Every Python file below that path is checked.
+Pass `verify.py` any path. Every Python file below that path is checked. Run `verify.py` from the
+project root, because the default `--config` is `./pyproject.toml`. `verify.py` rewrites files with
+`ruff check --fix` and `ruff format`, unless you pass `--no-fix`. For each tool that fails,
+`verify.py` prints that tool's output.
 
 `verify.py` resolves every tool to an absolute path. It exits 2 when a tool is missing or
 `pyproject.toml` is absent. **Do not replace it with a loop that greps tool output for findings.**

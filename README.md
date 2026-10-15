@@ -129,87 +129,6 @@ Values indicate rate per 100 comment blocks, with 95% CIs.
 - `human code` is the CPython stdlib and the mypy, pylint and astroid sources.
 - `/narrative Claude` is based on output from 20 different sample specs.
 
-## Dependencies
-
-`checks.py` needs only the standard library, so it runs with any `python3` at 3.11 or later:
-
-```bash
-python3 ~/.claude/skills/narrative/checks.py src/
-python3 ~/.claude/skills/narrative/checks.py src/ --select NAR001 --select NAR009
-```
-
-For the rest of the toolchain, I recommend a single environment so you don't have to recreate it for each project.
-
-Linux and macOS:
-
-```bash
-uv venv ~/.local/share/narrative/lintenv --python 3.11
-uv pip install --python ~/.local/share/narrative/lintenv/bin/python -r ~/.claude/skills/narrative/requirements-lock.txt
-```
-
-Windows (PowerShell):
-
-```powershell
-uv venv $env:LOCALAPPDATA\narrative\lintenv --python 3.11
-uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -r $HOME\.claude\skills\narrative\requirements-lock.txt
-```
-
-When an update changes requirements-lock.txt, run the `uv pip install` line again. (`install.sh` only copies the new lock file.) On Windows, use `py` or `python` in place of `python3` in the commands below.
-
-| package | version | job |
-|---|---|---|
-| `ruff` | 0.16.3 | formatting, imports, annotations, bugbear, quotes, banned APIs |
-| `pylint` | 4.0.7 | `mixedCase` function names, which no other linter can require |
-| `mypy` | 2.3.1 | type correctness under `--strict` |
-| `vermin` | 1.8.0 | the Python 3.11 floor |
-| `hypothesis` | 6.165.10 | property tests, which the style requires |
-| `pendulum` | 3.2.0 | dates and times |
-| `spacy`, `en_core_web_md` | 3.8.16, 3.8.0 | the sentence parse behind `agentverbs.py` (`NAR017`) |
-
-Then merge `pyproject-snippet.toml` into your project's `pyproject.toml`, or copy it for a new
-project. Several settings differ from the tool defaults, and `tooling.md` gives the reason for each.
-
-```bash
-cp ~/.claude/skills/narrative/pyproject-snippet.toml pyproject.toml   # new project
-```
-
-## Verify
-
-Run `verify.py` from your project root, and not the tools one by one:
-
-```bash
-cd your-project                                          # both defaults are relative
-python3 ~/.claude/skills/narrative/verify.py .           # rewrites files: runs --fix and format
-python3 ~/.claude/skills/narrative/verify.py . --no-fix  # reports only, changes nothing
-```
-
-It checks every Python file below the path. It runs `ruff check --fix`, `ruff format`, `pylint`,
-`mypy --strict`, `checks.py`, `vermin` and `agentverbs.py`, in that order, because that order
-converges. When a tool fails, it prints that tool's output.
-
-Name a Markdown or HTML file, such as a README Claude wrote, and it gets the prose checks only:
-
-```bash
-python3 ~/.claude/skills/narrative/verify.py README.md docs/report.html
-```
-
-| exit | meaning |
-|---|---|
-| 0 | every tool passed |
-| 1 | at least one tool reported a finding |
-| 2 | the toolchain or the config is missing, so nothing was checked |
-
-## Comments and docstrings
-
-Comments and docstrings are written for a smart, experienced developer with the file open, in the vocabulary of the trade: `idempotent`, `tuple`, `API`.
-
-By default, Claude's comments tend to record the reasoning behind the code: edge cases, alternatives and spec
-gaps. `SKILL.md` instead starts with a test: what information does this comment give over
-the code itself? Two rules follow. The reasoning belongs in the session user messages, and a comment
-that a professional reader would get from the code below it is cut.
-
-After a passing run, `verify.py` prints every comment and docstring summary, so the agent double checks its work.
-
 ## The nineteen custom lint rules
 
 | rule | finding |
@@ -235,19 +154,6 @@ After a passing run, `verify.py` prints every comment and docstring summary, so 
 | `NAR020` | a clause with its subject cut before `, so`: `Named, so a recreated container gets it back` |
 
 `NAR000` is code for a file that could not be read or parsed.
-
-## What is in this repository
-
-| path | contents |
-|---|---|
-| `skill/` | the ten files of the skill. `architecture.md` has the multi-module rules |
-| `install.sh` | the list of files in the skill, and the installer |
-| `verify_docs.py` | checks that every decision id and rule code in the documents exists |
-| `benchmark/decisions.jsonl` | all 456 decisions, each with its reasoning and evidence |
-| `benchmark/round1/` to `round10/` | the rounds that produced the decisions. `benchmark/README.md` describes each |
-| `benchmark/GAPS.md` | gaps found by writing real programs against the skill, and the rule each one became |
-| `validation/` | held-out tasks, in three arms each: no guidance, the earlier style doc, the skill |
-| `experiment/length/` | whether the style makes code longer: four tasks, two arms |
 
 ## Measured code effects
 

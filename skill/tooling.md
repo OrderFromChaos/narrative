@@ -10,6 +10,9 @@ Tested with ruff 0.16.3, pylint 4.0.7, mypy 2.3.1 and vermin 1.8.0, against the 
 Use **uv** for environments and packages: `uv venv`, `uv add`, `uv run`. Not pip or virtualenv
 directly. (R10-uv)
 
+`requirements-lock.txt` pins the tools below, plus `hypothesis` and `pendulum`, which the style
+requires, and spaCy with its `en_core_web_md` model for `agentverbs.py`.
+
 ## The split
 
 | Layer | Job |
@@ -18,7 +21,7 @@ directly. (R10-uv)
 | `ruff check` | imports, annotations presence, bugbear, quotes, banned APIs, bare except |
 | `pylint` (naming only) | `mixedCase` functions. **No other linter can require this** |
 | `mypy --strict` | type correctness |
-| `checks.py` | the residual rules no tool implements |
+| `checks.py` | the residual rules no tool implements. It uses only the standard library, so it runs alone with any `python3` at 3.11 or later: `python3 checks.py src/ --select NAR001` |
 | `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, and `NAR020`, a clause with no subject before `, so`, from a spaCy parse |
 | `prose.py` | the passages of a Markdown, HTML or plain text file, for `checks.py` and `agentverbs.py` |
 | `verify.py` | running all of the above correctly, with the toolchain and config guards |
