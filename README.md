@@ -1,30 +1,6 @@
 # Narrative
 
-**Makes Python Claude outputs pleasing to read: ~33% less code, zero mypy findings, and
-human-like comments.**
-
-## What you get
-
-- ✂️ **A third less code to review.** Programs Claude writes (based on a realistic spec) with the skill have
-  33% fewer executable lines. Against a highly detailed output contract, the savings are 9%.
-- ✅ **Passes mypy --strict.** Contains an opinionated linting pipeline including ruff, pylint, `mypy --strict`, 17 custom AST checks, and NLP checks for inanimate agent verbs and cut subjects.
-- 🎯 **No loss in spec correctness.** Guided and unguided programs pass the same blind conformance tests.
-- 💬 **Comments a reviewer wants.** Most of Claude's writing tics fall to the human rate or below, and comments are added for good reasons only.
-- 🔧 **Does not cause catastrophic tech debt problems.** Two consecutive change requests cost 329 changed lines with the
-  skill against 365 without it, over 14 files against 12.
-- ⚡ **One command for the whole toolchain.** `verify.py` runs every tool in the right order, and
-  exits 2 when a tool is missing, so a missing tool never passes as a clean run.
-- 🌐 **Transferrable to other languages.** The rules and checks are for Python, but the principles carry over. In my
-  experience, asking Claude to take the good parts of `/narrative` into another language works
-  well.
-
-Rules come from 456 human-selected choices between real working programs.
-
-⚠️ This skill has an opinionated ordering for code (`main()` first, then the steps it calls in call order, then the types). This does produce readable and pleasing code, but may lead to code differences between your PRs and the rest of your codebase. It will not force migrate the rest of your codebase to this style unless you tell it to.
-
 ## Before and after
-
-A seed-search helper from [gtnh-determinism](https://github.com/OrderedSet86/gtnh-determinism/blob/6d12e3e/seedsearch/multi-criteria.py#L102-L117).
 
 **Before:**
 
@@ -78,6 +54,27 @@ class EnchantTable(NamedTuple):
     z: int
     tower: str | None
 ```
+
+A seed-search helper from [gtnh-determinism](https://github.com/OrderedSet86/gtnh-determinism/blob/6d12e3e/seedsearch/multi-criteria.py#L102-L117), at commit [`6d12e3e`](https://github.com/OrderedSet86/gtnh-determinism/commit/6d12e3e).
+
+## Benefits
+
+- **A third less code to review.** Programs Claude writes (based on a realistic spec) with the skill have
+  33% fewer executable lines. Against a highly detailed output contract, the savings are 9%.
+- **Passes mypy --strict.** Contains an opinionated linting pipeline including ruff, pylint, `mypy --strict`, 17 custom AST checks, and NLP checks for inanimate agent verbs and cut subjects.
+- **No loss in spec correctness.** Guided and unguided programs pass the same blind conformance tests.
+- **Comments a reviewer wants.** Most of Claude's writing tics fall to the human rate or below, and comments are added for good reasons only.
+- **Does not cause catastrophic tech debt problems.** Two consecutive change requests cost 329 changed lines with the
+  skill against 365 without it, over 14 files against 12.
+- **One command for the whole toolchain.** `verify.py` runs every tool in the right order, and
+  exits 2 when a tool is missing, so a missing tool never passes as a clean run.
+- **Transferrable to other languages.** The rules and checks are for Python, but the principles carry over. In my
+  experience, asking Claude to take the good parts of `/narrative` into another language works
+  well.
+
+Rules come from 456 human-selected choices between real working programs.
+
+⚠️ This skill has an opinionated ordering for code (`main()` first, then the steps it calls in call order, then the types). This does produce readable and pleasing code, but may lead to code differences between your PRs and the rest of your codebase. It will not force migrate the rest of your codebase to this style unless you tell it to.
 
 ## Claude's comments, with and without the skill
 
