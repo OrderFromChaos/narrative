@@ -40,11 +40,6 @@ def findNearestEnchantTable(sweep_row: Mapping[str, Any]) -> EnchantTable | None
             tables.append(EnchantTable(distance, x, y, z, dungeon.get("tower")))
     return min(tables, key=lambda table: table.horizontal_distance_blocks, default=None)
 
-
-### vocabulary #########################################################################
-
-
-# json.dump() rejects a dataclass, and a NamedTuple is written as a JSON list.
 # Field order is part of the summary file's format.
 class EnchantTable(NamedTuple):
     horizontal_distance_blocks: float
