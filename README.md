@@ -75,6 +75,39 @@ Some examples of (2):
 
 ## Install
 
+### As a plugin (updates itself)
+
+In Claude Code:
+
+```
+/plugin marketplace add OrderFromChaos/narrative-python
+/plugin install narrative@narrative-python
+```
+
+Then open `/plugin`, go to **Marketplaces**, select `narrative-python` and select **Enable auto-update**.
+Each push to this repository then reaches you at your next session. Invoke the skill as
+`/narrative:narrative`, or let Claude load it when a task involves Python.
+
+The first time Claude runs the checks, Claude sets up the shared lint venv in
+`~/.local/share/narrative/lintenv` (`%LOCALAPPDATA%\narrative\lintenv` on Windows), with `uv`.
+After that, every project uses the same venv.
+
+To roll the plugin out to a whole team, a Claude Code admin can add this to managed settings:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "narrative-python": {
+      "source": { "source": "github", "repo": "OrderFromChaos/narrative-python" },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": { "narrative@narrative-python": true }
+}
+```
+
+### By hand
+
 Clone the repository and run the installer:
 
 ```bash
@@ -88,7 +121,8 @@ cd narrative-python
 it. Invoke the skill as `/narrative`, or let Claude
 load it when a task involves Python.
 
-**To update, run `git pull && ./install.sh`.**
+**To update, run `git pull && ./install.sh`.** If you change to the plugin, delete
+`~/.claude/skills/narrative`, or Claude loads both copies.
 
 # Details
 

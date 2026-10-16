@@ -1,6 +1,6 @@
 ---
 name: narrative
-description: Write or review Python in the Narrative house style, with mixedCase functions, main() first with types last, parse-at-the-boundary dataclasses, no ORM that re-validates what the database checks, explicit global on mutation, exhaustive match without a fallback arm, and a verified ruff/pylint/mypy toolchain. Covers multi-module architecture too: which module may import which, when one file becomes several, what goes in a package __init__.py, where a shared type belongs, and when to take or contain a third-party dependency. Use for any Python written in or for this codebase, when laying out modules or packages, and when reviewing a diff against this style.
+description: Write or review Python in the Narrative house style, with mixedCase functions, main() first with types last, parse-at-the-boundary dataclasses, no ORM that re-validates what the database checks, explicit global on mutation, exhaustive match without a fallback arm, and a verified ruff/pylint/mypy toolchain. Covers multi-module architecture too. Which module may import which, when one file becomes several, what goes in a package __init__.py, where a shared type belongs, and when to take or contain a third-party dependency. Use for any Python written in or for this codebase, when laying out modules or packages, and when reviewing a diff against this style.
 ---
 
 # Narrative Python
@@ -922,18 +922,18 @@ Linux and macOS:
 
 ```bash
 uv venv --python 3.11 ~/.local/share/narrative/lintenv
-uv pip install --python ~/.local/share/narrative/lintenv/bin/python -r ~/.claude/skills/narrative/requirements-lock.txt
+uv pip install --python ~/.local/share/narrative/lintenv/bin/python -r "${CLAUDE_SKILL_DIR}/requirements-lock.txt"
 ```
 
 Windows (PowerShell):
 
 ```powershell
 uv venv --python 3.11 $env:LOCALAPPDATA\narrative\lintenv
-uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -r $HOME\.claude\skills\narrative\requirements-lock.txt
+uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -r "${CLAUDE_SKILL_DIR}/requirements-lock.txt"
 ```
 
 When an update of the skill changes `requirements-lock.txt`, run the `uv pip install` line again.
-`install.sh` copies the new lock file but installs nothing.
+`install.sh` and a plugin update copy the new lock file but install nothing.
 `verify.py` uses this venv by default, and when the venv is missing it prints these two commands for
 the current machine. Pass `--venv` for a venv at another path. On Windows, run the scripts with `py`
 or `python` wherever `python3` appears in this document.
@@ -968,7 +968,7 @@ Take these steps in order before writing or rewording a comment. The kinds, the 
 Run `verify.py`. Do not call the tools by hand.
 
 ```
-python3 verify.py .
+python3 "${CLAUDE_SKILL_DIR}/verify.py" .
 ```
 
 Pass `verify.py` any path. Every Python file below that path is checked. Run `verify.py` from the
@@ -1026,7 +1026,7 @@ A page that a person wrote and you did not change is left as it is, unless the u
 be checked. Name each page to `verify.py`:
 
 ```bash
-python3 verify.py README.md docs/report.html
+python3 "${CLAUDE_SKILL_DIR}/verify.py" README.md docs/report.html
 ```
 
 Only the wording checks and `agentverbs.py` run on a page. Take the steps of **Prose review** for

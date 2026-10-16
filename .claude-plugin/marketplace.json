@@ -1,0 +1,23 @@
+{
+  "name": "narrative-python",
+  "description": "The Narrative Python house style as a Claude Code skill.",
+  "owner": {
+    "name": "Syris Norelli"
+  },
+  "plugins": [
+    {
+      "name": "narrative",
+      "description": "Write or review Python in the Narrative house style, with a verified ruff/pylint/mypy toolchain.",
+      "author": {
+        "name": "Syris Norelli"
+      },
+      "homepage": "https://github.com/OrderFromChaos/narrative-python",
+      "license": "Apache-2.0",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skill"
+      ]
+    }
+  ]
+}
