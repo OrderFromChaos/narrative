@@ -4,6 +4,8 @@
 # Usage:
 #     $ ./install.sh
 #     $ ./install.sh ~/.config/claude/skills/narrative
+#     $ ./install.sh --lite                  # skill-lite/ to ~/.claude/skills/narrative-lite
+#     $ ./install.sh --lite ~/.config/claude/skills/narrative-lite
 #
 # This file is the list of what the skill contains. A file in the destination that this list does
 # not name is removed, because a file left by an earlier version keeps rules the skill has withdrawn.
@@ -27,9 +29,32 @@ FILES=(
     pyproject-snippet.toml
 )
 
+# skill-lite/ has its own SKILL.md, architecture.md and domains.md. Its other files are symlinks into
+# skill/, and cp copies the target of each link.
+LITE_FILES=(
+    SKILL.md
+    architecture.md
+    domains.md
+    tooling.md
+    checks.py
+    verify.py
+    agentverbs.py
+    prose.py
+    words.json
+    requirements-lock.txt
+    pyproject-snippet.toml
+)
+
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_dir="$repo_dir/skill"
-destination="${1:-$HOME/.claude/skills/narrative}"
+default_destination="$HOME/.claude/skills/narrative"
+if [[ "${1:-}" == '--lite' ]]; then
+    shift
+    FILES=("${LITE_FILES[@]}")
+    source_dir="$repo_dir/skill-lite"
+    default_destination="$HOME/.claude/skills/narrative-lite"
+fi
+destination="${1:-$default_destination}"
 
 for name in "${FILES[@]}"; do
     if [[ ! -f "$source_dir/$name" ]]; then
@@ -54,7 +79,7 @@ for name in "${FILES[@]}"; do
 done
 
 version="$(git -C "$repo_dir" rev-parse --short HEAD 2>/dev/null || echo 'unknown commit')"
-if [[ -n "$(git -C "$repo_dir" status --porcelain -- skill 2>/dev/null || true)" ]]; then
+if [[ -n "$(git -C "$repo_dir" status --porcelain -- skill skill-lite 2>/dev/null || true)" ]]; then
     version+=' with uncommitted changes'
 fi
 printf '%s, installed %s\n' "$version" "$(date -u +%Y-%m-%dT%H:%MZ)" > "$destination/INSTALLED"

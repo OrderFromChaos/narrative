@@ -18,6 +18,20 @@
       "skills": [
         "./skill"
       ]
+    },
+    {
+      "name": "narrative-lite",
+      "description": "The Narrative house style at about half the length, with the same checkers and toolchain. Enable this plugin or narrative, not both.",
+      "author": {
+        "name": "Syris Norelli"
+      },
+      "homepage": "https://github.com/OrderFromChaos/narrative-python",
+      "license": "Apache-2.0",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skill-lite"
+      ]
     }
   ]
 }

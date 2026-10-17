@@ -124,6 +124,34 @@ load it when a task involves Python.
 **To update, run `git pull && ./install.sh`.** If you change to the plugin, delete
 `~/.claude/skills/narrative`, or Claude loads both copies.
 
+### Lite version
+
+`narrative-lite` is the same style at about half the length. It applies faster, and it uses the
+same checkers. It drops:
+
+- the decision ids and the evidence paragraphs
+- rules that are stated twice
+- long explanations of rules that a linter enforces
+
+The rules for money, dates, asyncio, SQLite rows, web frameworks and logging setup are in
+`domains.md`. Claude reads a section of it only for a program in that domain. Prose review covers
+only the comments and docstrings changed in the current task.
+
+Install one of the two skills, not both, or Claude loads both:
+
+```
+/plugin install narrative-lite@narrative-python
+```
+
+or, by hand:
+
+```bash
+./install.sh --lite
+```
+
+Invoke the lite skill as `/narrative-lite:narrative-lite` from the plugin, or as `/narrative-lite`
+after `install.sh`.
+
 # Details
 
 ## Claudish Begone
