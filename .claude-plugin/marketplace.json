@@ -6,7 +6,7 @@
   },
   "plugins": [
     {
-      "name": "narrative",
+      "name": "narrative-python",
       "description": "Write or review Python in the Narrative house style, with a verified ruff/pylint/mypy toolchain.",
       "author": {
         "name": "Syris Norelli"

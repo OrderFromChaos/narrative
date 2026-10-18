@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Install the narrative skill into a Claude Code skills directory.
+# Install the narrative-python skill into a Claude Code skills directory.
 #
 # Usage:
 #     $ ./install.sh
-#     $ ./install.sh ~/.config/claude/skills/narrative
+#     $ ./install.sh ~/.config/claude/skills/narrative-python
 #
 # This file is the list of what the skill contains. A file in the destination that this list does
 # not name is removed, because a file left by an earlier version keeps rules the skill has withdrawn.
@@ -29,7 +29,7 @@ FILES=(
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_dir="$repo_dir/skill"
-destination="${1:-$HOME/.claude/skills/narrative}"
+destination="${1:-$HOME/.claude/skills/narrative-python}"
 
 for name in "${FILES[@]}"; do
     if [[ ! -f "$source_dir/$name" ]]; then

@@ -81,12 +81,12 @@ In Claude Code:
 
 ```
 /plugin marketplace add OrderFromChaos/narrative-python
-/plugin install narrative@narrative-python
+/plugin install narrative-python@narrative-python
 ```
 
 Then open `/plugin`, go to **Marketplaces**, select `narrative-python` and select **Enable auto-update**.
 Each push to this repository then reaches you at your next session. Invoke the skill as
-`/narrative:narrative`, or let Claude load it when a task involves Python.
+`/narrative-python:narrative-python`, or let Claude load it when a task involves Python.
 
 The first time Claude runs the checks, Claude sets up the shared lint venv in
 `~/.local/share/narrative/lintenv` (`%LOCALAPPDATA%\narrative\lintenv` on Windows), with `uv`.
@@ -102,7 +102,7 @@ To roll the plugin out to a whole team, a Claude Code admin can add this to mana
       "autoUpdate": true
     }
   },
-  "enabledPlugins": { "narrative@narrative-python": true }
+  "enabledPlugins": { "narrative-python@narrative-python": true }
 }
 ```
 
@@ -117,12 +117,11 @@ cd narrative-python
 ./install.sh
 ```
 
-`install.sh` copies the skill's ten files to `~/.claude/skills/narrative`, or to a path you give
-it. Invoke the skill as `/narrative`, or let Claude
-load it when a task involves Python.
+`install.sh` copies the skill's ten files to `~/.claude/skills/narrative-python`, or to a path you
+give it. Invoke the skill as `/narrative-python`, or let Claude load it when a task involves Python.
 
 **To update, run `git pull && ./install.sh`.** If you change to the plugin, delete
-`~/.claude/skills/narrative`, or Claude loads both copies.
+`~/.claude/skills/narrative-python`, or Claude loads both copies.
 
 # Details
 

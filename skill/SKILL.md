@@ -1,5 +1,5 @@
 ---
-name: narrative
+name: narrative-python
 description: Write or review Python in the Narrative house style, with mixedCase functions, main() first with types last, parse-at-the-boundary dataclasses, no ORM that re-validates what the database checks, explicit global on mutation, exhaustive match without a fallback arm, and a verified ruff/pylint/mypy toolchain. Covers multi-module architecture too. Which module may import which, when one file becomes several, what goes in a package __init__.py, where a shared type belongs, and when to take or contain a third-party dependency. Use for any Python written in or for this codebase, when laying out modules or packages, and when reviewing a diff against this style.
 ---
 
