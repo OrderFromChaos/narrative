@@ -8,7 +8,7 @@ persist when a container is recreated`. A subordinate clause before `, so` is fl
 
 NAR021 is a clause that `as` or `, where` joins to a sentence: `a float, as in the machines' code`,
 `As the EBF.`, `as the recipe works it out`, and in a comment `the values it takes, where the spec
-has no range`. In the rewrite, each fact is a separate sentence.
+has no range`. To fix a NAR021 finding, cut the clause, or make its fact a new sentence.
 
 `a period ranks by its newest snapshot` makes a period rank, and `the report names it` makes a
 report speak. A subject acts when it is a person, an animal, a role such as `caller`, or a pronoun
@@ -45,7 +45,7 @@ Usage, with the shared lint venv of SKILL.md (Scripts\python.exe in place of bin
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py src/ README.md docs/report.html
     src/join.py:73: NAR017 'period ranks': agent verb on a subject that cannot act
     src/store.py:12: NAR020 'Named': clause with no subject before ", so"
-    src/tiers.py:30: NAR021 'as in': clause joined by "as" or ", where". State each fact in a separate sentence
+    src/tiers.py:30: NAR021 'as in': clause joined by "as" or ", where". Cut the clause, or make its fact a new sentence
     README.md:40: NAR017 'table shows': agent verb on a subject that cannot act
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --review src/ README.md
     src/join.py:40: 'path breaks'
@@ -101,7 +101,7 @@ MESSAGE = 'agent verb on a subject that cannot act'
 FRAGMENT_CODE = 'NAR020'
 FRAGMENT_MESSAGE = 'clause with no subject before ", so"'
 CONNECTIVE_CODE = 'NAR021'
-CONNECTIVE_MESSAGE = 'clause joined by "as" or ", where". State each fact in a separate sentence'
+CONNECTIVE_MESSAGE = 'clause joined by "as" or ", where". Cut the clause, or make its fact a new sentence'
 WORDS_PATH = Path(__file__).resolve().parent / 'words.json'
 MODEL = 'en_core_web_md'
 
