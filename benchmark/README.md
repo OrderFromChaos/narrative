@@ -25,8 +25,8 @@ validation/              held-out tasks for the blind skill-vs-doc comparison
 decisions.jsonl          the evidence base, one answer per line
 ```
 
-Rounds 2 and 6 have no directory. Both ran in conversation against the code in front of them, and
-their answers are in `decisions.jsonl` under `R2-*` and `R6-*`. A round earns a directory when it
+Rounds 2, 6 and 11 have no directory. Each of these rounds ran in conversation against the code at
+hand, and the answers are in `decisions.jsonl` under `R2-*`, `R6-*` and `R11-*`. A round earns a directory when it
 produces material a later reader must see to judge the answer.
 
 ## Protocol
@@ -78,6 +78,11 @@ produces material a later reader must see to judge the answer.
     and the checks are `NAR012` to `NAR019`. `NAR017`, the agent-verb check, parses each sentence
     with spaCy. Directory: `round10/`.
 
+11. **Round 11**: comments that passed every check in a narrative-java run on GT5-Unofficial, and
+    that the user rejected. `NAR020` now covers a subordinate clause before `, so`, `NAR021` flags a
+    clause joined by `as` or `, where`, and `agentverbs.py --pronouns` lists each sentence with a
+    pronoun for the review.
+
 ## decisions.jsonl schema
 
 One object per line. Every rule in `skill/SKILL.md` must cite an `id` from this file. A rule
@@ -87,7 +92,7 @@ with no `id` and no linter behind it does not ship.
 |---|---|---|
 | `id` | str | `Q07`, `R2-03`, `R3-P1-rank`, `R5-06`, `V-03` |
 | `dimension` | str | dotted, e.g. `errors.chaining` |
-| `round` | str | `1`, `2`, `2b`, `3`, `3a`, `4`, `5`, `6`, `7`, `8`, `9`, `10`, `validation` |
+| `round` | str | `1`, `2`, `2b`, `3`, `3a`, `4`, `5`, `6`, `7`, `8`, `9`, `10`, `11`, `validation` |
 | `kind` | str | `control` \| `gap` \| `provocation` \| `derived` |
 | `options` | list[str] | short labels in the order presented |
 | `choice` | str | chosen label, or `depends` |

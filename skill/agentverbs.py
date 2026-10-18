@@ -1,8 +1,14 @@
-r"""Flag comments and docstrings whose subject cannot act, and clauses with their subject cut.
+r"""Flag comments and docstrings whose subject cannot act, clauses with their subject cut, and joined clauses.
 
 NAR017 is an agent verb on a subject that cannot act. NAR020 is a clause with no subject before
 `, so`: `Named, so a recreated container gets it back`. The rewrite has a subject: `Named volumes
-persist when a container is recreated`.
+persist when a container is recreated`. A subordinate clause before `, so` is flagged too:
+`Whether some terms differ by mode, so the mode is an input`. That sentence has no main clause before
+`, so`.
+
+NAR021 is a clause that `as` or `, where` joins to a sentence: `a float, as in the machines' code`,
+`As the EBF.`, `as the recipe works it out`, and in a comment `the values it takes, where the spec
+has no range`. In the rewrite, each fact is a separate sentence.
 
 `a period ranks by its newest snapshot` makes a period rank, and `the report names it` makes a
 report speak. A subject acts when it is a person, an animal, a role such as `caller`, or a pronoun
@@ -39,24 +45,33 @@ Usage, with the shared lint venv of SKILL.md (Scripts\python.exe in place of bin
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py src/ README.md docs/report.html
     src/join.py:73: NAR017 'period ranks': agent verb on a subject that cannot act
     src/store.py:12: NAR020 'Named': clause with no subject before ", so"
+    src/tiers.py:30: NAR021 'as in': clause joined by "as" or ", where". State each fact in a separate sentence
     README.md:40: NAR017 'table shows': agent verb on a subject that cannot act
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --review src/ README.md
     src/join.py:40: 'path breaks'
+    $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --pronouns src/
+    src/join.py:52: it: 'Its newest snapshot wins.' after 'A period has several snapshots.'
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --lines sample.txt
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --score gold.tsv
     precision 1.00, recall 0.91 (29 of 32 found, 0 false)
 
-A line with `# noqa: NAR017`, `# noqa: NAR020` or a bare `# noqa` is skipped for that code. In a page,
+A line with `# noqa: NAR017`, `# noqa: NAR020`, `# noqa: NAR021` or a bare `# noqa` is skipped for that code. In a page,
 the comment is `<!-- noqa: NAR017 -->`.
 
 `--review` lists every other subject that cannot act, with its verb, for the manual prose review:
-a verb outside LITERAL that is not stative, such as `breaks` or `stays`. An `-s` word that the parse
-reads as a noun after another noun, where only a verb fits, is on the list too: `the path breaks`.
+a verb that is not stative, such as `breaks` or `stays`, and a verb on LITERAL unless it has a direct
+object and code as its subject: `the spec runs it` is listed, `PlanLoader reads the plan file` is
+not. An `-s` word after another noun is on the list too when only a verb fits there and spaCy
+tags a noun: `the path breaks`.
 A reader decides whether the subject can perform the verb. The list is no finding, and the exit code
 is 0.
 
+`--pronouns` lists every sentence with `it`, `its` or a standalone `that`, each after the sentence
+before. spaCy has no coreference resolution, so a reader names the noun for each pronoun. The list is no
+finding, and the exit code is 0.
+
 Exit codes:
-    0  nothing flagged, or a review list printed
+    0  nothing flagged, or a review or pronoun list printed
     1  at least one line flagged
 """
 
@@ -64,7 +79,9 @@ from __future__ import annotations
 
 import argparse
 import ast
+import bisect
 import io
+import itertools
 import json
 import re
 import sys
@@ -83,6 +100,8 @@ CODE = 'NAR017'
 MESSAGE = 'agent verb on a subject that cannot act'
 FRAGMENT_CODE = 'NAR020'
 FRAGMENT_MESSAGE = 'clause with no subject before ", so"'
+CONNECTIVE_CODE = 'NAR021'
+CONNECTIVE_MESSAGE = 'clause joined by "as" or ", where". State each fact in a separate sentence'
 WORDS_PATH = Path(__file__).resolve().parent / 'words.json'
 MODEL = 'en_core_web_md'
 
@@ -97,6 +116,14 @@ LITERAL = frozenset({
     'encode', 'subtract', 'refer', 'resolve', 'iterate', 'compute', 'rewrite', 'use', 'open', 'close',
     'copy', 'shadow', 'nest', 'implement', 'put', 'import', 'reach', 'remove', 'collect', 'load',
     'feed', 'receive',
+})  # fmt: skip
+# verbs of a relation, never an act. reviewPairs() skips them for every subject
+RELATION_VERBS = frozenset({'be', 'have', 'will'})
+# nouns for a piece of code. A LITERAL verb with a direct object and a subject on this list is an operation of code
+CODE_NOUNS = frozenset({
+    'method', 'function', 'class', 'this', 'test', 'loader', 'call', 'constructor', 'override', 'lambda',
+    'script', 'check', 'helper', 'query', 'regex', 'pattern', 'command', 'task', 'loop', 'field', 'record',
+    'interface', 'module', 'program', 'tool', 'code', 'getter', 'setter',
 })  # fmt: skip
 ROLES = frozenset({
     'i', 'you', 'we', 'he', 'she', 'they', 'who', 'someone', 'nobody', 'everyone', 'user', 'caller',
@@ -143,6 +170,20 @@ PAGE_PARTS = frozenset({
 # British spellings, and the American ones that WordNet lists: `honour`, `recognise`, `analyse`
 SPELLINGS = (('our', 'or'), ('ise', 'ize'), ('yse', 'yze'))
 SO_JOIN = re.compile(r',\s+so\b')
+# a clause opened by one of these words is subordinate, and is no main clause before `, so`
+SUBORDINATORS = frozenset({'whether', 'if', 'because', 'when', 'while', 'although', 'though', 'unless', 'since'})
+# matches:
+# `a float, as in the machines' code`
+# rejects:
+# `stored as in-memory rows`
+AS_IN = re.compile(r'\bas in\b(?!-)', re.IGNORECASE)
+# matches:
+# `the values it takes, where the spec has no range`
+WHERE_JOIN = re.compile(r',\s+where\b')
+# `as` in these phrases compares two things, and opens no clause: `the same as`, `such as`
+COMPARING_AS = frozenset({'same', 'such', 'well', 'soon', 'long', 'far', 'much', 'many'})
+PRONOUN_OBJECTS = frozenset({'it', 'them'})
+FINITE_TAGS = frozenset({'VBZ', 'VBP', 'VBD', 'MD'})
 # the parse of a longer clause before `, so` is unreliable
 FRAGMENT_MAX_WORDS = 8
 # Google-style docstring sections, whose indented entries are prose
@@ -160,6 +201,7 @@ def main() -> int:
     parser.add_argument('--lines', type=Path, help='flag each line of a plain text file')
     parser.add_argument('--score', type=Path, help='score against a label<TAB>text file')
     parser.add_argument('--review', action='store_true', help='list every other subject that cannot act, with its verb')
+    parser.add_argument('--pronouns', action='store_true', help='list every sentence with a pronoun, for the review')
     args = parser.parse_args()
 
     reader = SentenceReader.load(WORDS_PATH)
@@ -170,10 +212,21 @@ def main() -> int:
             for line, pair in reviewFile(reader, checked_file):
                 print(f'{checked_file}:{line}: {pair!r}')
         return 0
+    if args.pronouns:
+        for checked_file in discoverFiles(args.paths):
+            for listed in pronounFile(reader, checked_file):
+                after = f' after {listed.previous!r}' if listed.previous else ''
+                print(f'{checked_file}:{listed.line}: {listed.pronouns}: {listed.sentence!r}{after}')
+        return 0
     if args.lines:
         flagged = 0
         for text in args.lines.read_text(encoding='utf-8').splitlines():
-            if hits := [*reader.agentVerbs(text), *(f'{head},' for head in reader.fragments(text))]:
+            hits = [
+                *reader.agentVerbs(text),
+                *(f'{head},' for head in reader.fragments(text)),
+                *reader.connectives(text, page=False),
+            ]
+            if hits:
                 flagged += 1
                 print(f'{text}   <- {"; ".join(hits)}')
         return 1 if flagged else 0
@@ -181,8 +234,9 @@ def main() -> int:
     findings: list[Finding] = []
     for checked_file in discoverFiles(args.paths):
         findings.extend(checkFile(reader, checked_file))
+    messages = {CODE: MESSAGE, FRAGMENT_CODE: FRAGMENT_MESSAGE, CONNECTIVE_CODE: CONNECTIVE_MESSAGE}
     for finding in findings:
-        message = MESSAGE if finding.code == CODE else FRAGMENT_MESSAGE
+        message = messages[finding.code]
         print(f'{finding.checked_file}:{finding.line}: {finding.code} {finding.hit!r}: {message}')
     return 1 if findings else 0
 
@@ -232,8 +286,8 @@ def checkFile(reader: SentenceReader, checked_file: Path) -> list[Finding]:
     """Flag every comment and docstring passage of a Python file, or every passage of a page.
 
     A passage is checked as one text, so a sentence wrapped over several lines is parsed whole. In a
-    Python file, a noqa on any line of a passage silences that code for the whole passage. In a page,
-    where a paragraph can run to many sentences, a noqa silences only the findings on the line of the comment.
+    Python file, a noqa on any line of a passage silences that code for the whole passage. A paragraph
+    of a page can run to many sentences, so in a page a noqa silences only the findings on the line of the noqa.
 
     Returns:
         One finding per agent verb and per clause with no subject, on the line of its last word.
@@ -241,38 +295,37 @@ def checkFile(reader: SentenceReader, checked_file: Path) -> list[Finding]:
     source = checked_file.read_text(encoding='utf-8')
     if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
         suppressed = prose.suppressedCodes(source)
-        findings = passageFindings(reader, checked_file, prose.readPassages(checked_file), set(), set())
+        findings = passageFindings(reader, checked_file, prose.readPassages(checked_file), {}, page=True)
         return [f for f in findings if not (suppressed.get(f.line, set()) & {f.code, 'ALL'})]
     passages = [*commentPassages(source), *docstringPassages(ast.parse(source))]
-    return passageFindings(
-        reader,
-        checked_file,
-        passages,
-        silencedLines(source, CODE),
-        silencedLines(source, FRAGMENT_CODE),
-    )
+    silenced = {code: silencedLines(source, code) for code in (CODE, FRAGMENT_CODE, CONNECTIVE_CODE)}
+    return passageFindings(reader, checked_file, passages, silenced, page=False)
 
 
 def passageFindings(
     reader: SentenceReader,
     checked_file: Path,
     passages: list[Passage],
-    agent_silenced: set[int],
-    fragment_silenced: set[int],
+    silenced: dict[str, set[int]],
+    *,
+    page: bool,
 ) -> list[Finding]:
-    """Flag each passage, leaving out a code for every passage with a line in its silenced set.
+    """Flag each passage, leaving out a code for every passage with a line in that code's silenced set.
 
     Returns:
         The findings in passage order.
     """
     findings: list[Finding] = []
     for passage in sorted(passages, key=lambda passage: passage.lines[0]):
-        if not agent_silenced & set(passage.lines):
-            for hit in reader.agentVerbs(passage.text):
-                findings.append(Finding(checked_file, passage.lineOf(hit), CODE, hit))
-        if not fragment_silenced & set(passage.lines):
-            for head in reader.fragments(passage.text):
-                findings.append(Finding(checked_file, passage.lineOf(head), FRAGMENT_CODE, head))
+        lines = set(passage.lines)
+        hits = (
+            (CODE, reader.agentVerbs),
+            (FRAGMENT_CODE, reader.fragments),
+            (CONNECTIVE_CODE, lambda text: reader.connectives(text, page=page)),
+        )
+        for code, find in hits:
+            if not silenced.get(code, set()) & lines:
+                findings.extend(Finding(checked_file, passage.lineOf(hit), code, hit) for hit in find(passage.text))
     return findings
 
 
@@ -292,13 +345,36 @@ def reviewFile(reader: SentenceReader, checked_file: Path) -> list[tuple[int, st
         silenced = silencedLines(source, CODE)
     pairs: list[tuple[int, str]] = []
     for passage in sorted(passages, key=lambda passage: passage.lines[0]):
-        # in a Python file a noqa covers the whole passage, as in checkFile()
+        # a noqa in a Python file covers the whole passage, in checkFile() too
         if not page and silenced & set(passage.lines):
             continue
         for pair in reader.reviewPairs(passage.text):
             if (line := passage.lineOf(pair)) not in silenced:
                 pairs.append((line, pair))
     return pairs
+
+
+def pronounFile(reader: SentenceReader, checked_file: Path) -> list[PronounLine]:
+    """List each sentence of one file with a pronoun, for the review.
+
+    Returns:
+        One entry per sentence, in passage order.
+    """
+    source = checked_file.read_text(encoding='utf-8')
+    if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
+        passages = prose.readPassages(checked_file)
+    else:
+        passages = [*commentPassages(source), *docstringPassages(ast.parse(source))]
+    listed: list[PronounLine] = []
+    for passage in sorted(passages, key=lambda passage: passage.lines[0]):
+        # Passage.text is the lines joined by single spaces. ends is the offset after each line, for bisect_right()
+        ends = list(itertools.accumulate(len(text) + 1 for text in passage.texts))
+        cursor = 0
+        for pronouns, sentence, previous in reader.pronounSentences(passage.text):
+            cursor = max(passage.text.find(sentence, cursor), 0)
+            line = passage.lines[bisect.bisect_right(ends, cursor)]
+            listed.append(PronounLine(line, pronouns, sentence, previous))
+    return listed
 
 
 def silencedLines(source: str, code: str) -> set[int]:
@@ -384,6 +460,11 @@ def proseLines(docstring: str) -> list[tuple[int, str]]:
     return picked
 
 
+def standaloneThat(token: Token) -> bool:
+    """Tell `that` as a pronoun (`return that`) from `that` as a determiner or a relative word."""
+    return token.lower_ == 'that' and token.tag_ == 'DT' and token.dep_ != 'det'
+
+
 def americanSpelling(word: str, verbs: frozenset[str]) -> str:
     """Give the American spelling of a British verb. VerbNet lists `honor`, and WordNet lists both.
 
@@ -405,6 +486,16 @@ class Finding:
     line: int
     code: str
     hit: str
+
+
+@dataclass(frozen=True)
+class PronounLine:
+    """A sentence with a pronoun, on the pronoun list of the review."""
+
+    line: int
+    pronouns: str
+    sentence: str
+    previous: str
 
 
 @dataclass(frozen=True)
@@ -458,9 +549,12 @@ class SentenceReader:
         return self._lemma(verb) == 'show' and subject.lemma_.lower() in PAGE_PARTS
 
     def reviewPairs(self, text: str) -> list[str]:
-        """Find each subject that cannot act with a verb that is neither literal nor stative.
+        """Find each subject that cannot act with a verb that is not stative and not an operation of code.
 
-        A pair that agentVerbs() flags is left out, because it is already a finding.
+        A verb on LITERAL is an operation of code only with a direct object and code as its subject:
+        `PlanLoader reads the plan file`. `A saved index reads as the first mode` and `the mode that
+        runs recipeMap` are listed. A pair that agentVerbs() flags is left out, because it is already
+        a finding.
 
         Returns:
             One `subject verb` string per pair, in sentence order.
@@ -469,11 +563,16 @@ class SentenceReader:
         flagged = set(self.agentVerbs(text))
         pairs: list[str] = []
         for token in doc:
-            if token.dep_ != 'nsubj' or token.head.pos_ != 'VERB':
-                continue
             verb = token.head
-            lemma = self._lemma(verb)
-            if lemma in LITERAL or lemma in self.stative_verbs or self._misreadSubject(token, verb):
+            # `A saved index reads as the first mode` is tagged as a noun phrase with `reads` as its root
+            # noun. A root noun with a subject is a verb
+            misread_noun = verb.dep_ == 'ROOT' and verb.tag_ == 'NNS' and self._stem(verb) in self.verbs
+            if token.dep_ != 'nsubj' or (verb.pos_ != 'VERB' and not misread_noun):
+                continue
+            lemma = self._stem(verb) if misread_noun else self._lemma(verb)
+            if lemma in RELATION_VERBS or lemma in self.stative_verbs or self._misreadSubject(token, verb):
+                continue
+            if lemma in LITERAL and self._codeSubject(token) and any(c.dep_ == 'dobj' for c in verb.children):
                 continue
             page_part = lemma == 'show' and token.lemma_.lower() in PAGE_PARTS
             if not page_part and not self._canAct(token) and (pair := f'{token.text} {verb.text}') not in flagged:
@@ -516,7 +615,9 @@ class SentenceReader:
         """Find each clause before `, so` that has no subject and is not a noun phrase or a command.
 
         `Named, so…` and `In float, so…` count. `constant-time comparison, so…` is a label, and
-        `Sort by key, so…` is an imperative, so neither counts.
+        `Sort by key, so…` is an imperative, so neither counts. A subordinate clause is flagged even
+        with a subject, because the sentence then has no main clause before `, so`: `Whether some terms
+        differ, so…`.
 
         Returns:
             The words before `, so` of each such clause, in sentence order.
@@ -530,13 +631,88 @@ class SentenceReader:
             doc = self.nlp(head)
             root = next(token for token in doc if token.dep_ == 'ROOT')
             has_subject = any(token.dep_ in ('nsubj', 'nsubjpass', 'expl', 'csubj') for token in doc)
-            has_finite_verb = any(token.tag_ in ('VBZ', 'VBP', 'VBD', 'MD') for token in doc)
+            has_finite_verb = any(token.tag_ in FINITE_TAGS for token in doc)
             label = root.pos_ in ('NOUN', 'PROPN', 'PRON', 'NUM')
             command = doc[0].tag_ == 'VB' or root.tag_ in ('VB', 'VBG')
             interjection = doc[0].pos_ == 'INTJ'
-            if not (has_subject or has_finite_verb or label or command or interjection):
+            subordinate = any(c.dep_ == 'mark' and c.lower_ in SUBORDINATORS for c in root.children)
+            if subordinate or not (has_subject or has_finite_verb or label or command or interjection):
                 heads.append(head)
         return heads
+
+    def connectives(self, text: str, *, page: bool) -> list[str]:
+        """Find each clause that `as` or `, where` joins to a sentence.
+
+        Three forms of `as` are flagged: `as in` (`a float, as in the machines' code`), a sentence that
+        opens with `As` and has no verb (`As the EBF.`), and `as` before a verb whose object is `it`
+        or `them` (`as the recipe works it out`). `the same as` and `such as` compare, and in `as you
+        write it` a person acts, so neither is flagged. In a page, `, where` often opens a definition and
+        `As` opens a heading such as `As a plugin`, so only a comment is checked for those two.
+
+        Returns:
+            One hit per connective, in sentence order.
+        """
+        masked = QUOTED.sub('value', text)
+        hits = ['as in' for _ in AS_IN.finditer(masked)]
+        if not page:
+            hits.extend(', where' for _ in WHERE_JOIN.finditer(masked))
+        for sentence in self.nlp(masked).sents:
+            words = [token for token in sentence if not token.is_space]
+            if not words:
+                continue
+            if not page and words[0].text == 'As' and not any(token.tag_ in FINITE_TAGS for token in words):
+                hits.append(' '.join(token.text for token in words[:3] if not token.is_punct))
+            for word in words:
+                if word.lower_ != 'as' or word.tag_ != 'IN' or word.i + 1 >= len(word.doc):
+                    continue
+                if (word.i > 0 and word.doc[word.i - 1].lower_ in COMPARING_AS) or word.nbor(1).lower_ == 'in':
+                    continue
+                if (verb := self._verbWithPronounObject(word, sentence.end)) is not None:
+                    pronoun = next(c.text for c in verb.children if c.dep_ == 'dobj')
+                    hits.append(f'as {verb.text} {pronoun}')
+        return hits
+
+    def _verbWithPronounObject(self, word: Token, sentence_end: int) -> Token | None:
+        """Find the finite verb after `as` whose object is `it` or `them`, with no punctuation between.
+
+        spaCy can attach `as` to the noun before `as` (`the tier as the terms count it`), so the verb
+        is searched for by position, not through the parse. A verb whose subject can act is
+        left out: `as you write it`.
+
+        Returns:
+            The verb, or None.
+        """
+        for token in word.doc[word.i + 1 : sentence_end]:
+            # a hyphen joins a compound such as `per-tier`, and ends no clause. An `and` between two verbs
+            # ends the `as` phrase: `keeps the output as javac.log and reads it`
+            if (token.is_punct and token.tag_ != 'HYPH') or (token.dep_ == 'cc' and token.head.pos_ in ('VERB', 'AUX')):
+                return None
+            if token.pos_ != 'VERB' or token.tag_ not in FINITE_TAGS:
+                continue
+            objects = [c for c in token.children if c.dep_ == 'dobj']
+            subjects = [c for c in token.children if c.dep_ == 'nsubj']
+            if objects and objects[0].lower_ in PRONOUN_OBJECTS and not any(self._canAct(s) for s in subjects):
+                return token
+        return None
+
+    def pronounSentences(self, text: str) -> list[tuple[str, str, str]]:
+        """List each sentence with `it`, `its`, or `that` as a pronoun, each with the sentence before.
+
+        spaCy has no coreference resolution, so the list is for the review, not a check. `that` is
+        listed only as a standalone pronoun: `return that`, not `that file` or `the file that`.
+
+        Returns:
+            The pronouns, the sentence and the sentence before it (empty for the first), in order.
+        """
+        # the text is split before masking, so the code spans in the list are as written
+        sentences = [sentence for sentence in re.split(r'(?<=[.!?])\s+', text.strip()) if sentence]
+        found: list[tuple[str, str, str]] = []
+        for index, sentence in enumerate(sentences):
+            words = self.nlp(QUOTED.sub('value', sentence))
+            pronouns = [token.lower_ for token in words if token.lower_ in ('it', 'its') or standaloneThat(token)]
+            if pronouns:
+                found.append((', '.join(dict.fromkeys(pronouns)), sentence, sentences[index - 1] if index else ''))
+        return found
 
     def _parsedSubjects(self, doc: Doc) -> dict[int, str]:
         hits: dict[int, str] = {}
@@ -740,6 +916,13 @@ class SentenceReader:
             if self._needsMind(verb):
                 hits[token.i] = f'{left.text} {token.text} {verb.text}'
         return hits
+
+    def _codeSubject(self, subject: Token) -> bool:
+        """Tell whether a subject is code: a quoted span, an identifier, a program, or a noun on CODE_NOUNS."""
+        if subject.lower_ in ('that', 'which') and subject.head.dep_ == 'relcl':
+            subject = subject.head.head
+        noun = subject.lemma_.lower()
+        return subject.text == 'value' or bool(IDENTIFIER.search(subject.text)) or noun in CODE_NOUNS | PROGRAMS
 
     def _canAct(self, subject: Token) -> bool:
         if subject.lower_ in ('that', 'which') and subject.head.dep_ == 'relcl':

@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parent
 ### without one.
 
 DECISION_FIELDS = ('id', 'dimension', 'round', 'kind', 'options', 'choice', 'strength', 'condition', 'note', 'date')
-DECISION_ROUNDS = frozenset({'1', '2', '2b', '3', '3a', '4', '5', '6', '7', '8', '9', '10', 'validation'})
+DECISION_ROUNDS = frozenset({'1', '2', '2b', '3', '3a', '4', '5', '6', '7', '8', '9', '10', '11', 'validation'})
 DECISION_KINDS = frozenset({'control', 'gap', 'provocation', 'derived'})
 DECISION_STRENGTHS = frozenset({'strong', 'weak'})
 NULLABLE_FIELDS = frozenset({'condition', 'note', 'strength'})
@@ -148,9 +148,10 @@ def main() -> int:
             registries[name] = {k.value for k in keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
 
     rule_codes, retired = registries['RULES'], registries['RETIRED']
-    # the codes of agentverbs.py findings are its CODE and FRAGMENT_CODE constants
+    # the codes of agentverbs.py findings are the CODE, FRAGMENT_CODE and CONNECTIVE_CODE constants of agentverbs.py
+    code_names = ('CODE', 'FRAGMENT_CODE', 'CONNECTIVE_CODE')
     for node in ast.parse((ROOT / 'skill/agentverbs.py').read_text()).body:
-        if not isinstance(node, ast.Assign) or getattr(node.targets[0], 'id', '') not in ('CODE', 'FRAGMENT_CODE'):
+        if not isinstance(node, ast.Assign) or getattr(node.targets[0], 'id', '') not in code_names:
             continue
         if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
             rule_codes = rule_codes | {node.value.value}

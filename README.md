@@ -181,6 +181,7 @@ Values indicate rate per 100 comment blocks, with 95% CIs.
 | `NAR018` | a possessive `own` in a comment or docstring |
 | `NAR019` | a return contract written as a comment at the top of a function body |
 | `NAR020` | a clause with its subject cut before `, so`: `Named, so a recreated container gets it back` |
+| `NAR021` | a clause joined by `as` or `, where`: `a float, as in the parser` |
 
 `NAR000` is code for a file that could not be read or parsed.
 

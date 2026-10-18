@@ -730,7 +730,7 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
 
     Args:
         prose_lines: line number and text of each line of prose
-        list_items: the lines that open a list item, where a dash after the term is allowed
+        list_items: the lines that open a list item. A dash after the term is allowed on these lines
         checked_file: the file the lines come from
 
     Returns:

@@ -805,9 +805,12 @@ R10-depth-example, R10-period-join)
 
 **Sentence form:**
 - a one-line `#` comment has a lowercase start and no final period. Several lines, and every docstring, are sentences. (R10-Q26, R10-Q35, R10-docstrings)
-- two sentences over a connective such as `which` or `since`. With a connective, the reader may
-  attach the second clause to the wrong noun. `# migrate before load, which reads the account_id
-  column` → `# migrate before load. load reads the account_id column` (R10-period-join)
+- two sentences over a connective such as `which`, `since`, `as` or `, where`. With a connective,
+  the reader may attach the second clause to the wrong noun. `# migrate before load, which reads the
+  account_id column` → `# migrate before load. load reads the account_id column`. A comparison
+  with `as` to other code states no fact: `# a float, as in the parser` → `# the parser computes in
+  float too`. `NAR021` flags `as in`, a sentence that opens with `As` and has no verb, `as the X verbs
+  it`, and `, where` (R10-period-join, R11-connective-as-where)
 - terse. Drop articles where nothing is lost, never the subject or the verb (R10-seed-10, R10-terse-narrow)
 - every clause has a subject and a verb. A label for the thing is fine: `# least recently used
   first`, `Exact, case-sensitive comparison.` A predicate with its subject cut is not:
@@ -904,8 +907,12 @@ some noun compounds and participles are flagged by mistake. Silence those with `
 (R10-agentverb-check, R10-agentverb-agency)
 
 `NAR020`, from the same check, is a clause with no subject before `, so`: `Named, so a recreated
-container gets it back`. Only that form is flagged. Check every other clause against the subject and
-verb rule in **Sentence form** by hand. (R10-subject-verb, R10-nar020)
+container gets it back`, or a subordinate clause before `, so`: `Whether some terms differ by
+mode, so…`. Only that form is flagged. Check every other clause against the subject and
+verb rule in **Sentence form** by hand. (R10-subject-verb, R10-nar020, R11-nar020-subordinate)
+
+`NAR021`, from the same check, is a clause that `as` or `, where` joins to a sentence. See the
+connective rule in **Sentence form**. (R11-connective-as-where)
 
 ## Procedures
 
@@ -981,8 +988,9 @@ project root, because the default `--config` is `./pyproject.toml`. `verify.py` 
 With such a loop, a missing binary or config produces empty output, and empty output reads as a pass.
 
 `verify.py` runs these tools, in the order that converges: `ruff check --fix`, `ruff format`,
-`pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`. A passing run ends with a list of every comment and
-docstring summary, the input to **Prose review**.
+`pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`. A passing run ends with three lists, the
+input to **Prose review**: every comment and docstring summary, every subject that cannot act with
+its verb, and every sentence with a pronoun.
 
 | exit | meaning |
 |---|---|
@@ -999,12 +1007,17 @@ and loses type narrowing. Read `tooling.md` before you change config.
 **After a passing `verify.py` run, read the lists it prints, plus every error message and `--help`
 string.** The first list has every comment and docstring summary in the code. The second has each
 subject that cannot act, paired with its verb, for every verb that is neither a `NAR017` finding nor
-an operation of code. Take these steps for each sentence. (R10-prose-inventory, R10-closing-review)
+an operation of code. A verb such as `reads` or `runs` is an operation of code only with a direct
+object and code as its subject: `PlanLoader reads the plan file`, not `the spec reads`. The third
+has every sentence with `it`, `its` or a standalone `that`, each after the sentence before. Take
+these steps for each sentence. (R10-prose-inventory, R10-closing-review, R11-pronoun-list,
+R11-literal-review)
 
 1. Name the subject and the verb. Can that subject perform that verb? Most pairs are in the second
    list. A subject that is misread in the parse is not in it.
 2. For each noun phrase, name the variable, function, file or value it refers to. If none fits, or
-   two do, rewrite.
+   two do, rewrite. For each pronoun in the third list, name the noun the pronoun stands for. If
+   that noun is in another sentence, or two nouns fit, repeat the noun (R10-stand-in).
 3. List the code paths that reach the line: each branch, each caller, each failure. Check the claim
    on every path.
 4. Test the sentence against **Sentence form**, and the comment against the restatement gate.

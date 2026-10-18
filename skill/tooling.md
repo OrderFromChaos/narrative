@@ -22,7 +22,7 @@ requires, and spaCy with its `en_core_web_md` model for `agentverbs.py`.
 | `pylint` (naming only) | `mixedCase` functions. **No other linter can require this** |
 | `mypy --strict` | type correctness |
 | `checks.py` | the residual rules no tool implements. It uses only the standard library, so it runs alone with any `python3` at 3.11 or later: `python3 checks.py src/ --select NAR001` |
-| `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, and `NAR020`, a clause with no subject before `, so`, from a spaCy parse |
+| `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, `NAR020`, a clause with no subject before `, so`, and `NAR021`, a clause joined by `as` or `, where`, from a spaCy parse. `agentverbs.py --review` and `--pronouns` print a review list instead |
 | `prose.py` | the passages of a Markdown, HTML or plain text file, for `checks.py` and `agentverbs.py` |
 | `verify.py` | running all of the above correctly, with the toolchain and config guards |
 

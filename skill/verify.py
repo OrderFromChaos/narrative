@@ -124,6 +124,9 @@ def main() -> int:
     review = run([toolchain.python, str(agent_verbs), '--review', *prose_targets])
     print('\n--- every subject that cannot act, with its verb: can that subject perform that verb? ---')
     print(review.text.rstrip() or '(none)')
+    pronouns = run([toolchain.python, str(agent_verbs), '--pronouns', *prose_targets])
+    print('\n--- every sentence with a pronoun, after the one before it: which noun does each pronoun stand for? ---')
+    print(pronouns.text.rstrip() or '(none)')
     return EXIT_SUCCESS
 
 
