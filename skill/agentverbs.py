@@ -61,8 +61,8 @@ the comment is `<!-- noqa: NAR017 -->`.
 `--review` lists every other subject that cannot act, with its verb, for the manual prose review:
 a verb that is not stative, such as `breaks` or `stays`, and a verb on LITERAL unless it has a direct
 object and code as its subject: `the spec runs it` is listed, `PlanLoader reads the plan file` is
-not. An `-s` word after another noun is on the list too when only a verb fits there and spaCy
-tags a noun: `the path breaks`.
+not. A verb whose subject receives, such as `gets`, is never listed. An `-s` word after another
+noun is on the list too when only a verb fits there and spaCy tags a noun: `the path breaks`.
 A reader decides whether the subject can perform the verb. The list is no finding, and the exit code
 is 0.
 
@@ -119,6 +119,9 @@ LITERAL = frozenset({
 })  # fmt: skip
 # verbs of a relation, never an act. reviewPairs() skips them for every subject
 RELATION_VERBS = frozenset({'be', 'have', 'will'})
+# verbs whose subject receives, and does nothing: `every block of the column gets the sky light`.
+# reviewPairs() skips them for every subject
+RECEIVING_VERBS = frozenset({'get', 'receive', 'gain'})
 # nouns for a piece of code. A LITERAL verb with a direct object and a subject on this list is an operation of code
 CODE_NOUNS = frozenset({
     'method', 'function', 'class', 'this', 'test', 'loader', 'call', 'constructor', 'override', 'lambda',
@@ -570,7 +573,8 @@ class SentenceReader:
             if token.dep_ != 'nsubj' or (verb.pos_ != 'VERB' and not misread_noun):
                 continue
             lemma = self._stem(verb) if misread_noun else self._lemma(verb)
-            if lemma in RELATION_VERBS or lemma in self.stative_verbs or self._misreadSubject(token, verb):
+            skipped = lemma in RELATION_VERBS or lemma in RECEIVING_VERBS or lemma in self.stative_verbs
+            if skipped or self._misreadSubject(token, verb):
                 continue
             if lemma in LITERAL and self._codeSubject(token) and any(c.dep_ == 'dobj' for c in verb.children):
                 continue
@@ -599,7 +603,7 @@ class SentenceReader:
             if not word.lower_.endswith('s') or word.tag_ not in ('NNS', 'VBZ') or word.i == 0:
                 continue
             stem = self._stem(word)
-            if stem not in self.verbs or stem in LITERAL or stem in self.stative_verbs:
+            if stem not in self.verbs or stem in LITERAL | RECEIVING_VERBS or stem in self.stative_verbs:
                 continue
             noun = doc[word.i - 1]
             determined = any(t.dep_ in ('det', 'poss') for t in doc[word.left_edge.i : noun.i])

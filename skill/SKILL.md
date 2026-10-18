@@ -870,6 +870,7 @@ R10-depth-example, R10-period-join)
 - a worked example matches what the code does for every case in it: not `with a->b and b->c,
   a and c compare unequal` when a and b also compare unequal (R10-worked-example)
 - no semicolon and no dash. Write two sentences (R10-no-semicolon, `NAR013`)
+- a comment line over the line limit is wrapped onto the next line. Never change the wording to fit (R11-wrap-not-reword)
 - a Fence is the fact the code depends on, then the step the code takes because of that fact:
   `# bool subclasses Python int. Reject it too`, `# isdigit() admits non-ASCII digits such as '²'.
   Check isascii() too`. Write `X would` only when X is an alternative the code does not use, such as
@@ -893,8 +894,8 @@ R10-depth-example, R10-period-join)
 `NAR012` to `NAR016` and `NAR018` flag six wording faults in comments and docstrings, and a clean
 run is no evidence about the rest of these lists. Check every comment and docstring you write or
 touch against them. A dash after a list-item term is allowed. `NAR015` also flags `no longer` about
-data. Such a sentence usually has data as the subject of an agent verb, so reword it. Silence a
-false positive with `# noqa: NARxxx`. (R10-lint, R10-skill-gaps, R10-list-dash, R10-nar015-scope,
+data. Such a sentence usually has data as the subject of an agent verb, so reword it.
+(R10-lint, R10-skill-gaps, R10-list-dash, R10-nar015-scope,
 R10-nar016, R10-nar018)
 
 `NAR017` is an agent verb on a subject that cannot act, meaning a noun that is not a person, with a
@@ -903,8 +904,8 @@ verb for something only a person does: thought or speech (`a period ranks`, `the
 queue`, `the fallback places the file`). Documents get no exception. Write `named in the report`. A
 table, figure or example on the page can show what is in it: `the table below shows the totals`.
 It comes from `agentverbs.py`, the seventh check in `verify.py`. The check parses each sentence, and
-some noun compounds and participles are flagged by mistake. Silence those with `# noqa: NAR017`.
-(R10-agentverb-check, R10-agentverb-agency)
+some noun compounds and participles are flagged by mistake. (R10-agentverb-check,
+R10-agentverb-agency)
 
 `NAR020`, from the same check, is a clause with no subject before `, so`: `Named, so a recreated
 container gets it back`, or a subordinate clause before `, so`: `Whether some terms differ by
@@ -913,6 +914,19 @@ verb rule in **Sentence form** by hand. (R10-subject-verb, R10-nar020, R11-nar02
 
 `NAR021`, from the same check, is a clause that `as` or `, where` joins to a sentence. See the
 connective rule in **Sentence form**. (R11-connective-as-where)
+
+**A finding is information.** Read the sentence again, then rewrite or delete the sentence, except
+in three cases:
+
+1. **A misparse.** The flagged words are not the subject and verb, or not one clause, in what you
+   wrote. Leave the sentence.
+2. **A quoted example.** The flagged text is an example of the fault, such as a banned word in the
+   rule that bans the word. Leave the sentence.
+3. **The code's name for the thing.** The flagged words come from an identifier, such as `the worker
+   owns the lock` from `owns_lock()`. Leave the sentence, and list the sentence in your report.
+
+**Never add a `noqa` yourself.** The exceptions are the `# ruff: noqa: TID251` lines prescribed in
+**Data at boundaries**. (R11-findings)
 
 ## Procedures
 
@@ -1028,6 +1042,10 @@ For `# an expired item is removed on lookup`:
   comment covers only `getItem()`.
 - The rewrite: `# an expired item is removed on lookup, or before any eviction`.
 
+An entry on a review list is a question, not a finding. When the subject can do the verb in the
+domain's sense, such as a row that gets the default currency, leave the sentence as it is.
+(R11-review-question)
+
 Fix what fails and run `verify.py` again.
 
 ### Published prose
@@ -1043,5 +1061,5 @@ python3 "${CLAUDE_SKILL_DIR}/verify.py" README.md docs/report.html
 ```
 
 Only the wording checks and `agentverbs.py` run on a page. Take the steps of **Prose review** for
-each sentence you wrote. Silence a false positive with `<!-- noqa: NAR017 -->` on its line.
+each sentence you wrote, and handle each finding by the rule **A finding is information**.
 (R10-published-prose)
