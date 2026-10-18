@@ -724,6 +724,29 @@ Before writing or rewording a comment, follow **Writing a comment** under **Proc
 **When shortening an existing comment, rewrite the sentence. Do not delete words from it until it
 fits.** (R10-cleanup-rewrite)
 
+**When you replace an existing comment, rewrite it from the code.** (R11-rewrite-from-code)
+
+1. List the facts in the existing comment.
+2. Check each fact against its source where you can: the code for a fact about the code, and the
+   Python documentation, a spec or a vendor's documentation for a fact from outside the code. Some
+   facts have no source you can check, such as a business decision. Keep those.
+3. Drop a fact only when you find it false.
+4. Write a new comment from the facts you kept, by the steps of **Writing a comment**.
+
+Reordering or trimming the existing comment's sentences is not a rewrite. The existing comment's
+terms, framing and sentence order are not reference material.
+
+**Every term passes one of two tests:**
+
+1. **The domain's word:** the word a practitioner of the domain uses for the thing. In a billing
+   tool, the word an accountant uses: an invoice, a refund, a billing period.
+2. **An identifier, in backticks:** the name in the code that the reader can jump to, used as a
+   pointer, such as `QuotaLedger` or `readManifest()`. A pointer to a badly named identifier is
+   still a pointer. Don't use the identifier as an English word.
+
+A term that passes neither test gets a plainer word or a definition at its first use.
+(R11-rewrite-from-code)
+
 **Comment kinds:** (R10-topic-lists, R10-fp-fn, R10-kinds)
 
 - **Source**: a fact or requirement from outside the code. Test: it would still be true if the code
