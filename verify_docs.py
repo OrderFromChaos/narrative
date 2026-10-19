@@ -1,7 +1,7 @@
 """Check that a prose rewrite did not corrupt the technical record.
 
-Cross-checks the documents against the sources of truth rather than against a saved copy, so it
-works even without a pre-rewrite baseline.
+Cross-checks the documents against the sources of truth rather than against a saved copy, so the
+check works even without a pre-rewrite baseline.
 
 Usage:
     $ python3 verify_docs.py
@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 ### The schema that benchmark/README.md documents. Kept here rather than parsed out of the table,
-### because a checker that reads its rule from the document it checks proves nothing. The two are
+### because a checker that reads the rule from the checked document proves nothing. The two are
 ### compared by a human when either changes. That is cheap, and it already drifted three ways
 ### without one.
 
@@ -79,7 +79,7 @@ def supersededBy(record: dict[str, object]) -> list[str]:
     """Return the ids a decision replaces.
 
     The record type is dict[str, object] because schema values are strings, lists and nulls, so the
-    optional field must be narrowed before it can be walked.
+    optional field must be narrowed before the field can be walked.
 
     Returns:
         The superseded ids, in record order. Empty when the field is absent.
@@ -92,7 +92,7 @@ def supersededBy(record: dict[str, object]) -> list[str]:
 
 
 def supersessions(decisions: list[dict[str, object]]) -> dict[str, str]:
-    """Map every superseded decision id to the id that replaced it.
+    """Map every superseded decision id to the replacing decision's id.
 
     Declared in a field rather than parsed out of the reasoning. A marker read from free prose is
     the kind of check that silently stops matching and then reports nothing, which is the failure
@@ -130,7 +130,7 @@ def declarationPrefix(relative: Path) -> str:
 
 
 def main() -> int:
-    """Report any citation, code block or count in the docs that doesn't match its source."""
+    """Report any citation, code block or count in the docs that doesn't match the source of truth."""
     problems: list[str] = []
 
     decisions = [json.loads(line) for line in (ROOT / 'benchmark/decisions.jsonl').open()]
@@ -148,8 +148,8 @@ def main() -> int:
             registries[name] = {k.value for k in keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
 
     rule_codes, retired = registries['RULES'], registries['RETIRED']
-    # the codes of agentverbs.py findings are the CODE, FRAGMENT_CODE and CONNECTIVE_CODE constants of agentverbs.py
-    code_names = ('CODE', 'FRAGMENT_CODE', 'CONNECTIVE_CODE')
+    # the codes of agentverbs.py findings are the CODE, FRAGMENT_CODE, CONNECTIVE_CODE and PRONOUN_CODE constants
+    code_names = ('CODE', 'FRAGMENT_CODE', 'CONNECTIVE_CODE', 'PRONOUN_CODE')
     for node in ast.parse((ROOT / 'skill/agentverbs.py').read_text()).body:
         if not isinstance(node, ast.Assign) or getattr(node.targets[0], 'id', '') not in code_names:
             continue

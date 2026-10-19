@@ -5,10 +5,10 @@ output, so a missing or misresolved binary produces empty output and reads as a 
 resolves every tool to an absolute path and exits 2 if any one of them is absent, so a green result
 means the tools ran.
 
-This is the whole pipeline. Give it any path, and every Python file below it is checked, so no
-workflow is chosen at run time. A Markdown, HTML or plain text file named on the command line, such
-as a README or a published page, gets the two prose checks only: the wording checks of checks.py and
-agentverbs.py. pyproject.toml is required only when Python files are checked.
+This is the whole pipeline. Give it any path, and every Python file below the path is checked, so
+no workflow is chosen at run time. A Markdown, HTML or plain text file named on the command line,
+such as a README or a published page, gets the two prose checks only: the wording checks of checks.py
+and agentverbs.py. pyproject.toml is required only when Python files are checked.
 
 Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other.
 
@@ -68,6 +68,7 @@ def main() -> int:
     parser.add_argument('--venv', type=Path, default=SHARED_VENV)
     parser.add_argument('--config', type=Path, default=Path('pyproject.toml'))
     parser.add_argument('--no-fix', action='store_true', help='report only, do not rewrite files')
+    parser.add_argument('--all-sentences', action='store_true', help='list every sentence, not the first 1000')
     args = parser.parse_args()
     print(f'narrative skill: {readInstalledVersion()}')
 
@@ -107,7 +108,7 @@ def main() -> int:
 
     failed = [r for r in results if not r.passed]
     if failed:
-        # nobody should need to re-run a tool by hand to see why it failed
+        # nobody should need to re-run a tool by hand to see why the tool failed
         for result in failed:
             print(f'\n--- {result.tool} ---')
             print(result.detail.rstrip() or '(no output)')
@@ -118,8 +119,9 @@ def main() -> int:
     print(f'\nall {len(results)} checks passed')
     print('A pass is no evidence about the rules that no check implements. Read the lists below.')
     if code:
-        inventory = run([sys.executable, str(checker), '--prose', *[str(p) for p in code]])
-        print('\n--- every comment and docstring summary: read each against SKILL.md, Comments ---')
+        every = ['--all-sentences'] if args.all_sentences else []
+        inventory = run([sys.executable, str(checker), '--prose', *every, *[str(p) for p in code]])
+        print('\n--- every sentence of every comment and docstring: read each against SKILL.md, Comments ---')
         print(inventory.text.rstrip() or '(none)')
     review = run([toolchain.python, str(agent_verbs), '--review', *prose_targets])
     print('\n--- every subject that cannot act, with its verb: can that subject perform that verb? ---')
@@ -134,14 +136,14 @@ def checkConfig(config: Path) -> int | None:
     """Check that the config is a pyproject.toml with every Narrative section, and print the fix if not.
 
     Presence is not enough. Every real project already has a pyproject.toml, so present-but-wrong is
-    the usual state. A tool with no Narrative section runs with its defaults, and then double quotes
-    and snake_case functions pass.
+    the usual state. A tool with no Narrative section runs with the tool's defaults, and then double
+    quotes and snake_case functions pass.
 
     Returns:
         None when the config is usable, otherwise the exit code for a missing toolchain.
     """
     snippet = Path(__file__).resolve().parent / 'pyproject-snippet.toml'
-    # ruff reads any other file name as a ruff.toml, with its keys at the top level instead of under [tool.ruff]
+    # ruff reads any other file name as a ruff.toml, with the keys at the top level instead of under [tool.ruff]
     if config.name != 'pyproject.toml':
         print(f'config at {config} is not named pyproject.toml', file=sys.stderr)
         print(f'  fix: copy or merge {snippet} into a file named pyproject.toml', file=sys.stderr)
@@ -183,7 +185,7 @@ def runCodeTools(toolchain: Toolchain, config: Path, targets: list[str], *, fix:
 def discoverPython(paths: list[Path]) -> list[Path]:
     """Find every Python file at or below the given paths.
 
-    A directory expands to everything below it, so one command covers a whole project.
+    A directory expands to everything below the directory, so one command covers a whole project.
     """
     code: list[Path] = []
     for target in paths:

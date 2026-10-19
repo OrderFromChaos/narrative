@@ -7,7 +7,7 @@ and NAR018 cover the wording of comments and docstrings. NAR019 covers a return 
 as a comment.
 
 A Markdown, HTML or plain text file named on the command line gets the wording checks only, on the
-passages that prose.py reads from it. A directory expands to its Python files.
+passages that prose.py reads from the file. A directory expands to its Python files.
 
 See tooling.md for what the other tools own.
 
@@ -71,6 +71,11 @@ RETIRED = {
 
 
 TYPE_FACTORY_CALLS = frozenset({'NewType', 'TypeVar', 'ParamSpec', 'TypeVarTuple', 'NamedTuple', 'TypedDict'})
+# the number of sentences that --prose lists, from --from-sentence, unless --all-sentences is given
+SENTENCE_PAGE = 1000
+# matches:
+# `vocabulary #####`, a divider between sections of a file
+DIVIDER = re.compile(r'[-=#~*]{4,}$')
 
 
 def main() -> int:
@@ -82,7 +87,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description='Style checks that ruff, pylint and mypy do not implement.')
     parser.add_argument('paths', nargs='+', type=Path)
     parser.add_argument('--select', action='append', choices=sorted(RULES), help='only report these rules')
-    parser.add_argument('--prose', action='store_true', help='list every comment and docstring summary line')
+    parser.add_argument('--prose', action='store_true', help='list every sentence of every comment and docstring')
+    parser.add_argument('--from-sentence', type=int, default=1, help='with --prose, start at this sentence')
+    parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every sentence')
     args = parser.parse_args()
 
     targets: list[Path] = []
@@ -91,10 +98,14 @@ def main() -> int:
 
     if args.prose:
         # a page is prose throughout, so the inventory covers code only
+        listed: list[str] = []
         for checked_file in (target for target in targets if target.suffix.lower() not in prose.PROSE_SUFFIXES):
             shown = checked_file.relative_to(Path.cwd()) if checked_file.is_relative_to(Path.cwd()) else checked_file
-            for number, text in proseInventory(checked_file):
-                print(f'{shown}:{number}: {text}')
+            listed.extend(f'{shown}:{number}: {text}' for number, text in proseInventory(checked_file))
+        if not args.all_sentences:
+            listed = sentencePage(listed, args.from_sentence, program='checks.py', paths=args.paths)
+        for entry in listed:
+            print(entry)
         return 0
 
     findings: list[Finding] = []
@@ -314,8 +325,8 @@ def checkArgsPerLine(tree: ast.Module, checked_file: Path) -> list[Finding]:
 
     Signatures only. Calls are exempt.
 
-    The formatter cannot do this. `ruff format` leaves a four-argument signature alone while it
-    fits in 120 columns, and COM812 only fires once a construct has already been split.
+    The formatter cannot do this. `ruff format` leaves a four-argument signature alone while the
+    signature fits in 120 columns, and COM812 only fires once a construct has already been split.
 
     Only positional parameters count. Keyword-only parameters, after `*`, don't, so a function may
     have any number of those. Marking the optional parameters keyword-only documents them
@@ -368,7 +379,7 @@ def checkDocstringThreshold(tree: ast.Module, checked_file: Path) -> list[Findin
     helper and every two-line guard that calls one contains a `raise`.
 
     Keyword-only parameters count here, unlike NAR003, because every parameter is part of the
-    contract even when the caller may omit it.
+    contract even when the caller may omit the parameter.
 
     A pure line threshold would be gameable in the wrong direction: splitting a 21-line function
     into two 12-line ones deletes the obligation without simplifying either contract.
@@ -421,7 +432,7 @@ def annotationThings(node: ast.expr) -> int:
 def checkAnnotationComplexity(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Flag an annotation too complex to say out loud.
 
-    The measure is the number of names in the annotation below its outermost name, at any nesting.
+    The measure is the number of names in the annotation below the outermost name, at any nesting.
     The count is high for `dict[str, list[tuple[float, float]]]`, which is deep and narrow, and
     `tuple[a, b, c, d, e, f, g, h, i, j]`, which is one level deep and still unnameable.
 
@@ -516,12 +527,12 @@ def checkModuleDocstring(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Require a module docstring, and a usage example on anything runnable.
 
     The docstring is the first thing a reader meets, before `main()`. A runnable module's docstring
-    has an example invocation: invocation varies per program, and a reader shouldn't reconstruct it
-    from `argparse` calls further down.
+    has an example invocation: invocation varies per program, and a reader shouldn't reconstruct the
+    invocation from `argparse` calls further down.
 
     Returns:
         One finding for a missing docstring, or one for a runnable module with no example invocation
-        in its docstring.
+        in the module docstring.
     """
     runnable = any(isinstance(node, ast.If) and '__main__' in ast.unparse(node.test) for node in tree.body)
 
@@ -587,11 +598,11 @@ def reachableFunctions(tree: ast.Module) -> set[str]:
     missed live FIXME.
 
     A module with no `main` and no `__main__` block is a library module. Its callers are in files
-    outside this check, so every function in it counts as reachable.
+    outside this check, so every function in the module counts as reachable.
     """
     defined = {node.name: node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
 
-    # A library module (no main, no __main__ block) has its callers in other files. This check
+    # The callers of a library module (no main, no __main__ block) are in other files. This check
     # doesn't read them, so every function counts as reachable.
     entry = {name for name in defined if name == 'main'}
     runnable = any(isinstance(node, ast.If) and '__main__' in ast.unparse(node.test) for node in tree.body)
@@ -629,7 +640,7 @@ def checkDocstringSample(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Flag a docstring whose body is entirely indented.
 
     `ruff format` strips the common leading indent from a docstring body, so a body that is all
-    sample loses its alignment and the pasted table, log line or conversion becomes prose. One line
+    sample loses the alignment and the pasted table, log line or conversion becomes prose. One line
     at column 0 anchors the block.
     """
     findings: list[Finding] = []
@@ -658,7 +669,7 @@ def checkFixmeReachability(tree: ast.Module, source: str, checked_file: Path) ->
 
     The two markers mean different things. A TODO is deferred work and never blocks. A FIXME is
     either a merge blocker, or a known correctness problem parked in code nothing calls, left as a
-    danger sign for whoever next considers wiring it into the hot loop.
+    danger sign for whoever next considers wiring that code into the hot loop.
 
     Only the first kind is a defect. Reachability separates the two.
 
@@ -716,7 +727,7 @@ def checkPage(checked_file: Path) -> list[Finding]:
 def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], checked_file: Path) -> list[Finding]:
     """Flag six kinds of wording that no comment, docstring or published page needs.
 
-    - NAR012: a decision id, unresolvable outside the repository where it was recorded
+    - NAR012: a decision id, unresolvable outside the repository where the id was recorded
     - NAR013: a dash or a semicolon joining clauses, outside backticked code
     - NAR014: reassurance words, listed in WORDING
     - NAR015: changelog wording about code that is gone
@@ -784,9 +795,9 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
 def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> list[Finding]:
     """Flag a function whose body opens with a comment about what the function returns.
 
-    The contract belongs in the docstring, and only when the return type leaves it unclear.
+    The contract belongs in the docstring, and only when the return type leaves the contract unclear.
     The comment is the block of full-line comments directly above the first statement after the
-    docstring, and it counts when it opens with `returns`, `None when`, `None unless` or `the result`.
+    docstring. The comment counts when it opens with `returns`, `None when`, `None unless` or `the result`.
 
     Returns:
         One finding per function, at the first line of the comment.
@@ -813,10 +824,13 @@ def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> li
 
 
 def proseInventory(checked_file: Path) -> list[tuple[int, str]]:
-    """List every comment and the first line of every docstring in one file, in line order.
+    """List every sentence of every comment and docstring in one file, in line order.
+
+    The lines of a comment or a docstring are joined first, so a sentence wrapped over several lines
+    is listed whole, on the line where the sentence starts.
 
     Returns:
-        Line number and text, or nothing for a file that cannot be read or parsed.
+        Line number and sentence, or nothing for a file that cannot be read or parsed.
     """
     try:
         source = checked_file.read_text(encoding='utf-8')
@@ -824,14 +838,24 @@ def proseInventory(checked_file: Path) -> list[tuple[int, str]]:
     except (OSError, UnicodeDecodeError, SyntaxError):
         return []
 
-    summaries: list[tuple[int, str]] = []
-    for node in ast.walk(tree):
-        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            continue
-        docstring = ast.get_docstring(node)
-        if docstring and isinstance(node.body[0], ast.Expr):
-            summaries.append((node.body[0].lineno, docstring.splitlines()[0]))
-    return sorted([*commentLines(source), *summaries])
+    passages = [*prose.commentPassages(source), *prose.docstringPassages(tree)]
+    sentences = [pair for passage in passages for pair in passage.sentences()]
+    return sorted(pair for pair in sentences if not DIVIDER.search(pair[1]))
+
+
+def sentencePage(listed: list[str], first: int, *, program: str, paths: list[Path]) -> list[str]:
+    """Cut the sentence list to SENTENCE_PAGE entries from sentence `first`, counted from 1.
+
+    Returns:
+        The entries, then a line with the number left out and the `program` command for the next page.
+    """
+    end = first - 1 + SENTENCE_PAGE
+    page = listed[first - 1 : end]
+    if end < len(listed):
+        command = ' '.join([program, '--prose', '--from-sentence', str(end + 1), *(str(p) for p in paths)])
+        left_out = f'... {len(listed) - end} left out of {len(listed)} sentences'
+        page.append(f'{left_out}. For the next {SENTENCE_PAGE}: {command}')
+    return page
 
 
 def commentLines(source: str) -> list[tuple[int, str]]:
@@ -841,8 +865,8 @@ def commentLines(source: str) -> list[tuple[int, str]]:
             continue
 
         text = token.string.lstrip('#').strip()
-        pragma = re.match(r'(?:noqa|type:|pragma|fmt:|ruff:|pylint:|mypy:)', text)
-        divider = re.search(r'[-=#~*]{4,}$', text)
+        pragma = prose.PRAGMA.match(text)
+        divider = DIVIDER.search(text)
         if text and not pragma and not divider:
             lines.append((token.start[0], text))
 
@@ -870,7 +894,7 @@ def docstringLines(tree: ast.Module) -> list[tuple[int, str]]:
 
 
 def suppressedLines(source: str) -> dict[int, set[str]]:
-    """Map each line with a `# noqa: NARxxx` comment to the codes it silences.
+    """Map each line with a `# noqa: NARxxx` comment to the codes that the comment silences.
 
     Every check here is a heuristic over syntax, so each one can be wrong. A suppression clears a
     false positive with no change to correct code.
@@ -897,7 +921,7 @@ def checkFile(checked_file: Path) -> list[Finding]:
     the first bad path.
 
     Returns:
-        Every finding for this file, or a single NAR000 if it could not be read or parsed.
+        Every finding for this file, or a single NAR000 if the file could not be read or parsed.
     """
     if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
         return checkPage(checked_file)

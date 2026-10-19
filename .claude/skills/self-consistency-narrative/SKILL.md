@@ -6,8 +6,8 @@ description: Check the Narrative skill's own files against its own rules, so no 
 # Self-consistency pass on the Narrative skill
 
 Agents copy the skill's examples and wording. A violation in `skill/` teaches the violation, so the
-skill's own text must pass its own rules. This pass finds the violations, fixes the clear ones and
-reports the rest.
+skill's own text must pass the skill's rules. This pass finds the violations, fixes the clear ones
+and reports the rest.
 
 Repository root: the directory with `skill/`, `benchmark/` and `verify_docs.py`. `S` below is a
 directory in the scratchpad.
@@ -21,7 +21,7 @@ git log -1 --format=%cs -- skill/
 ```
 
 Read every record in `benchmark/decisions.jsonl` with that date or later. For each rule, search the
-skill files for text that breaks it, and for examples that teach the old form. A new rule usually
+skill files for text that breaks the rule, and for examples that teach the old form. A new rule usually
 makes some older example wrong.
 
 ## 2. Mechanical checks
@@ -43,7 +43,7 @@ cp skill/pyproject-snippet.toml S/pyproject.toml
 cd S && PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skill/verify.py --venv <repo>/.lintenv <repo>/skill/verify.py <repo>/skill/checks.py <repo>/skill/agentverbs.py <repo>/skill/prose.py
 ```
 
-All 7 checks must pass. Read the comment and docstring list it prints, and the scripts' error messages and `--help` text, through the steps of **Prose review** under **Procedures**.
+All 7 checks must pass. Read the comment and docstring list `verify.py` prints, and the scripts' error messages and `--help` text, through the steps of **Prose review** under **Procedures**.
 
 ```bash
 .lintenv/bin/python skill/agentverbs.py --score benchmark/round10/agentverb/gold.tsv
@@ -52,7 +52,7 @@ All 7 checks must pass. Read the comment and docstring list it prints, and the s
 
 The gold score must not drop. Held-out gold sets come from private artifacts and stay outside the
 repository, such as `~/.cache/narrative-agentverb-case/gold_gtnh.tsv`. Where one is present, score
-it with `--score` and report the score, and never tune a word list on it. `verify_docs.py` must report 0 problems, including the README's
+it with `--score` and report the score, and never tune a word list on that gold set. `verify_docs.py` must report 0 problems, including the README's
 decision count.
 
 ## 3. What the checks miss
@@ -74,8 +74,8 @@ in `checks.py` and comments in `pyproject-snippet.toml` and `requirements-lock.t
   `grep -nE '\blives?\b|\bhome\b|, which |, since ' skill/*.md` finds most of them
 - intensifiers (`perfectly`, `genuinely`, `actually`)
 - `its own`, `their own`, `on its own` anywhere in prose, not only in comments
-- a comment example that breaks a rule beside it, such as a one-line comment with a capital or a
-  final period
+- a comment example that breaks a rule beside the example, such as a one-line comment with a capital
+  or a final period
 
 ## 4. Known false positives
 
@@ -88,11 +88,11 @@ Do not fix these, and do not re-report them as new:
 - verb-shaped modifiers: `thinking traces`, `is missing`, `attribute declared in`, `a group described
   only with`, `database values`, `the isort setting`, and the table cell `PascalCase classes`
 - literal code verbs the lists do not cover: `declares global`, `a second module declaring a second
-  global`, `may catch it` (an exception), `hold open` and `an idle hold` (a file handle or
+  global`, `may catch the exception`, `hold open` and `an idle hold` (a file handle or
   connection), `stages that nothing reuses`
-- trade terms: `the source pushes` and `when the source supports it` (push notifications)
-- the rule text naming the word it bans (`deliberately`, `holds`, `its own`, `no longer` in the
-  bullets that ban them), quoted bad examples, and dashes after a list-item term
+- trade terms: `the source pushes` and `when the source can push` (push notifications)
+- a banned word named in the rule that bans the word (`deliberately`, `holds`, `its own`, `no longer`
+  in the bullets that ban them), quoted bad examples, and dashes after a list-item term
 - decision ids and the missing module docstring in the generated files
 
 When a hit is new, judge it by reading the sentence: does a non-person subject do something only a

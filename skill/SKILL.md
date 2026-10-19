@@ -26,12 +26,12 @@ docstrings apply to each module of a package exactly as they apply to a single-f
 `architecture.md` adds what happens **between** files: which module may import which, where a shared
 type belongs, when one file becomes several, and which modules may import a third-party dependency.
 Read it when the program spans more than one module or imports a third-party package. Skip it for a
-single-file program, where none of it applies.
+single-file program, where none of `architecture.md` applies.
 
-The reason for each rule is in its text, so read the rule and not the id after it. The ids are
-provenance. They resolve in `benchmark/decisions.jsonl` in the source repository,
-`github.com/OrderFromChaos/narrative-python`. That repository does not ship with the skill. **A rule with no
-id and no linter behind it does not belong here.**
+The reason for each rule is in the rule's text, so read the text and not the id after the rule. The
+ids are provenance. They resolve in `benchmark/decisions.jsonl` in the source repository,
+`github.com/OrderFromChaos/narrative-python`. That repository does not ship with the skill. **A rule
+with no id and no linter behind the rule does not belong here.**
 
 ## File layout
 
@@ -73,12 +73,12 @@ class ScanHeader: ...
 - `main()` returns an exit code. Call it as `sys.exit(main())`. All executable code is in
   `main()`. (Q10)
 
-- Caller before callee throughout. At module level, do not *call or subclass* anything before its
-  definition. Watch for a constant whose **value** references an Enum member or class. Annotations
+- Caller before callee throughout. At module level, do not *call or subclass* anything defined
+  further down. Watch for a constant whose **value** references an Enum member or class. Annotations
   are safe, because the future import makes them lazy. (R2-10, R3a-03)
 
 - That is an **ordering** rule, not a placement ban. A constant whose value is an Enum member is
-  legal in `### vocabulary` immediately after that Enum, and that is its only legal
+  legal in `### vocabulary` immediately after that Enum, and that is the constant's only legal
   module-level position. Do not contort around it. (R4-03)
 
 - Order constants by concern. Constants a dev would look for at the same moment go together. All the `_S`
@@ -96,12 +96,13 @@ class ScanHeader: ...
 
   - a body of **8 lines or under takes no internal blanks at all**
   - blanks **recur into nested blocks**, and one loop body can take four
-  - **a multi-line statement and the statement that consumes its value are one step**, so
-    `executemany` then `commit`, and a constructor then the `return` of it, stay adjacent
-  - a blank precedes a `return` when the phase before it is unrelated, and not when the returned
-    value was just built
-  - **length is not the trigger**, in either direction. A long statement earns no blank after it,
-    and a short group of statements still earns one before the next group
+  - **a multi-line statement and the statement that consumes the result are
+    one step**, so `executemany` then `commit`, and a constructor then the `return` of the
+    constructor's result, stay adjacent
+  - a blank precedes a `return` when the phase before the `return` is unrelated, and not when the
+    returned value was just built
+  - **length is not the trigger**, in either direction. A long statement earns no blank after the
+    statement, and a short group of statements still earns one before the next group
 
 - If a guard grows to three lines because it logs before raising, move the log call into a
   `reject*()` helper that logs and returns the exception. The guards are two lines again and group,
@@ -114,7 +115,7 @@ class ScanHeader: ...
 - **Keyword-only parameters do not count**, so a function may take any number of them. That is also
   the escape hatch at exactly four. Put `*` before the optional ones and they stop counting, and
   they read as optional in the signature anyway. Note `NAR004` counts *every* parameter, because
-  each one is part of the contract even when the caller may omit it. (R5-06)
+  each one is part of the contract even when the caller may omit the parameter. (R5-06)
 
 - Long strings: implicit concatenation in parens. Never `"""` for data, because its whitespace
   becomes part of the value. (Q03)
@@ -154,14 +155,14 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
 - If an extracted function would take 5+ parameters, that is a **missing owner**, not a reason to
   leave the code inline. Find where the values belong. That owner is a **class** when two of it can
   exist at once, and a **module** otherwise. A frozen record is the answer only when nothing has
-  behaviour over the values. If a general name for the group is hard to pick, it is not a real
-  grouping. (R7-C05-resolved, R7-C05-naming)
+  behaviour over the values. If a general name for the group is hard to pick, the values are not
+  a real group. (R7-C05-resolved, R7-C05-naming)
 
 - Always collapse duplicated-but-drifting code, even when the shared version takes an extra
   parameter. To localise the difference is the whole point. (R2b-E4)
 
 - Mixed `and`/`or` parenthesises each group explicitly. Never `A and B or C and D`. Ruff cannot
-  produce this form, so `SIM114` is disabled and `NAR007` enforces it. (R2b-B4)
+  produce this form, so `SIM114` is disabled and `NAR007` enforces the form. (R2b-B4)
 
 - Merge branches that share a body **only where the type checker narrows the merged branch the same
   way.** If you merge two `isinstance` branches, even with parentheses, mypy widens the subject back
@@ -186,7 +187,7 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
   `policyIn`, not `cutoffFor`. A name built from a preposition is about the input instead.
   (R9-03)
 
-- **A name is clear without its module**, and the module qualifier does not count toward it. A
+- **A name is clear without its module**, and the module qualifier does not count toward the name. A
   reader who has never opened the module must understand the name. `requirements_lock.packagesIn` is
   clear at the call site and unclear at the definition, and nothing stops a second module declaring
   a second `packagesIn`. **Two functions in one package do not share a name.** (R9-03, R7-B06)
@@ -253,9 +254,10 @@ stay at module level. (R3a-12)
   (R10-money-cents, R10-money-decimal)
 
 - **Dates and times use `pendulum`**, unless `datetime` is tightly integrated with the repository,
-  so that removing it would be hard. Replace a small `datetime` use with `pendulum`. A library that
-  returns `datetime` values, such as `tomllib`, `sqlite3` or a JSON decoder, is a boundary. Convert
-  each value to pendulum where it enters. (R10-pendulum, R10-pendulum-boundary)
+  so that removing `datetime` would be hard. Replace a small `datetime` use with `pendulum`. A
+  library that returns `datetime` values, such as `tomllib`, `sqlite3` or a JSON decoder, is a
+  boundary. Convert each value to pendulum where the value enters. (R10-pendulum,
+  R10-pendulum-boundary)
 
 - `Enum` for closed sets, `.value` at serialisation boundaries. Not `Literal`, not `StrEnum`. (R2-08)
 
@@ -272,8 +274,8 @@ stay at module level. (R3a-12)
 
   **The DB-API is the standing exception.** `sqlite3.executemany` takes a sequence per row and
   raises `ProgrammingError: parameters are of unsupported type` on a dataclass. Instead, use a
-  `NamedTuple` for rows. It is a tuple, so `executemany` takes it, and its fields have names. Use
-  `?` placeholders, and say why in a comment. (`R8-D27`, `R10-namedtuple-rows`)
+  `NamedTuple` for rows. It is a tuple, so `executemany` takes a `NamedTuple`. Its fields have
+  names. Use `?` placeholders, and say why in a comment. (`R8-D27`, `R10-namedtuple-rows`)
 
   ```python
   # sqlite3.Cursor.executemany() rejects dataclass rows. A NamedTuple is used instead
@@ -320,10 +322,10 @@ with `KeyError`.
 Speed does not change this. The difference between the forms is below run-to-run noise. (R4-03)
 
 `IntEnum` is not a substitute. It makes `json.dumps({'level': LogLevel.INFO})` silently emit `20`
-where a plain `Enum` raises `TypeError`, and its `str()` changed across releases. **`StrEnum` is
-available at the 3.11 floor and is not a substitute either**, for the same reason. It serialises
-silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum` and the exhaustive
-`match`. (R4-03, R7-E07-floor)
+where a plain `Enum` raises `TypeError`, and the `str()` of an `IntEnum` changed across releases.
+**`StrEnum` is available at the 3.11 floor and is not a substitute either**, for the same reason. It
+serialises silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum` and the
+exhaustive `match`. (R4-03, R7-E07-floor)
 
 ## Data at boundaries
 
@@ -332,9 +334,9 @@ silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum`
   (Q02, Q14, Q17)
 
 - **A parsed record contains only what its input contained.** Where one input format has a field and
-  another does not, the field is optional on the shared record, and the check that reads it skips an
-  absent value. **Never substitute a plausible default**, because the output then contains a fact
-  that the file does not. (R9-01)
+  another does not, the field is optional on the shared record, and the check that reads the field
+  skips an absent value. **Never substitute a plausible default**, because the output then contains
+  a fact that the file does not. (R9-01)
 
   A lockfile of `name==version` lines has no source. Give the record `source: SourceName | None`
   and let the source check pass on `None`. Do not stamp `'pypi'` on every package. Under a policy
@@ -343,12 +345,12 @@ silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum`
 
 - **Pydantic can be used for standardizing user input, at the boundary gate, and nowhere else.**
   `TID251` bans the import, so declare `# ruff: noqa: TID251` in the gate module, and name the gate
-  function in its module docstring. A second suppression in one program means validation is no
+  function in the gate module docstring. A second suppression in one program means validation is no
   longer at one gate. (R8-D10, R10-pydantic)
 
-- **No framework should validate output.** FastAPI makes a route's return annotation its response
-  model, so every response is validated at run time. Pass `response_model=None` in the route
-  decorator, and keep the annotation for mypy. (R10-pydantic)
+- **No framework should validate output.** FastAPI makes a route's return annotation the route's
+  response model, so every response is validated at run time. Pass `response_model=None` in the
+  route decorator, and keep the annotation for mypy. (R10-pydantic)
 
 - **`frozen=True` is the default for every dataclass.** It has nothing to do with boundaries. A
   record built and consumed inside one function is frozen for the same reason a parsed one is.
@@ -357,32 +359,32 @@ silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum`
 - Drop to mutable only when a **field's value is mutable**, and treat that as a smell rather than
   a decision. Reach for a `tuple` where you would write a `list`. A frozen wrapper around mutable
   contents is a half-guarantee. `dataclasses` will not stop you writing through it, so the bug grows
-  quietly and surfaces at run time with nothing to catch it. The standing exception is the
+  quietly and surfaces at run time with nothing to catch the bug. The standing exception is the
   schemaless remainder below, where a `Mapping` field is the prescribed shape.
 
 - **Genuinely schemaless input**: promote the fields the program computes on to typed
   attributes, and put the remainder in one `Mapping[str, object]` field. To flatten it to a JSON
-  string costs a second `json.loads` downstream, makes it unaddressable by `jq`, and forces the
-  reader back through `Any`. (R4-04)
+  string costs a second `json.loads` downstream, makes the remainder unaddressable by `jq`, and
+  forces the reader back through `Any`. (R4-04)
 
   A remainder field has two traps:
 
   - **Never splat the remainder into an output record.** `{'source': path, **entry.extra}` lets an
-    untrusted log line with a `source` key **forge its provenance in your report**.
+    untrusted log line with a `source` key **forge the log line's provenance in your report**.
     Nest it: `{'source': path, 'extra': dict(entry.extra)}`.
 
   - `frozen=True` plus a mapping field is **not hashable**. `set(entries)` raises `TypeError` at
     run time with no linter warning. The code works until someone dedupes.
 
-- **An ORM is fine where it makes database work easier, as long as it adds no run-time validation
-  that the database already does.** The cost is per row and per request, and worst on a hot path,
-  such as an endpoint that returns database values. SQLAlchemy, peewee, Piccolo and Django models
-  run no validation on write or on read. `TID251` bans the ORMs that do: SQLModel, ormar, Tortoise,
-  Pony and SQLObject. A migration, a healing script or a one-off backfill can still use one: declare
-  `# ruff: noqa: TID251` in that module. There is no `per-file-ignores` list. An exception is a
-  property of the module, not of a glob that drifts from the tree it matches. Do not explain a
-  suppression that follows this rule. Leave the suppression without a comment. (Q17, R6-03, R6-07,
-  R7-D04, R7-D04-generalised, R10-orm-validation)
+- **An ORM is fine where it makes database work easier, as long as the ORM adds no run-time
+  validation that the database already does.** The cost is per row and per request, and worst on a
+  hot path, such as an endpoint that returns database values. SQLAlchemy, peewee, Piccolo and Django
+  models run no validation on write or on read. `TID251` bans the ORMs that do: SQLModel, ormar,
+  Tortoise, Pony and SQLObject. A migration, a healing script or a one-off backfill can still use
+  one: declare `# ruff: noqa: TID251` in that module. There is no `per-file-ignores` list. An
+  exception is a property of the module, not of a glob that drifts from the tree the glob matches.
+  Do not explain a suppression that follows this rule. Leave the suppression without a comment.
+  (Q17, R6-03, R6-07, R7-D04, R7-D04-generalised, R10-orm-validation)
 
 ## Errors
 
@@ -440,7 +442,7 @@ silently where a plain `Enum` makes the boundary explicit. Keep the plain `Enum`
 
 - `NAR001` also counts a call to a method whose name starts with a configuration verb, such as
   `set`, `add`, `register` or `close`. So a function that calls `LOG.addHandler(...)` declares
-  `global LOG` even though it never rebinds it. (V-03)
+  `global LOG` even though the function never rebinds `LOG`. (V-03)
 
 - Every attribute declared in `__init__`. `hasattr(self, ...)` is a red flag. (Q04)
 
@@ -450,8 +452,9 @@ One stable event name plus structured `extra={...}` fields, never an f-string of
 message is a queryable key. (Q08)
 
 **Get each module's logger with `logging.getLogger(__name__)`.** In a package used as a library, add
-`logging.NullHandler()` to the package logger once, in its top-level `__init__.py`. Without it, the
-last-resort handler prints the package's warnings to stderr in a program that configures no logging.
+`logging.NullHandler()` to the package logger once, in the package's top-level `__init__.py`.
+Without it, the last-resort handler prints the package's warnings to stderr in a program that
+configures no logging.
 In a program, configure logging once, in `main()`, and add no NullHandler. (R10-nullhandler)
 
 **JSONL output is for machine reading. For terminal output, don't use JSONL.** (R5-03,
@@ -514,11 +517,11 @@ asyncio is the default for I/O-bound work. (R2-04)
 - **Test functions are `testSomethingDescriptive`**, in camelCase with a `test` prefix. The
   conventional `test_parse_header_roundtrips` fails the `mixedCase` gate this style mandates. The
   camelCase spelling passes pylint, *and* the pytest default `python_functions = test*` still
-  collects it.
+  collects the test function.
 
 - Tests are in a separate module, not in the program file. A `from hypothesis import given` at
-  module scope makes the program raise `ModuleNotFoundError` before it reaches `main()` on any
-  machine without the test library.
+  module scope makes the program raise `ModuleNotFoundError` before the program reaches `main()` on
+  any machine without the test library.
 
   Where a single file is required, put the tests behind `### tests` before the
   `### vocabulary` divider and import hypothesis lazily.
@@ -526,7 +529,8 @@ asyncio is the default for I/O-bound work. (R2-04)
 ## The module docstring
 
 **Every module opens with a docstring. Anything runnable has a usage example.** A reader meets it
-first, before `main()`, so it is about what the program is *for*, not how it works. (R5-02, NAR009)
+first, before `main()`, so it is about what the program is *for*, not how the program works.
+(R5-02, NAR009)
 
 **Write for a professional developer who has the file open.** That reader knows the language and the
 vocabulary of the trade, so `API`, `idempotent` and `tuple` are the right words and a plain-English
@@ -558,7 +562,7 @@ Required:
 - what it does
 - an example invocation per meaningful mode
 - exit codes when there are more than two
-- the shape of input and output where it is not obvious from the arguments
+- the shape of input and output where the shape is not obvious from the arguments
 
 `NAR009` enforces the docstring. For a module with a `__main__` block, `NAR009` also enforces the
 example.
@@ -571,15 +575,16 @@ replaces** rather than keeping both. (R9-08)
 
 **Never invent a sample.** Run the program and paste what it printed, or paste the `repr` of what
 the function returned. A format that appears nowhere in the program is a lie in the shape of
-documentation, and it is worse than the prose it replaced, because a reader cannot tell an invented
-sample from a real one. This is the docstring case of the boundary rule above. **Do not state what
-you did not observe.** A module that computes records rather than rendering text pastes the records.
+documentation, and is worse than the prose the format replaced, because a reader cannot tell an
+invented sample from a real one. This is the docstring case of the boundary rule above. **Do not
+state what you did not observe.** A module that computes records rather than rendering text pastes
+the records.
 
 **Show one line of each shape, not the whole output.** One team row, one over-quota line, one file
 outcome, and no repeats. The reader needs every shape the module can emit and needs no volume.
 
-**A sample goes stale and no tool checks it.** Keep it small, and re-paste it when the output
-changes.
+**A sample goes stale and no tool checks the sample.** Keep it small, and re-paste the sample when
+the output changes.
 
 **Expect it to cost lines.** The sample is there for exactness, not brevity. A reader learns
 the column order, the units and the alignment from three rows of a table and cannot learn them from
@@ -599,7 +604,7 @@ Teams over quota come first, worst first. A team within its quota has `-` as its
 
 **Keep at least one line of the body at column 0**, as the last line above does. `ruff format`
 strips the common leading indent from a docstring body, so a docstring whose body is *entirely*
-indented gets flattened and the sample loses its alignment. With one unindented line, the indent
+indented gets flattened and the sample loses alignment. With one unindented line, the indent
 is kept. The check is listed in `tooling.md`.
 
 Avoid the same table as prose:
@@ -651,13 +656,13 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   composite key and two separate sorts. `Teams sort by (-over, -used, team). The paths inside a team
   sort by (-size, path)` settles that, and the tie-break on `team` is visibly ascending while the
   numbers run descending. In prose, the same information is longer than the key.
-- **In the summary line, call what the code produces by its real name.** `Read the quota file, and
+- **In the summary line, use the real name of what the code produces.** `Read the quota file, and
   construct a QuotaPolicy accordingly` beats `Read the quota file, and answer what it states about a
   team and about a path`, a paraphrase of a type that already has a name.
 - **Stop at the fact.** `The first malformed field stops the read.` is the rule. A following
   sentence on why stopping is right is not functionality. This is `R9-02` one step further in. The
   ban is not only on style-guide justification but on justifying the design at all. Where a reason
-  has to survive, it is a `#` comment at the line it concerns.
+  has to survive, it is a `#` comment at the line the reason concerns.
 
 **A body earns its place for these, and in practice for nothing else:**
 
@@ -670,10 +675,11 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 - a **constraint from outside the program** — `the standard formatter of logging discards extra`
 - a **guarantee a caller needs** — `The call writes no file, prints nothing, and records nothing`
 
-- **A function gets a docstring when its contract is complex**, meaning it takes more than three parameters,
-  or it exceeds 20 lines. Below both, the contract goes in `#` comments. Raising is not a trigger,
-  because the style routes raise sites through a `reject*()` helper and every two-line guard that
-  calls one contains a `raise`. (Q05, R2-03, R2-05, R5-05, R8-D18-resolved)
+- **A function gets a docstring when the function's contract is complex**, meaning the function
+  takes more than three parameters, or exceeds 20 lines. Below both, the contract goes in `#`
+  comments. Raising is not a trigger, because the style routes raise sites through a `reject*()`
+  helper and every two-line guard that calls one contains a `raise`. (Q05, R2-03, R2-05, R5-05,
+  R8-D18-resolved)
 
   The trigger is contract complexity, not length alone, so the parameter count sits beside the line
   count. A bare line threshold is easy to get around by fragmentation. Splitting a 21-line
@@ -715,9 +721,9 @@ and docstrings only, so read messages and help text by hand. (R10-docstrings, R1
 and spec gaps. That reasoning is a thinking trace. It belongs in your report to the user, not in
 the code. (R10-stance)
 
-**Cut a comment whose content a smart reader would get from the code below it (including variable
-names), no matter how the comment is phrased or what rule category it seems to fit.**
-(R10-restatement-gate)
+**Cut a comment whose content a smart reader would get from the code below the comment (including
+variable names), no matter how the comment is phrased or what rule category the comment seems to
+fit.** (R10-restatement-gate)
 
 Before writing or rewording a comment, follow **Writing a comment** under **Procedures**.
 
@@ -741,27 +747,57 @@ terms, framing and sentence order are not reference material.
 1. **The domain's word:** the word a practitioner of the domain uses for the thing. In a billing
    tool, the word an accountant uses: an invoice, a refund, a billing period.
 2. **An identifier, in backticks:** the name in the code that the reader can jump to, used as a
-   pointer, such as `QuotaLedger` or `readManifest()`. A pointer to a badly named identifier is
-   still a pointer. Don't use the identifier as an English word.
+   pointer, such as `QuotaLedger` or `readManifest()`. Name an identifier in backticks even when its
+   name is unclear. The reader can search for the name and read the code.
 
-A term that passes neither test gets a plainer word or a definition at its first use.
-(R11-rewrite-from-code)
+A term that passes neither test gets a plainer word or a definition at the term's first use.
+(R11-rewrite-from-code, R11-pointer-wording)
+
+**A descriptive word in a term is a claim.** (R11-modifier-claim)
+
+Some words in a term are descriptive: an adjective such as `parsed` in `the parsed config`, or a
+noun for a kind of thing, such as `helpers` in `the read helpers`. Each descriptive word is a claim.
+`parsed` is a claim that the config is parsed, and `helpers` with `read` is a claim that the helpers
+only read. Check each descriptive word against its source by step 2 of the rewrite. Keep the word
+only when the word is true of everything the term names. `parsed` is false for the defaults:
+`load_config()` returns them without parsing. When a word is false, use the domain's word or an
+identifier instead. Don't add words to cover the other cases: `parsed or default config` is neither
+the domain's word nor an identifier.
+
+When the reader needs a fact about a library, and you can't read the library's source or find the
+fact in the library's documentation, write what your code does at the call. Not `the SDK retries on
+timeout`, but `fetch_invoice() calls the SDK once and catches TimeoutError`. Don't add `with no
+retry` or a similar phrase at the end. `with no retry` makes the same claim about the SDK. For the
+Python standard library, read the source or the Python documentation and check the fact.
+
+**Don't describe what a function's callers do.** (R11-callers)
+
+A developer who changes a caller has no reason to read this comment, so a sentence about what the
+callers do becomes false when they change. When the reader needs the reason for a requirement, state
+a fact about what the function returns or changes. Not `Return a frozen mapping. The pricing
+functions call this on each request`, but `Return a frozen mapping: the rates don't change while the
+process runs`. That docstring is on a method that subclasses override, and the developer of each
+override reads the docstring to learn what to return. Don't write a docstring for a function that
+only returns a constant. A requirement on the callers is part of the function's contract, such as
+`Call only from the main thread`. A fact about a function that this function calls is allowed. That
+call should be in the code below the comment.
 
 **Comment kinds:** (R10-topic-lists, R10-fp-fn, R10-kinds)
 
 - **Source**: a fact or requirement from outside the code. Test: it would still be true if the code
-  were deleted, and a smart reader wouldn't already know it.
+  were deleted, and a smart reader wouldn't already know the fact.
   (R10-Q10, R10-Q14, R10-Q23, R10-Q34, R10-Q43, R10-Q48, R10-Q51, R10-business-case, R10-audience)
   - `# vendor closes idle sockets at 60 s`
   - `# finance signs off each team's bill separately, so one file per team`
   - `# databases written before 2025/04/03 lack the account_id column`
   - `WARN_THRESHOLD = 1.6  # calibration spec CAL-7, section 3`
   - `# handles millions of rows`, at the top of the function
-- **Fence**: code that looks unusual, where the obvious simplification silently breaks it. Test: name
-  the simplification a smart, experienced developer would make, and the defect it causes: a wrong
-  result, a crash, a security hole or a performance collapse. A cosmetic difference doesn't count,
-  and neither does adding a feature. Name the step the code takes because of the fact.
-  (R10-Q20, R10-Q42, R10-Q44, R10-Q45, R10-Q50, R10-Q53, R10-Q55, R10-fence-consequence)
+- **Fence**: code that looks unusual, where the obvious simplification silently breaks the code.
+  Test: name the simplification a smart, experienced developer would make, and the defect the
+  simplification causes: a wrong result, a crash, a security hole or a performance collapse. A
+  cosmetic difference doesn't count, and neither does adding a feature. Name the step the code takes
+  because of the fact. (R10-Q20, R10-Q42, R10-Q44, R10-Q45, R10-Q50, R10-Q53, R10-Q55,
+  R10-fence-consequence)
   - `# bool subclasses Python int. Reject it too`, not `# bool subclasses Python int`
   - `# constant-time comparison to avoid timing attacks`
   - `# we want to make sure deleting an item doesn't shift the unvisited indices. Therefore, walk
@@ -772,10 +808,10 @@ A term that passes neither test gets a plainer word or a definition at its first
   look it up. State the intent, not the mechanism. (R10-Q42, R10-Q46)
   - `SIZE_PATTERN = re.compile(...)  # number, then an optional binary unit suffix`
   - `# fsum() for accurate floating point math`
-  - a regex gets a string it matches, and one it rejects where the boundary is unclear. Put each
-    literal in backticks, one per line, so the match boundary is visible and a developer can paste
-    it into regex101. A description such as `any single character` stays plain.
-    (R10-regex-sample, R10-regex-literals)
+  - a regex gets a string the regex matches, and one the regex rejects where the boundary is
+    unclear. Put each literal in backticks, one per line, so the match boundary is visible and a
+    developer can paste the literal into regex101. A description such as `any single character`
+    stays plain. (R10-regex-sample, R10-regex-literals)
     ```python
     # matches:
     # `search_v2`
@@ -786,13 +822,13 @@ A term that passes neither test gets a plainer word or a definition at its first
     ```
 - **Marker**: no test needed. (R10-candor, R10-Q03, R10-Q05, R10-Q36, R10-Q38, R6-12, R8-block-comments)
   - `FIXME:` incorrect behaviour, or behaviour that breaks soon after deploy. In reachable code it
-    blocks the merge (`NAR010`). In code nothing calls, it is a warning to whoever wires that code
-    in. Every function of a module with no `main` and no `__main__` block counts as reachable.
-    (R8-D02)
+    blocks the merge (`NAR010`). In code nothing calls, the `FIXME:` is a warning to whoever wires
+    that code in. Every function of a module with no `main` and no `__main__` block counts as
+    reachable. (R8-D02)
   - `TODO:` tech debt, future improvement
   - a stated assumption: `# vendor documents no encoding, UTF-8 assumed`
   - a label on a block of at least 4 lines, ideally 6 or more: `# parse data` (R10-block-label-size)
-  - a rule a developer must enforce, with capitals scaled to the cost of breaking it:
+  - a rule a developer must enforce, with capitals scaled to the cost of breaking the rule:
     `# read-only: NEVER write to the audited readings`
 
 **Never, even when a kind's test passes:**
@@ -800,20 +836,23 @@ A term that passes neither test gets a plainer word or a definition at its first
 - standard library or language behaviour the reader knows: `<=`, case sensitivity, `None` (R10-Q19, R10-Q21, R10-Q26, R10-Q49)
 - why the file follows this style guide: `so this is a class and not a module` (R9-02, R10-Q01)
 - decision ids such as `(Q08)` (R7-D04-comments, `NAR012`)
-- changelog: an earlier state of the code, or a fixed bug with nothing left of it (R10-Q04, R10-Q08, R10-Q52, `NAR015`)
+- changelog: an earlier state of the code, or a fixed bug with nothing left of the bug (R10-Q04,
+  R10-Q08, R10-Q52, `NAR015`)
 - alternatives never in the code (`rather than`, `instead of`), except in architecture discussion (R10-Q07, R10-rather-than)
 - risks far outside the task's scale, and decisions too inconsequential for a later reader to reconsider (R10-Q13, R10-rating)
 - future needs nobody has documented or planned (R10-Q15)
 - reassurance that a weakness is fine, such as `deliberately` or `on purpose` (R10-candor, R10-Q20, `NAR014`)
-- guarantees about other modules or functions. Put a module's guarantee in the project's architecture
-  document. Where the code depends on another function's guarantee and the check is cheap, check it
-  in the code: `while self.items and …`, not `# store() rejects an oversized item, so the cache is
-  never empty` (R10-Q24, R10-Q11, R10-other-modules, R10-check-invariant)
+- guarantees about other modules or functions. Put a module's guarantee in the project's
+  architecture document. Where the code depends on another function's guarantee and the check is
+  cheap, check the guarantee in the code: `while self.items and …`, not `# store() rejects an
+  oversized item, so the cache is never empty` (R10-Q24, R10-Q11, R10-other-modules,
+  R10-check-invariant)
 - how one function uses a type, written on the type: `member order is the order plan.json lists a
   snapshot's rules` belongs with the function that writes plan.json, or nowhere if the order is
   already plain in that function (R10-usage-placement)
 - illustrations of a decision just discussed in the session (R10-Q21)
-- a function's return contract. State it in the docstring, and only if the return type doesn't make it obvious. (R10-return-contract, `NAR019`)
+- a function's return contract. State it in the docstring, and only if the return type doesn't make
+  the contract obvious. (R10-return-contract, `NAR019`)
 
 **Depth:** in proportion to the idea's difficulty for the reader. `# signed error` on a rolling
 mean, more on a novel method. When the reader needs the consequence or the action as well as the
@@ -836,7 +875,7 @@ R10-depth-example, R10-period-join)
   it`, and `, where` (R10-period-join, R11-connective-as-where)
 - terse. Drop articles where nothing is lost, never the subject or the verb (R10-seed-10, R10-terse-narrow)
 - every clause has a subject and a verb. A label for the thing is fine: `# least recently used
-  first`, `Exact, case-sensitive comparison.` A predicate with its subject cut is not:
+  first`, `Exact, case-sensitive comparison.` A predicate with the subject cut is not:
   `Bound to one machine` → `The modifier is bound to one machine`, and
   `# named, so a recreated container gets it back` → `# named volumes persist when a container
   is recreated (e.g. docker compose down && docker compose up)`. (R10-subject-verb, `NAR020`)
@@ -848,15 +887,19 @@ R10-depth-example, R10-period-join)
     timezone`. A snapshot name is in UTC, and the timezone comes from the policy
   - the referent is gone or ambiguous: `tz=None leaves TOML local times without one` → `without a
     UTC offset`. A pronoun at the start of a sentence can refer to the subject of either sentence
-    before it, so repeat the noun
+    before the pronoun, so repeat the noun
   - a stand-in such as `the one`, `it` or `that` takes the place of a noun that fits: `follow the
     one under which the reader diffs less` → `follow the rule under which the reader diffs less`.
     Repeat the noun (R10-stand-in)
+  - `it` or `its` after two or more singular nouns in one sentence. A reader can take the pronoun
+    for either noun, even when only one of the nouns makes sense. Repeat the noun the pronoun stands
+    for, or split the sentence: `QuotaLedger extends Store, and it caches every read` → `QuotaLedger
+    extends Store, and Store caches every read`. `NAR022` flags this form (R11-pronoun-grammar)
   (R10-referent)
 - the concrete thing, not `what the X does to the Y`: `Say what the fact requires of the code` →
   `Name the step the code takes because of the fact` (R10-nominal-chain)
-- a claim is true in every case that reaches it. Otherwise, name the case in the sentence. List the
-  paths that reach the sentence:
+- a claim is true in every case that reaches the claim. Otherwise, name the case in the sentence.
+  List the paths that reach the sentence:
   - `# an expired item is removed on lookup` → `# an expired item is removed on lookup, or before
     any eviction`
   - `Returns the cached copy.` → `Returns the cached copy when one exists, otherwise the downloaded
@@ -872,13 +915,13 @@ R10-depth-example, R10-period-join)
   (R10-alternative-marker)
 - possessives and noun compounds over relative clauses: `the archive's collections`, `in read order` (R10-seed-1, R10-seed-9, R10-Q32)
 - trade terms over paraphrase: `has no side effects`. Modifiers before the noun: `JSONL logs`. (R10-seed-3, R10-seed-4)
-- the conclusion, not the derivation. State what the code means, not how it gets there.
+- the conclusion, not the derivation. State what the code means, not how the code gets there.
   `None when malformed`, not `None when a malformed line names no customer as a string`. Cut a
-  clause about an internal check, structure or attribute unless the reader needs it to act.
+  clause about an internal check, structure or attribute unless the reader needs the clause to act.
   (R10-conclusion)
 - no intensifiers. Drop a word that only stresses, such as `exactly`, `always`, `precisely` or
-  `simply`. Keep it when the sentence means something else without it: `exactly two decimal places`.
-  (R10-intensifiers)
+  `simply`. Keep it when the sentence means something else without the word: `exactly two decimal
+  places`. (R10-intensifiers)
 - the full term when a short form is ambiguous: `timezone`, not `zone` (R10-clipped-terms)
 - contractions and the imperative (R10-Q28, R10-Q29, R10-we)
 - callables as `name()`, and no article before an identifier (R10-Q30, R10-Q35)
@@ -890,8 +933,8 @@ R10-depth-example, R10-period-join)
   perform the verb. (R10-Q31, R10-Q39, R10-seed-1, R10-seed-6, R10-seed-15, R10-skill-gaps)
 - no `is what`, no `its own` (R10-Q40, R10-Q41, `NAR018`)
 - the general case: `records are separated by blank lines`, not `two records` (R10-Q40)
-- a worked example matches what the code does for every case in it: not `with a->b and b->c,
-  a and c compare unequal` when a and b also compare unequal (R10-worked-example)
+- a worked example matches what the code does for every case in the example: not `with a->b and
+  b->c, a and c compare unequal` when a and b also compare unequal (R10-worked-example)
 - no semicolon and no dash. Write two sentences (R10-no-semicolon, `NAR013`)
 - a comment line over the line limit is wrapped onto the next line. Never change the wording to fit (R11-wrap-not-reword)
 - a Fence is the fact the code depends on, then the step the code takes because of that fact:
@@ -907,17 +950,18 @@ R10-depth-example, R10-period-join)
   csv_bytes = csv_path.read_bytes()
   ```
 - a comment on one branch of a `match` or `if` chain is about what only that branch does. A reason
-  that covers every branch goes above them once. Cut it when a name such as `local` already makes it
-  obvious (R10-branch-comment)
-- directly above the statement it concerns, not above its enclosing block. Inside `try:`, it goes above the
-  call it concerns, not above `try:`. A comment on an argument goes above the call that passes it,
-  above `pendulum.parse(raw_at, tz=None)`, not below the `try` block. End-of-line for a short note.
-  (R10-Q34, R10-locality, R10-fence-form, R10-argument-placement)
+  that covers every branch goes above them once. Cut it when a name such as `local` already makes
+  the reason obvious (R10-branch-comment)
+- directly above the statement it concerns, not above its enclosing block. Inside `try:`, it goes
+  above the call the comment concerns, not above `try:`. A comment on an argument goes above the
+  call that passes the argument, above `pendulum.parse(raw_at, tz=None)`, not below the `try`
+  block. End-of-line for a short note. (R10-Q34, R10-locality, R10-fence-form,
+  R10-argument-placement)
 
 `NAR012` to `NAR016` and `NAR018` flag six wording faults in comments and docstrings, and a clean
 run is no evidence about the rest of these lists. Check every comment and docstring you write or
 touch against them. A dash after a list-item term is allowed. `NAR015` also flags `no longer` about
-data. Such a sentence usually has data as the subject of an agent verb, so reword it.
+data. Such a sentence usually has data as the subject of an agent verb, so reword the sentence.
 (R10-lint, R10-skill-gaps, R10-list-dash, R10-nar015-scope,
 R10-nar016, R10-nar018)
 
@@ -925,7 +969,8 @@ R10-nar016, R10-nar018)
 verb for something only a person does: thought or speech (`a period ranks`, `the report names it`,
 `a policy can judge`), or, with an object, a deliberate act (`the default config sends the job to a
 queue`, `the fallback places the file`). Documents get no exception. Write `named in the report`. A
-table, figure or example on the page can show what is in it: `the table below shows the totals`.
+table, figure or example on the page can show what is in the table, figure or example: `the table
+below shows the totals`.
 It comes from `agentverbs.py`, the seventh check in `verify.py`. The check parses each sentence, and
 some noun compounds and participles are flagged by mistake. (R10-agentverb-check,
 R10-agentverb-agency)
@@ -937,6 +982,9 @@ verb rule in **Sentence form** by hand. (R10-subject-verb, R10-nar020, R11-nar02
 
 `NAR021`, from the same check, is a clause that `as` or `, where` joins to a sentence. See the
 connective rule in **Sentence form**. (R11-connective-as-where)
+
+`NAR022`, from the same check, is `it` or `its` after two or more singular nouns in one sentence.
+See the referent rule in **Sentence form**. (R11-pronoun-grammar)
 
 **A finding is information.** Read the sentence again, then rewrite or delete the sentence, except
 in three cases:
@@ -954,13 +1002,14 @@ in three cases:
 ## Procedures
 
 Take these in order. **Setup** happens once per machine and once per project. **Writing a comment**
-applies to each comment as you write it. **Verify** and **Prose review** follow once the code is
-written. **Published prose** applies to each page you write, such as a README. (R10-procedures)
+applies to each comment as you write the comment. **Verify** and **Prose review** follow once the
+code is written. **Published prose** applies to each page you write, such as a README.
+(R10-procedures)
 
 ### Setup
 
-Once per machine, make one lint venv and reuse it for every project. A venv per project means a
-separate install of about 430 MB in each. (R10-setup)
+Once per machine, make one lint venv and reuse the venv for every project. A venv per project means
+a separate install of about 430 MB in each. (R10-setup)
 
 Linux and macOS:
 
@@ -978,13 +1027,14 @@ uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -
 
 When an update of the skill changes `requirements-lock.txt`, run the `uv pip install` line again.
 `install.sh` and a plugin update copy the new lock file but install nothing.
-`verify.py` uses this venv by default, and when the venv is missing it prints these two commands for
-the current machine. Pass `--venv` for a venv at another path. On Windows, run the scripts with `py`
-or `python` wherever `python3` appears in this document.
+`verify.py` uses this venv by default, and when the venv is missing `verify.py` prints these two
+commands for the current machine. Pass `--venv` for a venv at another path. On Windows, run the
+scripts with `py` or `python` wherever `python3` appears in this document.
 
-Once per project, merge `pyproject-snippet.toml` into the project's `pyproject.toml`, or copy it as
-the `pyproject.toml` of a new project. The file must be named `pyproject.toml`. Ruff reads a config file with any other name as a `ruff.toml`, and
-`verify.py` exits 2.
+Once per project, merge `pyproject-snippet.toml` into the project's `pyproject.toml`, or copy
+`pyproject-snippet.toml` as the `pyproject.toml` of a new project. The file must be named
+`pyproject.toml`. Ruff reads a config file with any other name as a `ruff.toml`, and `verify.py`
+exits 2.
 
 ### Writing a comment
 
@@ -994,11 +1044,11 @@ Take these steps in order before writing or rewording a comment. The kinds, the 
 1. **Rename first.** If the information fits in a name or a type, rename and write no comment:
    `over_quota: ByteCount`, `total_cents`, `rollingMeanSignedError`. (R10-Q25, R10-Q27, R10-Q16)
 2. **Guarantee it in code.** Establish a cheap precondition, such as sorted input, upstream in the
-   call flow, not in the function that depends on it, and write no comment. An index lookup doesn't
-   sort its input. If a code change removes a trap, make the change and write no comment. If
-   explaining how the code works takes more than one plain clause, rewrite the code instead. Name
-   the step, or use the obvious construct. A `dict` filled with `setdefault()` and sliced by
-   insertion order becomes an explicit loop that counts periods. (R10-Q19, R10-footgun,
+   call flow, not in the function that depends on the precondition, and write no comment. An index
+   lookup doesn't sort its input. If a code change removes a trap, make the change and write no
+   comment. If explaining how the code works takes more than one plain clause, rewrite the code
+   instead. Name the step, or use the obvious construct. A `dict` filled with `setdefault()` and
+   sliced by insertion order becomes an explicit loop that counts periods. (R10-Q19, R10-footgun,
    R10-hard-comment)
 3. **Match a kind.** Write a comment only if it is one of the four **Comment kinds**, passes that
    kind's test, and is not under **Never**. Deleting is a valid outcome of a rewrite when the content
@@ -1025,9 +1075,10 @@ project root, because the default `--config` is `./pyproject.toml`. `verify.py` 
 With such a loop, a missing binary or config produces empty output, and empty output reads as a pass.
 
 `verify.py` runs these tools, in the order that converges: `ruff check --fix`, `ruff format`,
-`pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`. A passing run ends with three lists, the
-input to **Prose review**: every comment and docstring summary, every subject that cannot act with
-its verb, and every sentence with a pronoun.
+`pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`. A passing run ends with three
+lists, the input to **Prose review**: every sentence of every comment and docstring, every verb
+whose subject cannot act, and every sentence with a pronoun. `verify.py` prints only the first 1000
+sentences of the first list.
 
 | exit | meaning |
 |---|---|
@@ -1041,20 +1092,21 @@ and loses type narrowing. Read `tooling.md` before you change config.
 
 ### Prose review
 
-**After a passing `verify.py` run, read the lists it prints, plus every error message and `--help`
-string.** The first list has every comment and docstring summary in the code. The second has each
-subject that cannot act, paired with its verb, for every verb that is neither a `NAR017` finding nor
-an operation of code. A verb such as `reads` or `runs` is an operation of code only with a direct
-object and code as its subject: `PlanLoader reads the plan file`, not `the spec reads`. The third
-has every sentence with `it`, `its` or a standalone `that`, each after the sentence before. Take
-these steps for each sentence. (R10-prose-inventory, R10-closing-review, R11-pronoun-list,
-R11-literal-review)
+**After a passing `verify.py` run, read the three lists at the end of the output, plus every error
+message and `--help` string.** The first list has every sentence of every comment and docstring in
+the code. The second has each subject that cannot act, paired with the subject's verb, for every
+verb that is neither a `NAR017` finding nor an operation of code. A verb such as `reads` or `runs`
+is an operation of code only with a direct object and code as the verb's subject: `PlanLoader reads
+the plan file`, not `the spec reads`. The third has every sentence with `it`, `its` or a standalone
+`that`, each after the sentence before. Take these steps for each sentence. (R10-prose-inventory,
+R10-closing-review, R11-pronoun-list, R11-literal-review)
 
 1. Name the subject and the verb. Can that subject perform that verb? Most pairs are in the second
-   list. A subject that is misread in the parse is not in it.
-2. For each noun phrase, name the variable, function, file or value it refers to. If none fits, or
-   two do, rewrite. For each pronoun in the third list, name the noun the pronoun stands for. If
-   that noun is in another sentence, or two nouns fit, repeat the noun (R10-stand-in).
+   list. A subject that is misread in the parse is not in the list.
+2. For each noun phrase, name the variable, function, file or value that the phrase refers to. If
+   none fits, or two do, rewrite. Check each descriptive word of the phrase by **A descriptive word
+   in a term is a claim**. For each pronoun in the third list, name the noun the pronoun stands for.
+   If that noun is in another sentence, repeat the noun. (R10-stand-in)
 3. List the code paths that reach the line: each branch, each caller, each failure. Check the claim
    on every path.
 4. Test the sentence against **Sentence form**, and the comment against the restatement gate.
@@ -1066,7 +1118,7 @@ For `# an expired item is removed on lookup`:
 - The rewrite: `# an expired item is removed on lookup, or before any eviction`.
 
 An entry on a review list is a question, not a finding. When the subject can do the verb in the
-domain's sense, such as a row that gets the default currency, leave the sentence as it is.
+domain's sense, such as a row that gets the default currency, leave the sentence unchanged.
 (R11-review-question)
 
 Fix what fails and run `verify.py` again.
@@ -1075,9 +1127,9 @@ Fix what fails and run `verify.py` again.
 
 A README, a doc page or an HTML report that you write follows the prose rules of this skill, as a
 comment does. When you rewrite part of a page, the rules cover the section you changed. If the
-rest of the page is clearly written by an LLM, suggest cleaning it, and do not change it unasked.
-A page that a person wrote and you did not change is left as it is, unless the user asks for it to
-be checked. Name each page to `verify.py`:
+rest of the page is clearly written by an LLM, suggest cleaning the rest, and do not change the
+rest unasked. A page that a person wrote and you did not change is left as it is, unless the user
+asks for it to be checked. Name each page to `verify.py`:
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/verify.py" README.md docs/report.html

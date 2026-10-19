@@ -71,7 +71,7 @@ Some examples of (2):
 
 ## Note
 
-⚠️ This skill has an opinionated unidirectional ordering for code (`main()` first, then the steps it calls in call order, then the types). This does produce readable and pleasing code, but may lead to stylistic differences between your PR and the rest of your codebase. **It will not force migrate the rest of your codebase to this style unless you tell it to.**
+⚠️ This skill has an opinionated unidirectional ordering for code (`main()` first, then the steps `main()` calls in call order, then the types). This does produce readable and pleasing code, but may lead to stylistic differences between your PR and the rest of your codebase. **It will not force migrate the rest of your codebase to this style unless you tell the skill to.**
 
 ## Install
 
@@ -86,7 +86,7 @@ In Claude Code:
 
 Then open `/plugin`, go to **Marketplaces**, select `narrative-python` and select **Enable auto-update**.
 Each push to this repository then reaches you at your next session. Invoke the skill as
-`/narrative-python:narrative-python`, or let Claude load it when a task involves Python.
+`/narrative-python:narrative-python`, or let Claude load the skill when a task involves Python.
 
 The first time Claude runs the checks, Claude sets up the shared lint venv in
 `~/.local/share/narrative/lintenv` (`%LOCALAPPDATA%\narrative\lintenv` on Windows), with `uv`.
@@ -118,7 +118,8 @@ cd narrative-python
 ```
 
 `install.sh` copies the skill's ten files to `~/.claude/skills/narrative-python`, or to a path you
-give it. Invoke the skill as `/narrative-python`, or let Claude load it when a task involves Python.
+give `install.sh`. Invoke the skill as `/narrative-python`, or let Claude load the skill when a task
+involves Python.
 
 **To update, run `git pull && ./install.sh`.** If you change to the plugin, delete
 `~/.claude/skills/narrative-python`, or Claude loads both copies.
@@ -181,6 +182,7 @@ Values indicate rate per 100 comment blocks, with 95% CIs.
 | `NAR019` | a return contract written as a comment at the top of a function body |
 | `NAR020` | a clause with its subject cut before `, so`: `Named, so a recreated container gets it back` |
 | `NAR021` | a clause joined by `as` or `, where`: `a float, as in the parser` |
+| `NAR022` | `it` or `its` after two or more singular nouns in one sentence: `QuotaLedger extends Store, and it caches every read` |
 
 `NAR000` is code for a file that could not be read or parsed.
 
@@ -226,8 +228,8 @@ each arm by an agent that saw only that arm and that change.
 At C1 the guided agent extracted a shared parser, which cost more lines at the time. At C5 the
 unguided agent reached the same design, because the spec requires identical rejection messages
 across formats. Both pay about 95 lines for a fifth format. The guided arm touches more files in
-three of the five changes, the same number in one, and fewer in one. In C1, C3 and C5, some of its
-files changed only to re-paste a stale docstring sample (required by rule `R9-08`).
+three of the five changes, the same number in one, and fewer in one. In C1, C3 and C5, some of the
+guided arm's files changed only to re-paste a stale docstring sample (required by rule `R9-08`).
 
 ## License
 

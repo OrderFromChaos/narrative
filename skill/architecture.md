@@ -5,7 +5,7 @@
 Read this when the program spans more than one module, or imports a third-party package. Do not read
 it for a single-file program. None of it applies, and reading it is pure context cost.
 
-The reason for each rule is in its text. The ids are provenance and resolve in
+The reason for each rule is in the rule's text. The ids are provenance and resolve in
 `benchmark/decisions.jsonl` in the source repository. That repository does not ship with the skill. A rule that
 no tool can check is marked as such.
 
@@ -31,26 +31,26 @@ diff does not need to know what the device is.
 
 1. a parameter threaded through functions that do not use it
 2. one more file
-3. one more named type. It costs nothing when the field belongs to the thing it is about
+3. one more named type. It costs nothing when the field belongs to the thing the field is about
 
 Spend a named type or a file to delete a threaded parameter. Never the reverse.
 
 ## Fact placement
 
-**Ask whose property the fact is, and put it in that thing's module.** (`R7-A05-property`)
+**Ask whose property the fact is, and put the fact in that thing's module.** (`R7-A05-property`)
 
-A per-vendor retry cap is a property of the manufacturer's networking stack, so it belongs with the
-vendor and not in a generic backoff module. A retention window is a property of the data, not of the
-scheduler that runs the cleanup. Four questions that look unrelated have their answer in this one
-rule:
+A per-vendor retry cap is a property of the manufacturer's networking stack, so the retry cap
+belongs with the vendor and not in a generic backoff module. A retention window is a property of the
+data, not of the scheduler that runs the cleanup. Four questions that look unrelated have their
+answer in this one rule:
 
 - **Do not make a caller pass what the callee can compute from its arguments and imports.**
-  (`R7-A01-revised`) A store module may import a config module, so that no caller has to pass it a
-  lookup. **This outranks dependency direction.** The two rules collide often.
+  (`R7-A01-revised`) A store module may import a config module, so that no caller has to pass the
+  store module a lookup. **This outranks dependency direction.** The two rules collide often.
 
-- **An exception type belongs in the shared vocabulary, not in the module that raises it.**
-  (`R7-A04-revised`) Any module may catch it, so it belongs to no one module. The alternative pays
-  for a circular import.
+- **An exception type belongs in the shared vocabulary, not in the module that raises the
+  exception.** (`R7-A04-revised`) Any module may catch the exception, so the exception type belongs
+  to no one module. The alternative pays for a circular import.
 
 - **A type centralises once it appears in a signature.** (`R7-B07`, `R7-B07-bound`) A shape built and
   consumed inside one function is a step, not a type. The three values a `struct.unpack` produces
@@ -90,7 +90,7 @@ rule:
   The first is three `Path` calls. The second composes `isReport`, a concept from the
   problem. From the name of the whole, a reader learns that the two conditions belong together.
 
-  This is judgement and no tool checks it. Measured over eight packages, seven functions forwarded to
+  This is judgement. No tool checks it. Measured over eight packages, seven functions forwarded to
   a single expression and only one was the defect, so a mechanical threshold would be six false
   positives in seven.
 
@@ -124,7 +124,7 @@ local of that type becomes `results_store: Store`. (`R9-03`, `R8-B06-Q11`)
 ## Where the cuts go
 
 **A coherent concern earns a module. Line count is not the criterion**, in either direction. A
-28-line concern earns a separate file, and a 340-line file with six concerns in it becomes six.
+28-line concern earns a separate file, and a 340-line file with six concerns becomes six.
 (`R7-B01-B03-criterion`)
 
 **The test is whether you can name it without saying "and".** (`R8-D12-resolved`) `retention.py` is
@@ -141,11 +141,11 @@ everything. Cut by subject when it has several vendors, several formats, or seve
 measure directly. Cut on the axis the expected changes land in more cleanly.
 
 **Naming a concept and crossing a boundary are two tests, and they can disagree.** (`R7-B04`,
-`R8-D39`) A helper that leaves the package must be findable by someone who did not write it, which
-forces it to name a concept. A checksum earns `checksum.py`. A byte formatter and a batcher that
-never leave can share one module. But a version comparator can be a clean concept and still be
-imported by one module and cross nothing. Where the two tests disagree, no order between them is
-settled. Treat it as a question for review, not a rule.
+`R8-D39`) A helper that leaves the package must be findable by someone who did not write the helper,
+which forces the helper to name a concept. A checksum earns `checksum.py`. A byte formatter and a
+batcher that never leave can share one module. But a version comparator can be a clean concept and
+still be imported by one module and cross nothing. Where the two tests disagree, no order between
+them is settled. Treat it as a question for review, not a rule.
 
 **Shared code inside one system starts as one `common.py`, scoped to that system's directory.**
 (`R7-A05-growth`) Split it when it grows: definitions first, then implementation. This is never a
@@ -168,7 +168,8 @@ with `__all__`, and has no state and no constants. An application package's `__i
 Split the workflow out only when `main` grows long.
 
 **The entry point has the list of modules and nothing about any of them.** (`R7-A05-entry`) Two
-files is the floor for adding a new subject: the new module, and the one line with its name.
+files is the floor for adding a new subject: the new module, and the one line with the module's
+name.
 
 **The reading order is in `__main__.py`.** (`R7-B01-map`) Its docstring is the program's purpose,
 then the modules in reading order. What every other module owes is `SKILL.md`'s rule, not a second
@@ -176,8 +177,9 @@ one stated here. This cost is known and accepted. A reader arriving at one modul
 module and no map.
 
 **This is the one docstring with other modules' names in it, and the only exception to the rule that
-a docstring is about its file alone.** The entry point is the file whose subject *is* the module
-list. Every other module docstring is about what that module does, and nothing else. (`R9-02`)
+a docstring is about the docstring's file alone.** The entry point is the file whose subject *is*
+the module list. Every other module docstring is about what that module does, and nothing else.
+(`R9-02`)
 
 **`main()`-first generalises to a library.** (`R7-E05`) The public entry takes `main()`'s
 position, callees follow in first-call order, types last under the divider. It does not replace the
@@ -191,28 +193,30 @@ the parser is a module. The test is neither lifetime ownership nor shared state,
 state would make every file a class.
 
 `SKILL.md` governs when a `Protocol` is earned, and that is a different question from this one. A
-seam earns a `Protocol` once it has more than one real implementation. A thing earns a class once
-two of it can exist at once. One object, one implementation, and a class is the right answer.
+seam earns a `Protocol` once the seam has more than one real implementation. A thing earns a class
+once two of that thing can exist at once. One object, one implementation, and a class is the right
+answer.
 
 **One coordinator, not a chain.** (`R7-C03`) Stages that nothing reuses separately do not each call
-the next. One function calls them in turn, with the intermediates in its local variables.
+the next. One function calls them in turn, with the intermediates in the function's local variables.
 
-**A pure core earns its place by the number of decisions in it.** (`R7-C06`, `R7-C07`) Four routing
-rules and three effects earn one. Compute a plan, then apply it. One f-string does not. Build the
-line where you emit it.
+**A pure core earns its place by the number of decisions in the core.** (`R7-C06`, `R7-C07`) Four
+routing rules and three effects earn one. Compute a plan, then apply the plan. One f-string does
+not. Build the line where you emit it.
 
 **Every case of a closed set is in one module, in an exhaustive `match`.** (`R7-A06`) A decorator
 that registers each handler at import inverts the import arrows and puts the dispatch table beyond
 the type checker's reach. Adding a member must fail the type check, not fail at runtime.
 
-**Centralise a type before anything shares it. Do not generalise behaviour before you need it.**
+**Centralise a type before anything shares the type. Do not generalise behaviour before you need
+it.**
 (`R7-B07-preemption`) Moving a type later is a mechanical edit that a type checker verifies.
 Removing a wrongly general dispatch is not. This is a deliberate asymmetry.
 
 ## Resources, state and config
 
-**A resource is opened at the scope whose lifetime it matches**, and the reader finds the open at the
-top of that scope. (`R7-A03`)
+**A resource is opened at the scope whose lifetime the resource matches**, and the reader finds the
+open at the top of that scope. (`R7-A03`)
 
 **Idle time is not the variable. What the handle costs on the far side is.** (`R7-A03-idle`) A local
 file handle is free to hold open. A network connection, a device socket or a licensed SDK seat has a
@@ -224,25 +228,25 @@ file.
 
 **One program-scoped config object reaches every module.** (`R7-E03`) Per-module slices make
 consumers re-derive a local version, and each version is new surface. There is one config for the whole
-program, so unlike every other bundle it takes no class with behaviour around it.
+program. Unlike every other bundle, the config gets no wrapping class with behaviour.
 
 **The config object is a module-level singleton, not a parameter.** (`R8-D09-resolved`) Parse the
-config once at import into a frozen record and import that name where it is needed. A frozen config
-has nothing to close, so the singleton rule above already allows it. Not allowed under that rule: a
-*hardcoded default* invented in a module. A default belongs in the config file. The singleton is
-**assigned once and never rebound.** A function that reassigns it mutates module state and owes a
-`global`, and fails `NAR001`.
+config once at import into a frozen record and import that name where that name is needed. A frozen
+config has nothing to close, so the singleton rule above already allows a frozen config. Not allowed
+under that rule: a *hardcoded default* invented in a module. A default belongs in the config file.
+The singleton is **assigned once and never rebound.** A function that reassigns it mutates module
+state and owes a `global`, and fails `NAR001`.
 
 **Leaf modules import the constants they need**, when those constants exist at import time.
-(`R7-A07`) Thread the config object instead when the program resolves it at run time. *No tool
-checks this, and both forms work.*
+(`R7-A07`) Thread the config object instead when the program resolves the config object at run
+time. *No tool checks this, and both forms work.*
 
-**Pass a flag no further down than the function that branches on it.** (`R7-C04`) A flag may
+**Pass a flag no further down than the function that branches on the flag.** (`R7-C04`) A flag may
 go further inside a named config.
 
-**The clock goes inside the function that reads it.** (`R7-E04`) Test through the real clock and
-assert on ordering and bounds, not on an instant. Inject it only for a measured speedup on a hot
-loop, and then justify it.
+**The clock goes inside the function that reads the clock.** (`R7-E04`) Test through the real clock
+and assert on ordering and bounds, not on an instant. Inject it only for a measured speedup on a hot
+loop. Then justify it.
 
 ## Third-party code
 
@@ -276,9 +280,9 @@ constraint everyone's.
 so the formatter emits `module`, `lineno` and `funcName` to locate the record instead.
 (`R7-E02-fields`)
 
-**Shared code goes in the shared library**, not in whichever program used it first. (`R7-E06`)
+**Shared code goes in the shared library**, not in whichever program used the code first. (`R7-E06`)
 
-**The source pushes and the service follows**, when the source supports it. (`R7-E07`) A poll loop
+**The source pushes and the service follows**, when the source can push. (`R7-E07`) A poll loop
 is the fallback, not the shape. This was decided for instruments on a socket, and it extends to any
 source with notifications, such as a queue, a filesystem watch or a webhook. It does **not** reach a
 source that can only be asked, such as an HTTP endpoint you do not control. There, polling is the
@@ -290,17 +294,17 @@ aggregates over a window rather than over a batch.
 ## Where degrade-and-report splits
 
 **The module doing the work collects per-item failures, and the module above logs the aggregate.**
-(`Q24`, `R7-A08`) The rule is in `SKILL.md`. This is the only thing a module boundary adds to it.
-Real dependencies in tests (`R2-02`, `R7-C08`) need no adjustment at module scale at all.
+(`Q24`, `R7-A08`) The rule is in `SKILL.md`. This is the only thing a module boundary adds to the
+rule. Real dependencies in tests (`R2-02`, `R7-C08`) need no adjustment at module scale at all.
 
 ## Comments
 
 The comment rules are in `SKILL.md`, **Comments**, including the ban on decision citations
 (`NAR012`).
 
-Exception: a program may contain the name of a rule it **implements**. `checks.py` has the comment
-`names bound in the function are locals, covered by NAR006`, where `NAR006` is an identifier of
-`checks.py` itself. A name from the same program is not a citation.
+Exception: a program may contain the name of a rule the program **implements**. `checks.py` has the
+comment `names bound in the function are locals, covered by NAR006`, where `NAR006` is an identifier
+of `checks.py` itself. A name from the same program is not a citation.
 
 ## Not architecture, learned alongside
 
@@ -311,12 +315,12 @@ diffing banned by `R2b-P0`. `RET504` stays disabled, so this form is legal. *No 
 set. Apply it where the signature is off the screen.*
 
 **Order module constants by who changes the value.** (`R7-A05-ordering`) Operator-tunable first,
-developer-only bindings last. Where execution order forces a constant later in the block, it joins
-the block rather than leading it. Do not contort around it (`R4-03`).
+developer-only bindings last. Where execution order forces a constant later in the block, the
+constant joins the block rather than leading the block. Do not contort around it (`R4-03`).
 
-**Take `ruff format`'s signature indentation.** (`R7-indent`, `R7-indent-resolved`) A hanging double
-indent reads better and PEP 8 allows it, but the formatter rewrites it and has no setting for it.
-Accept the constraint rather than work around it.
+**Take `ruff format`'s signature indentation.** (`R7-indent`, `R7-indent-resolved`) PEP 8 allows a
+hanging double indent, and the indent reads better. `ruff format` rewrites the indent, and has no
+setting to turn the rewrite off. Accept the constraint rather than work around it.
 
 ## What no tool can check
 
@@ -329,4 +333,4 @@ Stated plainly, as `SKILL.md` does for constant placement.
 
 Four more are checkable in principle and **no checker for them exists**, so they are review
 judgement too: import cycles, a cross-module import of an underscore-prefixed name, an `__all__`
-with an undefined name, and a handle type in a signature outside its owning module.
+with an undefined name, and a handle type in a signature outside the handle type's owning module.

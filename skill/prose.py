@@ -1,7 +1,9 @@
-"""Read the prose of a Markdown, HTML or plain text file as passages, for checks.py and agentverbs.py.
+"""Read the prose of a page, or of Python comments and docstrings, as passages for the prose checks.
 
-A passage is one paragraph, heading, list item or table cell, with the line number of each of its
-lines. Code is left out: fenced blocks in Markdown, and `pre`, `script` and `style` in HTML.
+In a Markdown, HTML or plain text file, a passage is one paragraph, heading, list item or table cell,
+with the line number of each of the passage's lines. In a Python file, a passage is a run of
+whole-line comments at one column, one trailing comment, or a run of docstring lines. Code is left
+out: fenced blocks in Markdown, and `pre`, `script` and `style` in HTML.
 Inline code stays in backticks, so it is read as code and not as a sentence.
 
 A finding in a page is silenced with an HTML comment on the same line, `<!-- noqa: NAR017 -->`,
@@ -10,11 +12,17 @@ or `<!-- noqa -->` for every code. Markdown renders no such comment.
 Usage, from a script in this directory:
     from prose import PROSE_SUFFIXES, readPassages
     passages = readPassages(Path('README.md'))
+    passages = [*commentPassages(source), *docstringPassages(ast.parse(source))]
 """
 
 from __future__ import annotations
 
+import ast
+import bisect
+import io
+import itertools
 import re
+import tokenize
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
@@ -58,10 +66,16 @@ INLINE_ELEMENTS = frozenset({
 })  # fmt: skip
 # inline elements whose text is code, kept in backticks
 CODE_ELEMENTS = frozenset({'code', 'kbd', 'samp', 'var'})
+PRAGMA = re.compile(r'(?:noqa|type:|pragma|fmt:|ruff:|pylint:|mypy:)')
+# Google-style docstring sections, whose indented entries are prose
+SECTION_HEADER = re.compile(r'(?:Args|Arguments|Returns|Yields|Raises|Attributes|Notes?):$')
+# matches:
+# the space between two sentences, after `ends.` or `ends?`
+SENTENCE_BREAK = re.compile(r'(?<=[.!?])\s+')
 
 
 def readPassages(prose_file: Path) -> list[Passage]:
-    """Read one Markdown, HTML or plain text file into passages, chosen by its suffix.
+    """Read one Markdown, HTML or plain text file into passages, chosen by the file's suffix.
 
     Returns:
         The passages in line order.
@@ -76,7 +90,7 @@ def readPassages(prose_file: Path) -> list[Passage]:
 
 
 def suppressedCodes(source: str) -> dict[int, set[str]]:
-    """Map each line with a `<!-- noqa -->` comment to the codes it silences.
+    """Map each line with a `<!-- noqa -->` comment to the codes that the comment silences.
 
     Returns:
         Line number to the set of codes, or `{'ALL'}` for a bare `<!-- noqa -->`.
@@ -92,7 +106,7 @@ def suppressedCodes(source: str) -> dict[int, set[str]]:
 def markdownPassages(markdown: str) -> list[Passage]:
     """Split Markdown into paragraphs, headings, list items, quotes and table cells.
 
-    A line indented under a list item continues it. Front matter, fenced code, table rules and
+    A line indented under a list item continues the item. Front matter, fenced code, table rules and
     HTML comments are left out.
 
     Returns:
@@ -124,7 +138,7 @@ def markdownPassages(markdown: str) -> list[Passage]:
         if start := HEADING.match(line) or LIST_MARKER.match(line):
             list_item = start.re is LIST_MARKER
             passages.append(Passage((number,), (inlineText(line[start.end() :]),), list_item))
-            # a heading is one line, and a list item takes the indented lines after it
+            # a heading is one line, and a list item takes the indented lines after the item
             open_passage = list_item
             continue
         if open_passage:
@@ -156,7 +170,7 @@ def inlineText(markdown: str) -> str:
 
 
 def htmlPassages(html: str) -> list[Passage]:
-    """Split HTML into the text of its block elements, such as `p`, `li`, `td` and `figcaption`.
+    """Split HTML into the text of the block elements, such as `p`, `li`, `td` and `figcaption`.
 
     Returns:
         The passages in line order.
@@ -187,6 +201,81 @@ def paragraphPassages(text: str) -> list[Passage]:
     return passages
 
 
+def commentPassages(source: str) -> list[Passage]:
+    """Group comments into passages: a run of whole-line comments at one column, or one trailing comment.
+
+    Returns:
+        The passages in line order.
+    """
+    passages: list[Passage] = []
+    run_column = -1
+    for token in tokenize.generate_tokens(io.StringIO(source).readline):
+        if token.type != tokenize.COMMENT:
+            continue
+        text = token.string.lstrip('#').strip()
+        whole_line = token.line[: token.start[1]].strip() == ''
+        if not text or PRAGMA.match(text):
+            run_column = -1
+            continue
+        joins_run = (
+            whole_line and passages and run_column == token.start[1] and passages[-1].lines[-1] == token.start[0] - 1
+        )
+        if joins_run:
+            passages[-1] = passages[-1].extendedBy(token.start[0], text)
+        else:
+            passages.append(Passage((token.start[0],), (text,)))
+        run_column = token.start[1] if whole_line else -1
+    return passages
+
+
+def docstringPassages(tree: ast.Module) -> list[Passage]:
+    passages: list[Passage] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        if ast.get_docstring(node) is None or not isinstance(node.body[0], ast.Expr):
+            continue
+        literal = node.body[0].value
+        if not isinstance(literal, ast.Constant) or not isinstance(literal.value, str):
+            continue
+        previous_offset = -2
+        for offset, text in proseLines(literal.value):
+            number = literal.lineno + offset
+            if offset == previous_offset + 1:
+                passages[-1] = passages[-1].extendedBy(number, text)
+            else:
+                passages.append(Passage((number,), (text,)))
+            previous_offset = offset
+    return passages
+
+
+def proseLines(docstring: str) -> list[tuple[int, str]]:
+    """Pick the sentences out of a docstring, leaving out pasted samples.
+
+    A line indented past the body is a sample, such as a table or program output, unless the line is
+    an entry under a section header such as `Returns:`.
+
+    Returns:
+        Line offset within the docstring, and the stripped line.
+    """
+    raw_lines = docstring.splitlines()
+    body = [line for line in raw_lines[1:] if line.strip()]
+    margin = min((len(line) - len(line.lstrip()) for line in body), default=0)
+    picked: list[tuple[int, str]] = []
+    in_section = False
+    for offset, line in enumerate(raw_lines):
+        stripped = line.strip()
+        if not stripped or stripped.startswith(('$', '>>>')):
+            continue
+        indent = len(line) - len(line.lstrip())
+        if offset == 0 or indent <= margin:
+            in_section = SECTION_HEADER.match(stripped) is not None
+            picked.append((offset, stripped))
+        elif in_section:
+            picked.append((offset, stripped))
+    return picked
+
+
 ### vocabulary #########################################################################################
 
 
@@ -194,7 +283,7 @@ def paragraphPassages(text: str) -> list[Passage]:
 class Passage:
     """Consecutive lines of prose, read as one text.
 
-    A list item can open with a term and a dash, so the dash check of checks.py skips it.
+    A list item can open with a term and a dash, so the dash check of checks.py skips the item.
     """
 
     lines: tuple[int, ...]
@@ -208,6 +297,24 @@ class Passage:
     def extendedBy(self, number: int, text: str) -> Passage:
         return Passage((*self.lines, number), (*self.texts, text), self.list_item)
 
+    def sentences(self) -> list[tuple[int, str]]:
+        """Split the passage into sentences, each with the line on which the sentence starts.
+
+        Returns:
+            The line and the text of each sentence, in order.
+        """
+        # Passage.text is the lines joined by single spaces. ends is the offset after each line, for bisect_right()
+        ends = list(itertools.accumulate(len(text) + 1 for text in self.texts))
+        found: list[tuple[int, str]] = []
+        cursor = 0
+        for sentence in SENTENCE_BREAK.split(self.text.strip()):
+            if not sentence:
+                continue
+            cursor = max(self.text.find(sentence, cursor), 0)
+            found.append((self.lines[min(bisect.bisect_right(ends, cursor), len(self.lines) - 1)], sentence))
+            cursor += len(sentence)
+        return found
+
     def lineOf(self, hit: str) -> int:
         """Find the line of a hit such as `summary shows`.
 
@@ -215,8 +322,8 @@ class Passage:
         every word.
 
         Returns:
-            The first line with every word of the hit, else the first line with its last word, else
-            the first line of the passage.
+            The first line with every word of the hit, else the first line with the hit's last word,
+            else the first line of the passage.
         """
         words = hit.split()
         lines = list(zip(self.lines, self.texts, strict=True))
@@ -228,7 +335,7 @@ class Passage:
 
 
 class HtmlProse(HTMLParser):
-    """Collect the text of each block element of an HTML document, with its line numbers."""
+    """Collect the text of each block element of an HTML document, with the element's line numbers."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)

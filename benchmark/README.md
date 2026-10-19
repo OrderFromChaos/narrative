@@ -4,7 +4,7 @@ Instrument for deriving a `narrative` skill family from measured taste rather th
 
 Target is **"the best possible way to write code with infinite time and effort"**, not how the
 author currently writes. The existing corpus, an unpublished Python project, is contrast material
-only — it contradicts the written style doc on six of its own rules.
+only. The corpus contradicts the written style doc on six of the doc's rules.
 
 ## Layout
 
@@ -26,8 +26,8 @@ decisions.jsonl          the evidence base, one answer per line
 ```
 
 Rounds 2, 6 and 11 have no directory. Each of these rounds ran in conversation against the code at
-hand, and the answers are in `decisions.jsonl` under `R2-*`, `R6-*` and `R11-*`. A round earns a directory when it
-produces material a later reader must see to judge the answer.
+hand, and the answers are in `decisions.jsonl` under `R2-*`, `R6-*` and `R11-*`. A round earns a
+directory when the round produces material a later reader must see to judge the answer.
 
 ## Protocol
 
@@ -57,15 +57,15 @@ produces material a later reader must see to judge the answer.
 7. **Round 7** — architecture. Forty-one forced choices about which module imports which, where one file
    becomes several, and what a third-party dependency may touch. The program kinds are a
    long-running service, an importable library and a monorepo. The one-shot CLI is left out: rounds
-   1 to 6 already cover that shape, and none of this round's questions come up in it. Stage 2 builds
-   real multi-module programs only where stage 1 leaves an answer open.
+   1 to 6 already cover that shape, and none of this round's questions come up in the one-shot CLI.
+   Stage 2 builds real multi-module programs only where stage 1 leaves an answer open.
 
 8. **Round 8** — red team. Four agents with no access to the design conversation: one built a
-   multi-module service against the skill, one read it hostilely for contradictions, one installed it
-   from the README on a simulated fresh machine, and one reviewed a program with eight planted
-   defects. 35 defects recorded as `R8-D01` to `R8-D35`. Separately, twelve functions were stripped
-   of every internal blank line and marked up by hand, which measured `NAR008` at 42% precision and
-   22% recall and removed it.
+   multi-module service against the skill, one read the skill hostilely for contradictions, one
+   installed the skill from the README on a simulated fresh machine, and one reviewed a program with
+   eight planted defects. 35 defects recorded as `R8-D01` to `R8-D35`. Separately, twelve functions
+   were stripped of every internal blank line and marked up by hand, which measured `NAR008` at 42%
+   precision and 22% recall and removed `NAR008`.
 
 9. **Round 9**: the skill read as a text. The author read the V3 output and reported four defects
    in the skill's own text, and V4 was the held-out test of the fixes. Directory: `round9/`.
@@ -80,13 +80,14 @@ produces material a later reader must see to judge the answer.
 
 11. **Round 11**: comments that passed every check in a narrative-java run on GT5-Unofficial, and
     that the user rejected. `NAR020` now covers a subordinate clause before `, so`, `NAR021` flags a
-    clause joined by `as` or `, where`, and `agentverbs.py --pronouns` lists each sentence with a
-    pronoun for the review.
+    clause joined by `as` or `, where`, `NAR022` flags `it` or `its` after two or more singular
+    nouns in one sentence, and `agentverbs.py --pronouns` lists each sentence with a pronoun for the
+    review.
 
 ## decisions.jsonl schema
 
 One object per line. Every rule in `skill/SKILL.md` must cite an `id` from this file. A rule
-with no `id` and no linter behind it does not ship.
+with no `id` and no linter behind the rule does not ship.
 
 | field | type | notes |
 |---|---|---|
@@ -109,6 +110,6 @@ no guidance, with the earlier style doc as context, and with the finished skill.
 shuffled blind for a rating from 1 to 5 and for marking violations, and scored with `ruff`, `pylint`,
 `mypy` and `checks.py`.
 
-If the skill does not beat doc-as-context, it has not earned its context budget and should be cut
-back to a shorter rule list. That outcome is a real possible result of this benchmark, not a
+If the skill does not beat doc-as-context, the skill is not worth the context budget and should
+be cut back to a shorter rule list. That outcome is a real possible result of this benchmark, not a
 failure mode to design around.

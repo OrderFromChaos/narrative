@@ -1,9 +1,9 @@
 """Write the comment examples of the skill documents as Python files, so agentverbs.py can read them.
 
 `SKILL_examples.py` has every comment example of `SKILL.md`, from backticks in the prose and from
-code blocks, as a trailing comment on the line of its source. agentverbs.py skips backticked text in
-prose, and reads each trailing comment as a separate passage, so each example is checked alone. The
-prose of the documents is checked directly: `agentverbs.py skill/SKILL.md`.
+code blocks, as a trailing comment on the line of the example's source. agentverbs.py skips backticked
+text in prose, and reads each trailing comment as a separate passage, so each example is checked
+alone. The prose of the documents is checked directly: `agentverbs.py skill/SKILL.md`.
 
 Usage:
     $ python3 prose_as_comments.py OUT_DIR

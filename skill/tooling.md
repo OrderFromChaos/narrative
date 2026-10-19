@@ -11,7 +11,7 @@ Use **uv** for environments and packages: `uv venv`, `uv add`, `uv run`. Not pip
 directly. (R10-uv)
 
 `requirements-lock.txt` pins the tools below, plus `hypothesis` and `pendulum`, which the style
-requires, and spaCy with its `en_core_web_md` model for `agentverbs.py`.
+requires, and spaCy with spaCy's `en_core_web_md` model for `agentverbs.py`.
 
 ## The split
 
@@ -22,17 +22,17 @@ requires, and spaCy with its `en_core_web_md` model for `agentverbs.py`.
 | `pylint` (naming only) | `mixedCase` functions. **No other linter can require this** |
 | `mypy --strict` | type correctness |
 | `checks.py` | the residual rules no tool implements. It uses only the standard library, so it runs alone with any `python3` at 3.11 or later: `python3 checks.py src/ --select NAR001` |
-| `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, `NAR020`, a clause with no subject before `, so`, and `NAR021`, a clause joined by `as` or `, where`, from a spaCy parse. `agentverbs.py --review` and `--pronouns` print a review list instead |
+| `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, `NAR020`, a clause with no subject before `, so`, `NAR021`, a clause joined by `as` or `, where`, and `NAR022`, `it` or `its` after two or more singular nouns in one sentence, from a spaCy parse. `agentverbs.py --review` and `--pronouns` print a review list instead |
 | `prose.py` | the passages of a Markdown, HTML or plain text file, for `checks.py` and `agentverbs.py` |
 | `verify.py` | running all of the above correctly, with the toolchain and config guards |
 
 Run order matters: `ruff check --fix`, then `ruff format`, then `pylint`, `mypy`, `checks.py`,
 `vermin`, `agentverbs.py`.
-`verify.py` runs them in that order, so use it rather than reproducing the sequence.
+`verify.py` runs them in that order, so use `verify.py` rather than reproducing the sequence.
 
 A Markdown, HTML or plain text file named to `verify.py` gets the wording checks of `checks.py` and
 `agentverbs.py` only. A directory expands to its Python files. In a page, `<!-- noqa: NAR017 -->`
-silences a code on its line.
+silences a code on the same line.
 
 ## The config
 
@@ -46,7 +46,7 @@ snippet because it is a decision, not an oversight.
 **`global-statement` (W0603) must stay disabled.** `NAR001` *requires* a `global` declaration on
 mutation and W0603 *complains* about every `global`, so conformant code could never be pylint-clean
 and the gate would be unusable. If you want an inventory of module-state touch points,
-`grep -rn '^\s*global '` gives it without breaking the gate.
+`grep -rn '^\s*global '` gives that inventory without breaking the gate.
 
 ## The one fault outside every tool's checks
 
@@ -55,7 +55,7 @@ function is a warning sign. The function has side effects on module state. Read-
 exempt.
 
 Python already enforces half of this. A module name cannot be *rebound* without `global`, because
-without it, Python silently binds a local instead.
+without `global`, Python silently binds a local instead.
 
 Nothing enforces the other half:
 
@@ -72,7 +72,7 @@ def loadConfig(data: dict[str, int]) -> None:
 No `global`, no error, module state mutated. Verified: **neither `ruff check --select ALL` nor
 `pylint --enable=all` has a finding for the undeclared mutation.** Both have findings for other
 things in the file, such as a missing docstring and a non-conforming function name. That gap is
-`NAR001`, and it is the highest-value check in the set.
+`NAR001`, and `NAR001` is the highest-value check in the set.
 
 `NAR006` covers the adjacent bug. A bare `NAME = x` that shadows a module-level name creates a
 local, so the module value silently never changes.
@@ -96,12 +96,12 @@ local, so the module value silently never changes.
 
 ## Gotchas
 
-**`ruff format` collapses a 4-arg signature back onto one line** unless it ends with a magic
-trailing comma. With the comma, the signature stays exploded. Without it, the signature is
+**`ruff format` collapses a 4-arg signature back onto one line** unless the signature ends with a
+magic trailing comma. With the comma, the signature stays exploded. Without it, the signature is
 joined onto one line.
 
 So the ">3 args goes multiline" rule in `SKILL.md` survives only because of the trailing comma.
-`COM812` is therefore *enabled*, against the general ruff advice to disable it alongside the
+`COM812` is therefore *enabled*, against the general ruff advice to disable `COM812` alongside the
 formatter. Here `COM812` is the mechanism that makes the rule stick.
 
 **Nothing forces the split in the first place.** Neither `ruff check` nor `ruff format` touches a
@@ -112,13 +112,13 @@ formatter writes double quotes regardless. Set it to `'double'`. There is no rea
 `"""` for data strings anyway (implicit concatenation in parens instead, Q03), so multiline quotes
 only ever appear in docstrings.
 
-**`ruff format` deletes the blank line between `class X:` and its first method**, and collapses two
+**`ruff format` deletes the blank line between `class X:` and the first method**, and collapses two
 blank lines between methods to one. Take the formatter defaults: 2 blank
 lines between top-level definitions, 1 between methods, none after the `class` statement.
 
 **`ruff format` strips the common leading indent from a docstring body.** A docstring whose body is
 *entirely* an indented block therefore loses the indent, and a pasted table, log line or conversion
-sample loses its alignment:
+sample loses alignment:
 
 ```python
 """Summary line.          -->    """Summary line.
@@ -134,7 +134,8 @@ whose body is all indented, a function docstring whose body is indented past the
 anchored block that ruff leaves alone (R9-08).
 
 A second trap comes with pasting a real file. A blank line inside the sample becomes a
-whitespace-only line once the block is indented, and ruff reports it as `W293`. Strip the trailing space.
+whitespace-only line once the block is indented, and ruff reports that line as `W293`. Strip the
+trailing space.
 
 **mypy reports `import-not-found` for banned libraries** before ruff gets to say why. Read the ruff
 message, not the mypy one.
@@ -161,7 +162,7 @@ mixedCase argument and a mixedCase attribute still fail pylint.
 With `N806` ignored, mixedCase locals pass ruff but still fail pylint, so coverage survives
 (R3a-13).
 
-**The `SIM114` autofix makes code worse, so the config disables it.** Applied to two adjacent
+**The `SIM114` autofix makes code worse, so the config disables `SIM114`.** Applied to two adjacent
 `elif` branches with the same body, it produced:
 
 ```python
@@ -181,7 +182,7 @@ Explicit parentheses fix the readability and **lose type narrowing**. That is th
 objection. **The loss happens only when the merged branches narrow the same attribute access to
 different types.** Here `node.name` is `str` on an `ast.FunctionDef` and
 `str | None` on an `ast.ExceptHandler`, so merging widens `node` back to a union and the attribute
-with it:
+with `node`:
 
 ```
 error: Argument 1 to "add" of "set" has incompatible type "str | None"; expected "str"
