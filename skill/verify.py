@@ -10,6 +10,10 @@ no workflow is chosen at run time. A Markdown, HTML or plain text file named on 
 such as a README or a published page, gets the two prose checks only: the wording checks of checks.py
 and agentverbs.py. pyproject.toml is required only when Python files are checked.
 
+Unless nothing was checked, the output ends with three review lists, over the Python files and the
+pages: every sentence, every subject that cannot act paired with the subject's verb, and every
+sentence with a pronoun. On a failing run the lists are printed after the findings.
+
 Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other.
 
 Usage:
@@ -113,23 +117,38 @@ def main() -> int:
             print(f'\n--- {result.tool} ---')
             print(result.detail.rstrip() or '(no output)')
 
+        # the lists are the same with or without findings. Fixing a finding rewrites sentences and changes the lists
+        print('\n=== review lists from a failing run. Fix the findings above, then read the lists of the next run ===')
+        printReviewLists(toolchain.python, prose_targets, all_sentences=args.all_sentences)
         print(f'\n{len(failed)} of {len(results)} checks failed')
         return EXIT_FINDINGS
 
     print(f'\nall {len(results)} checks passed')
     print('A pass is no evidence about the rules that no check implements. Read the lists below.')
-    if code:
-        every = ['--all-sentences'] if args.all_sentences else []
-        inventory = run([sys.executable, str(checker), '--prose', *every, *[str(p) for p in code]])
-        print('\n--- every sentence of every comment and docstring: read each against SKILL.md, Comments ---')
-        print(inventory.text.rstrip() or '(none)')
-    review = run([toolchain.python, str(agent_verbs), '--review', *prose_targets])
+    printReviewLists(toolchain.python, prose_targets, all_sentences=args.all_sentences)
+    return EXIT_SUCCESS
+
+
+def printReviewLists(python: str, prose_targets: list[str], *, all_sentences: bool) -> None:
+    """Print the three lists for Prose review in SKILL.md: sentences, agent verbs and pronouns.
+
+    Args:
+        python: The interpreter with the parser modules installed, for agentverbs.py.
+        prose_targets: Every Python file and every page checked in this run.
+        all_sentences: List every sentence, not only the first page of the sentence list.
+    """
+    checker = Path(__file__).resolve().parent / 'checks.py'
+    agent_verbs = Path(__file__).resolve().parent / 'agentverbs.py'
+    every = ['--all-sentences'] if all_sentences else []
+    inventory = run([sys.executable, str(checker), '--prose', *every, *prose_targets])
+    print('\n--- every sentence of every comment, docstring and page: read each against SKILL.md, Comments ---')
+    print(inventory.text.rstrip() or '(none)')
+    review = run([python, str(agent_verbs), '--review', *prose_targets])
     print('\n--- every subject that cannot act, with its verb: can that subject perform that verb? ---')
     print(review.text.rstrip() or '(none)')
-    pronouns = run([toolchain.python, str(agent_verbs), '--pronouns', *prose_targets])
+    pronouns = run([python, str(agent_verbs), '--pronouns', *prose_targets])
     print('\n--- every sentence with a pronoun, after the one before it: which noun does each pronoun stand for? ---')
     print(pronouns.text.rstrip() or '(none)')
-    return EXIT_SUCCESS
 
 
 def checkConfig(config: Path) -> int | None:

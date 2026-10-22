@@ -1075,10 +1075,11 @@ project root, because the default `--config` is `./pyproject.toml`. `verify.py` 
 With such a loop, a missing binary or config produces empty output, and empty output reads as a pass.
 
 `verify.py` runs these tools, in the order that converges: `ruff check --fix`, `ruff format`,
-`pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`. A passing run ends with three
-lists, the input to **Prose review**: every sentence of every comment and docstring, every verb
-whose subject cannot act, and every sentence with a pronoun. `verify.py` prints only the first 1000
-sentences of the first list.
+`pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`. A run with exit 0 or 1 ends
+with three lists, the input to **Prose review**: every sentence of every comment, docstring and
+named page, every verb whose subject cannot act, and every sentence with a pronoun. On a run with
+exit 1, `verify.py` prints the lists after the findings. `verify.py` prints only the first 1000
+sentences of the first list. (R11-lists-on-failure, R11-page-inventory)
 
 | exit | meaning |
 |---|---|
@@ -1092,14 +1093,16 @@ and loses type narrowing. Read `tooling.md` before you change config.
 
 ### Prose review
 
-**After a passing `verify.py` run, read the three lists at the end of the output, plus every error
-message and `--help` string.** The first list has every sentence of every comment and docstring in
-the code. The second has each subject that cannot act, paired with the subject's verb, for every
-verb that is neither a `NAR017` finding nor an operation of code. A verb such as `reads` or `runs`
-is an operation of code only with a direct object and code as the verb's subject: `PlanLoader reads
-the plan file`, not `the spec reads`. The third has every sentence with `it`, `its` or a standalone
-`that`, each after the sentence before. Take these steps for each sentence. (R10-prose-inventory,
-R10-closing-review, R11-pronoun-list, R11-literal-review)
+**Fix every finding of `verify.py` first. Then read the three lists at the end of the output, plus
+every error message and `--help` string.** You rewrite sentences when you fix findings, so read the
+lists from the run after the fixes. The first list has every sentence of every comment and
+docstring in the code, and every sentence of each named page. The second has each subject that
+cannot act, paired with the subject's verb, for every verb that is neither a `NAR017` finding nor
+an operation of code. A verb such as `reads` or `runs` is an operation of code only with a direct
+object and code as the verb's subject: `PlanLoader reads the plan file`, not `the spec reads`. The
+third has every sentence with `it`, `its` or a standalone `that`, each after the sentence before.
+Take these steps for each sentence. (R10-prose-inventory, R10-closing-review, R11-pronoun-list,
+R11-literal-review)
 
 1. Name the subject and the verb. Can that subject perform that verb? Most pairs are in the second
    list. A subject that is misread in the parse is not in the list.
@@ -1135,6 +1138,7 @@ asks for it to be checked. Name each page to `verify.py`:
 python3 "${CLAUDE_SKILL_DIR}/verify.py" README.md docs/report.html
 ```
 
-Only the wording checks and `agentverbs.py` run on a page. Take the steps of **Prose review** for
-each sentence you wrote, and handle each finding by the rule **A finding is information**.
-(R10-published-prose)
+Only the wording checks and `agentverbs.py` run on a page. `verify.py` prints the three lists of
+**Prose review** for each named page too. Take the steps of **Prose review** for each sentence you
+wrote, and handle each finding by the rule **A finding is information**. (R10-published-prose,
+R11-page-inventory)

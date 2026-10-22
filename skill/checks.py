@@ -87,7 +87,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description='Style checks that ruff, pylint and mypy do not implement.')
     parser.add_argument('paths', nargs='+', type=Path)
     parser.add_argument('--select', action='append', choices=sorted(RULES), help='only report these rules')
-    parser.add_argument('--prose', action='store_true', help='list every sentence of every comment and docstring')
+    parser.add_argument('--prose', action='store_true', help='list every sentence of every comment, docstring and page')
     parser.add_argument('--from-sentence', type=int, default=1, help='with --prose, start at this sentence')
     parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every sentence')
     args = parser.parse_args()
@@ -97,9 +97,8 @@ def main() -> int:
         targets.extend(sorted(discoverPython(target)) if target.is_dir() else [target])
 
     if args.prose:
-        # a page is prose throughout, so the inventory covers code only
         listed: list[str] = []
-        for checked_file in (target for target in targets if target.suffix.lower() not in prose.PROSE_SUFFIXES):
+        for checked_file in targets:
             shown = checked_file.relative_to(Path.cwd()) if checked_file.is_relative_to(Path.cwd()) else checked_file
             listed.extend(f'{shown}:{number}: {text}' for number, text in proseInventory(checked_file))
         if not args.all_sentences:
@@ -824,23 +823,27 @@ def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> li
 
 
 def proseInventory(checked_file: Path) -> list[tuple[int, str]]:
-    """List every sentence of every comment and docstring in one file, in line order.
+    """List every sentence of every comment and docstring in one file, or of one page, in line order.
 
-    The lines of a comment or a docstring are joined first, so a sentence wrapped over several lines
-    is listed whole, on the line where the sentence starts.
+    A Markdown, HTML or plain text page is prose throughout, so every sentence of the page is listed.
+    The lines of a comment, a docstring or a paragraph are joined first, so a sentence wrapped over
+    several lines is listed whole, on the line where the sentence starts.
 
     Returns:
         Line number and sentence, or nothing for a file that cannot be read or parsed.
     """
     try:
-        source = checked_file.read_text(encoding='utf-8')
-        tree = ast.parse(source)
+        if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
+            passages = prose.readPassages(checked_file)
+        else:
+            source = checked_file.read_text(encoding='utf-8')
+            passages = [*prose.commentPassages(source), *prose.docstringPassages(ast.parse(source))]
     except (OSError, UnicodeDecodeError, SyntaxError):
         return []
 
-    passages = [*prose.commentPassages(source), *prose.docstringPassages(tree)]
     sentences = [pair for passage in passages for pair in passage.sentences()]
-    return sorted(pair for pair in sentences if not DIVIDER.search(pair[1]))
+    # sorted() is stable, so with the line as the key, two sentences on one line are listed in reading order
+    return sorted((pair for pair in sentences if not DIVIDER.search(pair[1])), key=lambda pair: pair[0])
 
 
 def sentencePage(listed: list[str], first: int, *, program: str, paths: list[Path]) -> list[str]:

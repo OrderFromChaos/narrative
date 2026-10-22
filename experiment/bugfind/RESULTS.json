@@ -1,0 +1,738 @@
+{
+  "tasks_compared": 28,
+  "arms": {
+    "base": {
+      "resolved": 16,
+      "fail_to_pass_passed": 42,
+      "fail_to_pass_total": 71,
+      "pass_to_pass_failed": 4,
+      "cost_usd": 10.06,
+      "wall_min": 82,
+      "runs_off_target_model": 0
+    },
+    "skill": {
+      "resolved": 16,
+      "fail_to_pass_passed": 43,
+      "fail_to_pass_total": 71,
+      "pass_to_pass_failed": 1,
+      "cost_usd": 21.49,
+      "wall_min": 92,
+      "runs_off_target_model": 0
+    }
+  },
+  "base_only": [
+    "python-pillow__Pillow-9023",
+    "ucfopen__canvasapi-716"
+  ],
+  "skill_only": [
+    "sqlfluff__sqlfluff-7617",
+    "marcosschroh__dataclasses-avroschema-835"
+  ],
+  "mcnemar_exact_p": 1.0,
+  "excluded": {
+    "pyccel__pyccel-2512": "an arm hit the time limit",
+    "NeurodataWithoutBorders__pynwb-2056": "the gold patch fails the hidden tests in this environment"
+  },
+  "tasks": [
+    {
+      "instance_id": "dask__dask-12119",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 6,
+        "fail_to_pass_total": 9,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.164299,
+        "wall_s": 182,
+        "num_turns": 12,
+        "only_target_model": true,
+        "first_call_input_tokens": null
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 6,
+        "fail_to_pass_total": 9,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5110646,
+        "wall_s": 130,
+        "num_turns": 17,
+        "only_target_model": true,
+        "first_call_input_tokens": null
+      }
+    },
+    {
+      "instance_id": "BrianPugh__cyclopts-633",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 2,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.18514419999999998,
+        "wall_s": 87,
+        "num_turns": 14,
+        "only_target_model": true,
+        "first_call_input_tokens": 11139
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 2,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.4212054,
+        "wall_s": 86,
+        "num_turns": 13,
+        "only_target_model": true,
+        "first_call_input_tokens": 35508
+      }
+    },
+    {
+      "instance_id": "omni-us__jsonargparse-711",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 3,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.9772276000000002,
+        "wall_s": 263,
+        "num_turns": 43,
+        "only_target_model": true,
+        "first_call_input_tokens": 11673
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 3,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 1.1163092000000001,
+        "wall_s": 175,
+        "num_turns": 35,
+        "only_target_model": true,
+        "first_call_input_tokens": 36549
+      }
+    },
+    {
+      "instance_id": "wireservice__csvkit-1274",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.4385458000000001,
+        "wall_s": 107,
+        "num_turns": 26,
+        "only_target_model": true,
+        "first_call_input_tokens": 11203
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.7244294,
+        "wall_s": 129,
+        "num_turns": 29,
+        "only_target_model": true,
+        "first_call_input_tokens": 35601
+      }
+    },
+    {
+      "instance_id": "stuartmaxwell__djpress-117",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 3,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.1698184,
+        "wall_s": 43,
+        "num_turns": 12,
+        "only_target_model": true,
+        "first_call_input_tokens": 11031
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 3,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.410679,
+        "wall_s": 40,
+        "num_turns": 12,
+        "only_target_model": true,
+        "first_call_input_tokens": 35267
+      }
+    },
+    {
+      "instance_id": "pyinfra-dev__pyinfra-1679_interface",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 3,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5305668,
+        "wall_s": 123,
+        "num_turns": 17,
+        "only_target_model": true,
+        "first_call_input_tokens": 12434
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 2,
+        "fail_to_pass_total": 3,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.7336728,
+        "wall_s": 118,
+        "num_turns": 20,
+        "only_target_model": true,
+        "first_call_input_tokens": 38052
+      }
+    },
+    {
+      "instance_id": "conan-io__conan-19735_interface",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.1437368,
+        "wall_s": 43,
+        "num_turns": 8,
+        "only_target_model": true,
+        "first_call_input_tokens": 11324
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.3691882,
+        "wall_s": 43,
+        "num_turns": 9,
+        "only_target_model": true,
+        "first_call_input_tokens": 35882
+      }
+    },
+    {
+      "instance_id": "tobymao__sqlglot-5431",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5210756,
+        "wall_s": 262,
+        "num_turns": 21,
+        "only_target_model": true,
+        "first_call_input_tokens": 11314
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.8639749999999999,
+        "wall_s": 222,
+        "num_turns": 19,
+        "only_target_model": true,
+        "first_call_input_tokens": 35757
+      }
+    },
+    {
+      "instance_id": "astropy__astropy-18005",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.3871208,
+        "wall_s": 79,
+        "num_turns": 19,
+        "only_target_model": true,
+        "first_call_input_tokens": 11623
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.8517201999999999,
+        "wall_s": 162,
+        "num_turns": 29,
+        "only_target_model": true,
+        "first_call_input_tokens": 36405
+      }
+    },
+    {
+      "instance_id": "MahjongRepository__mahjong-62",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.205002,
+        "wall_s": 57,
+        "num_turns": 10,
+        "only_target_model": true,
+        "first_call_input_tokens": 11213
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 1.3428354000000002,
+        "wall_s": 447,
+        "num_turns": 22,
+        "only_target_model": true,
+        "first_call_input_tokens": 35586
+      }
+    },
+    {
+      "instance_id": "sympy__sympy-28382",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.2080004,
+        "wall_s": 130,
+        "num_turns": 15,
+        "only_target_model": true,
+        "first_call_input_tokens": 11068
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.41914939999999995,
+        "wall_s": 192,
+        "num_turns": 14,
+        "only_target_model": true,
+        "first_call_input_tokens": 35318
+      }
+    },
+    {
+      "instance_id": "sqlfluff__sqlfluff-7617",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.4258428000000001,
+        "wall_s": 130,
+        "num_turns": 21,
+        "only_target_model": true,
+        "first_call_input_tokens": 12382
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.8990152,
+        "wall_s": 147,
+        "num_turns": 29,
+        "only_target_model": true,
+        "first_call_input_tokens": 37920
+      }
+    },
+    {
+      "instance_id": "tobymao__sqlglot-5233",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5843376000000001,
+        "wall_s": 218,
+        "num_turns": 23,
+        "only_target_model": true,
+        "first_call_input_tokens": 11266
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 1.3310591999999997,
+        "wall_s": 331,
+        "num_turns": 29,
+        "only_target_model": true,
+        "first_call_input_tokens": 35710
+      }
+    },
+    {
+      "instance_id": "sktime__sktime-8723",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5032053999999999,
+        "wall_s": 273,
+        "num_turns": 19,
+        "only_target_model": true,
+        "first_call_input_tokens": 12391
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 1.1032587999999999,
+        "wall_s": 365,
+        "num_turns": 31,
+        "only_target_model": true,
+        "first_call_input_tokens": 37950
+      }
+    },
+    {
+      "instance_id": "python-pillow__Pillow-9023",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.2951284,
+        "wall_s": 129,
+        "num_turns": 20,
+        "only_target_model": true,
+        "first_call_input_tokens": 12315
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 1.1116892,
+        "wall_s": 237,
+        "num_turns": 32,
+        "only_target_model": true,
+        "first_call_input_tokens": 37873
+      }
+    },
+    {
+      "instance_id": "mlte-team__mlte-809",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.3422132,
+        "wall_s": 387,
+        "num_turns": 19,
+        "only_target_model": true,
+        "first_call_input_tokens": 11062
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5853693999999999,
+        "wall_s": 337,
+        "num_turns": 17,
+        "only_target_model": true,
+        "first_call_input_tokens": 35307
+      }
+    },
+    {
+      "instance_id": "scverse__spatialdata-822",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 2,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5096018,
+        "wall_s": 1056,
+        "num_turns": 23,
+        "only_target_model": true,
+        "first_call_input_tokens": 15580
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 2,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.8209138,
+        "wall_s": 631,
+        "num_turns": 22,
+        "only_target_model": true,
+        "first_call_input_tokens": 44396
+      }
+    },
+    {
+      "instance_id": "pandas-dev__pandas-60791",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 3,
+        "fail_to_pass_total": 3,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.2073712,
+        "wall_s": 60,
+        "num_turns": 11,
+        "only_target_model": true,
+        "first_call_input_tokens": 12189
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 3,
+        "fail_to_pass_total": 3,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.44304839999999995,
+        "wall_s": 68,
+        "num_turns": 11,
+        "only_target_model": true,
+        "first_call_input_tokens": 37498
+      }
+    },
+    {
+      "instance_id": "alibaba__opensandbox-816",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5016993999999999,
+        "wall_s": 136,
+        "num_turns": 24,
+        "only_target_model": true,
+        "first_call_input_tokens": 11389
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 1.0244803999999998,
+        "wall_s": 174,
+        "num_turns": 33,
+        "only_target_model": true,
+        "first_call_input_tokens": 36021
+      }
+    },
+    {
+      "instance_id": "optuna__optuna-6428",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.2534404,
+        "wall_s": 69,
+        "num_turns": 13,
+        "only_target_model": true,
+        "first_call_input_tokens": 12115
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.4869642,
+        "wall_s": 77,
+        "num_turns": 13,
+        "only_target_model": true,
+        "first_call_input_tokens": 37412
+      }
+    },
+    {
+      "instance_id": "ucfopen__canvasapi-716",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 2,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.17592519999999998,
+        "wall_s": 41,
+        "num_turns": 9,
+        "only_target_model": true,
+        "first_call_input_tokens": 11341
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5328251999999999,
+        "wall_s": 75,
+        "num_turns": 16,
+        "only_target_model": true,
+        "first_call_input_tokens": 35912
+      }
+    },
+    {
+      "instance_id": "mmornati__home-assistant-csnet-home-132",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 5,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.23756000000000002,
+        "wall_s": 66,
+        "num_turns": 13,
+        "only_target_model": true,
+        "first_call_input_tokens": 11986
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 5,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.571906,
+        "wall_s": 76,
+        "num_turns": 16,
+        "only_target_model": true,
+        "first_call_input_tokens": 37173
+      }
+    },
+    {
+      "instance_id": "sympy__sympy-28183",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.22188360000000001,
+        "wall_s": 302,
+        "num_turns": 16,
+        "only_target_model": true,
+        "first_call_input_tokens": 11268
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.6945782,
+        "wall_s": 295,
+        "num_turns": 26,
+        "only_target_model": true,
+        "first_call_input_tokens": 35723
+      }
+    },
+    {
+      "instance_id": "lmstudio-ai__lmstudio-python-110",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.27348079999999997,
+        "wall_s": 70,
+        "num_turns": 20,
+        "only_target_model": true,
+        "first_call_input_tokens": 12050
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 2,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5596657999999999,
+        "wall_s": 87,
+        "num_turns": 17,
+        "only_target_model": true,
+        "first_call_input_tokens": 37304
+      }
+    },
+    {
+      "instance_id": "marcosschroh__dataclasses-avroschema-835",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 0,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 3,
+        "cost_usd": 0.49365760000000003,
+        "wall_s": 121,
+        "num_turns": 20,
+        "only_target_model": true,
+        "first_call_input_tokens": 11622
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 1,
+        "fail_to_pass_total": 1,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.8404284,
+        "wall_s": 122,
+        "num_turns": 20,
+        "only_target_model": true,
+        "first_call_input_tokens": 36380
+      }
+    },
+    {
+      "instance_id": "schemathesis__schemathesis-3270",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 3,
+        "fail_to_pass_total": 5,
+        "pass_to_pass_failed": 1,
+        "cost_usd": 0.39834440000000004,
+        "wall_s": 224,
+        "num_turns": 17,
+        "only_target_model": true,
+        "first_call_input_tokens": 12461
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 3,
+        "fail_to_pass_total": 5,
+        "pass_to_pass_failed": 1,
+        "cost_usd": 1.4788313999999998,
+        "wall_s": 479,
+        "num_turns": 43,
+        "only_target_model": true,
+        "first_call_input_tokens": 38137
+      }
+    },
+    {
+      "instance_id": "noppanut15__depthviz-55",
+      "base": {
+        "resolved": true,
+        "fail_to_pass_passed": 7,
+        "fail_to_pass_total": 7,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.40789719999999996,
+        "wall_s": 143,
+        "num_turns": 20,
+        "only_target_model": true,
+        "first_call_input_tokens": 11089
+      },
+      "skill": {
+        "resolved": true,
+        "fail_to_pass_passed": 7,
+        "fail_to_pass_total": 7,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.7308194000000001,
+        "wall_s": 136,
+        "num_turns": 25,
+        "only_target_model": true,
+        "first_call_input_tokens": 35416
+      }
+    },
+    {
+      "instance_id": "collective__icalendar-880",
+      "base": {
+        "resolved": false,
+        "fail_to_pass_passed": 5,
+        "fail_to_pass_total": 9,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.29731660000000004,
+        "wall_s": 122,
+        "num_turns": 21,
+        "only_target_model": true,
+        "first_call_input_tokens": 11714
+      },
+      "skill": {
+        "resolved": false,
+        "fail_to_pass_passed": 5,
+        "fail_to_pass_total": 9,
+        "pass_to_pass_failed": 0,
+        "cost_usd": 0.5098588000000001,
+        "wall_s": 132,
+        "num_turns": 15,
+        "only_target_model": true,
+        "first_call_input_tokens": 36623
+      }
+    }
+  ]
+}
