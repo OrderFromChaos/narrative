@@ -78,9 +78,21 @@ is 0.
 before. spaCy has no coreference resolution, so a reader names the noun for each pronoun. The list is no
 finding, and the exit code is 0.
 
+Without --since, each of the two lists stops after 1000 entries, with the command for the next 1000:
+--from-pair N with --review, and --from-pronoun N with --pronouns. With --all-sentences, every entry
+is listed.
+
+With --since REF, only the comment and docstring passages with a line that the diff against
+merge-base(HEAD, REF) adds or changes are checked and listed. A page is checked whole.
+
+With --cache PATH, the spaCy results of each passage are kept in PATH between runs, keyed by the
+text of the passage. The cache is discarded when agentverbs.py, words.json, spaCy or the spaCy
+model changes, and spaCy is loaded only when a passage is not in the cache.
+
 Exit codes:
     0  nothing flagged, or a review or pronoun list printed
     1  at least one line flagged
+    2  git failed for --since, or REF names no commit
 """
 
 from __future__ import annotations
@@ -88,13 +100,18 @@ from __future__ import annotations
 import argparse
 import ast
 import bisect
+import hashlib
+import importlib.metadata
 import itertools
 import json
 import re
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeVar, cast
 
+import checks
 import prose
 import spacy
 from prose import Passage
@@ -217,21 +234,52 @@ def main() -> int:
     parser.add_argument('--score', type=Path, help='score against a label<TAB>text file')
     parser.add_argument('--review', action='store_true', help='list every other subject that cannot act, with its verb')
     parser.add_argument('--pronouns', action='store_true', help='list every sentence with a pronoun, for the review')
+    parser.add_argument('--from-pair', type=int, default=1, help='with --review, start the list at this pair')
+    parser.add_argument('--from-pronoun', type=int, default=1, help='with --pronouns, start the list at this sentence')
+    parser.add_argument('--all-sentences', action='store_true', help='with --review or --pronouns, list every entry')
+    parser.add_argument('--since', help='check only the passages changed since merge-base(HEAD, SINCE)')
+    parser.add_argument('--cache', type=Path, help='a file that keeps the spaCy results between runs')
     args = parser.parse_args()
 
-    reader = SentenceReader.load(WORDS_PATH)
+    reader = CachedReader.open(args.cache)
     if args.score:
         return scoreLabels(reader, args.score)
+    try:
+        changed = checks.readChangedLines(args.since, Path.cwd(), '*.py') if args.since else None
+    except checks.GitError as exc:
+        print(f'agentverbs.py: {exc}', file=sys.stderr)
+        return 2
+
+    checked_files = discoverFiles(args.paths)
+    if changed is not None:
+        checked_files = [path for path in checked_files if checks.isPage(path) or path.resolve() in changed]
+    paged = changed is None and not args.all_sentences
+    cache_arguments = ['--cache', str(args.cache)] if args.cache else []
     if args.review:
-        for checked_file in discoverFiles(args.paths):
-            for line, pair in reviewFile(reader, checked_file):
-                print(f'{checked_file}:{line}: {pair!r}')
+        listed = [
+            f'{checked_file}:{line}: {pair!r}'
+            for checked_file in checked_files
+            for line, pair in reviewFile(reader, checked_file, checks.changedLinesOf(changed, checked_file))
+        ]
+        if paged:
+            option = ['agentverbs.py', '--review', '--from-pair']
+            arguments = [*args.paths, *cache_arguments]
+            listed = checks.listPage(listed, args.from_pair, unit='pairs', option=option, arguments=arguments)
+        print(*listed, sep='\n')
+        reader.save()
         return 0
     if args.pronouns:
-        for checked_file in discoverFiles(args.paths):
-            for listed in pronounFile(reader, checked_file):
-                after = f' after {listed.previous!r}' if listed.previous else ''
-                print(f'{checked_file}:{listed.line}: {listed.pronouns}: {listed.sentence!r}{after}')
+        listed = []
+        for checked_file in checked_files:
+            for entry in pronounFile(reader, checked_file, checks.changedLinesOf(changed, checked_file)):
+                after = f' after {entry.previous!r}' if entry.previous else ''
+                listed.append(f'{checked_file}:{entry.line}: {entry.pronouns}: {entry.sentence!r}{after}')
+        if paged:
+            option = ['agentverbs.py', '--pronouns', '--from-pronoun']
+            arguments = [*args.paths, *cache_arguments]
+            listed = checks.listPage(listed, args.from_pronoun, unit='sentences', option=option, arguments=arguments)
+        print(*listed, sep='\n')
+        reader.save()
         return 0
     if args.lines:
         flagged = 0
@@ -248,8 +296,9 @@ def main() -> int:
         return 1 if flagged else 0
 
     findings: list[Finding] = []
-    for checked_file in discoverFiles(args.paths):
-        findings.extend(checkFile(reader, checked_file))
+    for checked_file in checked_files:
+        findings.extend(checkFile(reader, checked_file, checks.changedLinesOf(changed, checked_file)))
+    reader.save()
     messages = {
         CODE: MESSAGE,
         FRAGMENT_CODE: FRAGMENT_MESSAGE,
@@ -262,7 +311,7 @@ def main() -> int:
     return 1 if findings else 0
 
 
-def scoreLabels(reader: SentenceReader, labels_path: Path) -> int:
+def scoreLabels(reader: CachedReader, labels_path: Path) -> int:
     """Compare the check with hand labels: `agent` or `ok`, a tab, then the line.
 
     Returns:
@@ -303,12 +352,13 @@ def discoverFiles(paths: list[Path]) -> list[Path]:
     return files
 
 
-def checkFile(reader: SentenceReader, checked_file: Path) -> list[Finding]:
+def checkFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] | None = None) -> list[Finding]:
     """Flag every comment and docstring passage of a Python file, or every passage of a page.
 
     A passage is checked as one text, so a sentence wrapped over several lines is parsed whole. In a
     Python file, a noqa on any line of a passage silences that code for the whole passage. A paragraph
     of a page can run to many sentences, so in a page a noqa silences only the findings on the line of the noqa.
+    With `changed_lines`, only the passages with a changed line are checked.
 
     Returns:
         One finding per agent verb and per clause with no subject, on the line of the finding's last word.
@@ -318,14 +368,17 @@ def checkFile(reader: SentenceReader, checked_file: Path) -> list[Finding]:
         suppressed = prose.suppressedCodes(source)
         findings = passageFindings(reader, checked_file, prose.readPassages(checked_file), {}, page=True)
         return [f for f in findings if not (suppressed.get(f.line, set()) & {f.code, 'ALL'})]
-    passages = [*prose.commentPassages(source), *prose.docstringPassages(ast.parse(source))]
+    passages = changedPassages(
+        [*prose.commentPassages(source), *prose.docstringPassages(ast.parse(source))],
+        changed_lines,
+    )
     codes = (CODE, FRAGMENT_CODE, CONNECTIVE_CODE, PRONOUN_CODE)
     silenced = {code: silencedLines(source, code) for code in codes}
     return passageFindings(reader, checked_file, passages, silenced, page=False)
 
 
 def passageFindings(
-    reader: SentenceReader,
+    reader: CachedReader,
     checked_file: Path,
     passages: list[Passage],
     silenced: dict[str, set[int]],
@@ -352,8 +405,14 @@ def passageFindings(
     return findings
 
 
-def reviewFile(reader: SentenceReader, checked_file: Path) -> list[tuple[int, str]]:
+def reviewFile(
+    reader: CachedReader,
+    checked_file: Path,
+    changed_lines: set[int] | None = None,
+) -> list[tuple[int, str]]:
     """List the subject and verb pairs of one file for review, leaving out what a NAR017 noqa silences.
+
+    With `changed_lines`, only the passages with a changed line are listed.
 
     Returns:
         The line and the `subject verb` of each pair, in passage order.
@@ -364,7 +423,10 @@ def reviewFile(reader: SentenceReader, checked_file: Path) -> list[tuple[int, st
         passages = prose.readPassages(checked_file)
         silenced = {number for number, codes in prose.suppressedCodes(source).items() if codes & {CODE, 'ALL'}}
     else:
-        passages = [*prose.commentPassages(source), *prose.docstringPassages(ast.parse(source))]
+        passages = changedPassages(
+            [*prose.commentPassages(source), *prose.docstringPassages(ast.parse(source))],
+            changed_lines,
+        )
         silenced = silencedLines(source, CODE)
     pairs: list[tuple[int, str]] = []
     for passage in sorted(passages, key=lambda passage: passage.lines[0]):
@@ -377,8 +439,10 @@ def reviewFile(reader: SentenceReader, checked_file: Path) -> list[tuple[int, st
     return pairs
 
 
-def pronounFile(reader: SentenceReader, checked_file: Path) -> list[PronounLine]:
+def pronounFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] | None = None) -> list[PronounLine]:
     """List each sentence of one file with a pronoun, for the review.
+
+    With `changed_lines`, only the passages with a changed line are listed.
 
     Returns:
         One entry per sentence, in passage order.
@@ -387,7 +451,10 @@ def pronounFile(reader: SentenceReader, checked_file: Path) -> list[PronounLine]
     if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
         passages = prose.readPassages(checked_file)
     else:
-        passages = [*prose.commentPassages(source), *prose.docstringPassages(ast.parse(source))]
+        passages = changedPassages(
+            [*prose.commentPassages(source), *prose.docstringPassages(ast.parse(source))],
+            changed_lines,
+        )
     listed: list[PronounLine] = []
     for passage in sorted(passages, key=lambda passage: passage.lines[0]):
         # Passage.text is the lines joined by single spaces. ends is the offset after each line, for bisect_right()
@@ -398,6 +465,10 @@ def pronounFile(reader: SentenceReader, checked_file: Path) -> list[PronounLine]
             line = passage.lines[bisect.bisect_right(ends, cursor)]
             listed.append(PronounLine(line, pronouns, sentence, previous))
     return listed
+
+
+def changedPassages(passages: list[Passage], changed_lines: set[int] | None) -> list[Passage]:
+    return [passage for passage in passages if changed_lines is None or changed_lines & set(passage.lines)]
 
 
 def silencedLines(source: str, code: str) -> set[int]:
@@ -933,6 +1004,91 @@ class SentenceReader:
         if IDENTIFIER.search(subject.text):
             return False
         return subject.lower_ in self.animate_nouns or subject.lemma_.lower() in self.animate_nouns
+
+
+# a result of SentenceReader, kept by CachedReader
+Result = TypeVar('Result')
+
+
+class CachedReader:
+    """The checks of SentenceReader, with the results of each passage text kept between runs.
+
+    spaCy is loaded at the first text that is not in the cache.
+    """
+
+    def __init__(self, cache_path: Path | None, key: str, entries: dict[str, dict[str, object]]) -> None:
+        self.cache_path = cache_path
+        self.key = key
+        self.entries = entries
+        self.reader: SentenceReader | None = None
+        self.changed = False
+
+    @classmethod
+    def open(cls, cache_path: Path | None) -> CachedReader:
+        """Read the cache, or start an empty one when the cache is absent, unreadable or of another version."""
+        versions = [
+            hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            hashlib.sha256(WORDS_PATH.read_bytes()).hexdigest(),
+            importlib.metadata.version('spacy'),
+            importlib.metadata.version(MODEL),
+        ]
+        key = ' '.join(versions)
+        entries: dict[str, dict[str, object]] = {}
+        if cache_path is not None and cache_path.is_file():
+            try:
+                stored = json.loads(cache_path.read_text(encoding='utf-8'))
+            except (OSError, json.JSONDecodeError):
+                stored = {}
+            if isinstance(stored, dict) and stored.get('key') == key and isinstance(stored.get('entries'), dict):
+                entries = stored['entries']
+        return cls(cache_path, key, entries)
+
+    def agentVerbs(self, text: str) -> list[str]:
+        return self._cached(text, 'verbs', lambda reader: reader.agentVerbs(text))
+
+    def fragments(self, text: str) -> list[str]:
+        return self._cached(text, 'heads', lambda reader: reader.fragments(text))
+
+    def connectives(self, text: str, *, page: bool) -> list[str]:
+        name = 'page_connectives' if page else 'connectives'
+        return self._cached(text, name, lambda reader: reader.connectives(text, page=page))
+
+    def ambiguousPronouns(self, text: str) -> list[str]:
+        return self._cached(text, 'pronouns', lambda reader: reader.ambiguousPronouns(text))
+
+    def reviewPairs(self, text: str) -> list[str]:
+        return self._cached(text, 'pairs', lambda reader: reader.reviewPairs(text))
+
+    def pronounSentences(self, text: str) -> list[tuple[str, str, str]]:
+        # JSON has no tuple, so each entry is stored in the cache as a list
+        stored = self._cached(
+            text,
+            'pronoun_sentences',
+            lambda reader: [list(row) for row in reader.pronounSentences(text)],
+        )
+        return [(pronouns, sentence, previous) for pronouns, sentence, previous in stored]
+
+    def save(self) -> None:
+        """Write the cache when an entry was added.
+
+        The cache is written to a temporary file, then renamed to cache_path.
+        """
+        if self.cache_path is None or not self.changed:
+            return
+
+        self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = self.cache_path.with_suffix('.tmp')
+        temporary_path.write_text(json.dumps({'key': self.key, 'entries': self.entries}), encoding='utf-8')
+        temporary_path.replace(self.cache_path)
+
+    def _cached(self, text: str, name: str, compute: Callable[[SentenceReader], Result]) -> Result:
+        entry = self.entries.setdefault(hashlib.sha1(text.encode('utf-8')).hexdigest(), {})
+        if name not in entry:
+            if self.reader is None:
+                self.reader = SentenceReader.load(WORDS_PATH)
+            entry[name] = compute(self.reader)
+            self.changed = True
+        return cast(Result, entry[name])
 
 
 if __name__ == '__main__':

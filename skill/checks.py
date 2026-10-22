@@ -9,6 +9,14 @@ as a comment.
 A Markdown, HTML or plain text file named on the command line gets the wording checks only, on the
 passages that prose.py reads from the file. A directory expands to its Python files.
 
+With --since REF, only the Python files that the diff against merge-base(HEAD, REF) adds or changes
+are checked, and a finding is reported only when the finding's lines overlap the changed lines. The
+lines of a finding in a comment or docstring are the lines of the passage, and the lines of a
+finding on a `def` or `class` line are the lines of the definition. A page is checked whole.
+
+--prose lists every sentence of every comment, docstring and page. Without --since, the list stops
+after 1000 sentences, with the command for the next 1000.
+
 See tooling.md for what the other tools own.
 
 Usage:
@@ -16,10 +24,13 @@ Usage:
     $ python3 checks.py src/loader.py src/report.py
     $ python3 checks.py README.md docs/report.html
     $ python3 checks.py src/ --select NAR001 --select NAR006
+    $ python3 checks.py src/ --since origin/main
+    $ python3 checks.py src/ README.md --prose --from-sentence 1001
 
 Exit codes:
     0  nothing found
     1  at least one finding
+    2  git failed for --since, or REF names no commit
 """
 
 from __future__ import annotations
@@ -28,8 +39,10 @@ import argparse
 import ast
 import io
 import re
+import subprocess
 import sys
 import tokenize
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -71,8 +84,9 @@ RETIRED = {
 
 
 TYPE_FACTORY_CALLS = frozenset({'NewType', 'TypeVar', 'ParamSpec', 'TypeVarTuple', 'NamedTuple', 'TypedDict'})
-# the number of sentences that --prose lists, from --from-sentence, unless --all-sentences is given
-SENTENCE_PAGE = 1000
+# the number of entries of each review list without --since and --all-sentences: the sentences of --prose here,
+# and the pairs and the pronoun sentences of agentverbs.py
+LIST_PAGE = 1000
 # matches:
 # `vocabulary #####`, a divider between sections of a file
 DIVIDER = re.compile(r'[-=#~*]{4,}$')
@@ -90,26 +104,41 @@ def main() -> int:
     parser.add_argument('--prose', action='store_true', help='list every sentence of every comment, docstring and page')
     parser.add_argument('--from-sentence', type=int, default=1, help='with --prose, start at this sentence')
     parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every sentence')
+    parser.add_argument('--since', help='report only lines changed since merge-base(HEAD, SINCE)')
     args = parser.parse_args()
 
     targets: list[Path] = []
     for target in args.paths:
         targets.extend(sorted(discoverPython(target)) if target.is_dir() else [target])
+    try:
+        changed = readChangedLines(args.since, Path.cwd(), '*.py') if args.since else None
+    except GitError as exc:
+        print(f'checks.py: {exc}', file=sys.stderr)
+        return 2
+
+    if changed is not None:
+        targets = [target for target in targets if isPage(target) or target.resolve() in changed]
 
     if args.prose:
         listed: list[str] = []
         for checked_file in targets:
             shown = checked_file.relative_to(Path.cwd()) if checked_file.is_relative_to(Path.cwd()) else checked_file
-            listed.extend(f'{shown}:{number}: {text}' for number, text in proseInventory(checked_file))
-        if not args.all_sentences:
-            listed = sentencePage(listed, args.from_sentence, program='checks.py', paths=args.paths)
+            inventory = proseInventory(checked_file, changedLinesOf(changed, checked_file))
+            listed.extend(f'{shown}:{number}: {text}' for number, text in inventory)
+        if changed is None and not args.all_sentences:
+            option = ['checks.py', '--prose', '--from-sentence']
+            listed = listPage(listed, args.from_sentence, unit='sentences', option=option, arguments=args.paths)
         for entry in listed:
             print(entry)
         return 0
 
     findings: list[Finding] = []
     for checked_file in targets:
-        findings.extend(checkFile(checked_file))
+        found = checkFile(checked_file)
+        if (changed_lines := changedLinesOf(changed, checked_file)) is not None:
+            spans = changeSpans(checked_file)
+            found = [f for f in found if f.code == 'NAR000' or inChange(changed_lines, spans, f.line)]
+        findings.extend(found)
     if args.select:
         findings = [f for f in findings if f.code in args.select]
 
@@ -822,12 +851,13 @@ def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> li
     return findings
 
 
-def proseInventory(checked_file: Path) -> list[tuple[int, str]]:
+def proseInventory(checked_file: Path, changed_lines: set[int] | None = None) -> list[tuple[int, str]]:
     """List every sentence of every comment and docstring in one file, or of one page, in line order.
 
     A Markdown, HTML or plain text page is prose throughout, so every sentence of the page is listed.
     The lines of a comment, a docstring or a paragraph are joined first, so a sentence wrapped over
-    several lines is listed whole, on the line where the sentence starts.
+    several lines is listed whole, on the line where the sentence starts. With `changed_lines`, only
+    the passages with a changed line are listed.
 
     Returns:
         Line number and sentence, or nothing for a file that cannot be read or parsed.
@@ -841,24 +871,125 @@ def proseInventory(checked_file: Path) -> list[tuple[int, str]]:
     except (OSError, UnicodeDecodeError, SyntaxError):
         return []
 
-    sentences = [pair for passage in passages for pair in passage.sentences()]
+    kept = [passage for passage in passages if changed_lines is None or changed_lines & set(passage.lines)]
+    sentences = [pair for passage in kept for pair in passage.sentences()]
     # sorted() is stable, so with the line as the key, two sentences on one line are listed in reading order
     return sorted((pair for pair in sentences if not DIVIDER.search(pair[1])), key=lambda pair: pair[0])
 
 
-def sentencePage(listed: list[str], first: int, *, program: str, paths: list[Path]) -> list[str]:
-    """Cut the sentence list to SENTENCE_PAGE entries from sentence `first`, counted from 1.
+def listPage(
+    listed: list[str],
+    first: int,
+    *,
+    unit: str,
+    option: list[str],
+    arguments: Sequence[Path | str],
+) -> list[str]:
+    """Cut a review list to LIST_PAGE entries from entry `first`, counted from 1.
+
+    Args:
+        listed: Every entry of the list.
+        first: The first entry to keep.
+        unit: The entries in the plural, such as `sentences`, for the line on the entries left out.
+        option: The program and the options of the command for the next entries, up to the number.
+        arguments: The paths and options of the command for the next entries, after the number.
 
     Returns:
-        The entries, then a line with the number left out and the `program` command for the next page.
+        The entries, then a line with the number left out and the command for the next entries.
     """
-    end = first - 1 + SENTENCE_PAGE
+    end = first - 1 + LIST_PAGE
     page = listed[first - 1 : end]
     if end < len(listed):
-        command = ' '.join([program, '--prose', '--from-sentence', str(end + 1), *(str(p) for p in paths)])
-        left_out = f'... {len(listed) - end} left out of {len(listed)} sentences'
-        page.append(f'{left_out}. For the next {SENTENCE_PAGE}: {command}')
+        command = ' '.join([*option, str(end + 1), *(str(argument) for argument in arguments)])
+        page.append(f'... {len(listed) - end} left out of {len(listed)} {unit}. For the next {LIST_PAGE}: {command}')
     return page
+
+
+def readChangedLines(since: str, any_repo_path: Path, pattern: str) -> ChangedLines:
+    """List the lines that the diff against merge-base(HEAD, since) adds or changes, per file that matches `pattern`.
+
+    For a hunk that only deletes lines, the line below the deleted lines is listed, so a finding on that
+    line is reported under --since. Every line of an untracked file is listed.
+
+    Raises:
+        GitError: git fails, or `since` names no commit.
+    """
+    # matches:
+    # `@@ -10,2 +12,3 @@ def readPlan(path):`
+    # `@@ -4 +4 @@`
+    HUNK = re.compile(r'^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@')
+    repo_root = Path(runGit(['rev-parse', '--show-toplevel'], any_repo_path).strip())
+    base = runGit(['merge-base', 'HEAD', since], repo_root).strip()
+    changed: ChangedLines = {}
+    current: Path | None = None
+    for diff_line in runGit(['diff', '-M', '--unified=0', base, '--', pattern], repo_root).splitlines():
+        if diff_line.startswith('+++ '):
+            new_name = diff_line.removeprefix('+++ ')
+            current = None if new_name == '/dev/null' else (repo_root / new_name.removeprefix('b/')).resolve()
+        elif current is not None and (hunk := HUNK.match(diff_line)):
+            start, count = int(hunk['start']), int(hunk['count'] or '1')
+            changed.setdefault(current, set()).update(range(start, start + count) if count else {start + 1})
+
+    for untracked in runGit(['ls-files', '--others', '--exclude-standard', '--', pattern], repo_root).splitlines():
+        untracked_path = (repo_root / untracked).resolve()
+        line_count = len(untracked_path.read_text(encoding='utf-8', errors='replace').splitlines())
+        changed.setdefault(untracked_path, set()).update(range(1, line_count + 1))
+    return changed
+
+
+def runGit(arguments: list[str], repo_path: Path) -> str:
+    """Run one git command in the repository.
+
+    Raises:
+        GitError: git exits nonzero.
+    """
+    result = subprocess.run(['git', '-C', str(repo_path), *arguments], capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise GitError(f'git {" ".join(arguments)} failed: {result.stderr.strip()}')
+    return result.stdout
+
+
+def changeSpans(checked_file: Path) -> Spans:
+    """Map a line of a Python file to the lines that count for --since when a finding is on that line.
+
+    A finding on the line of a `def` or `class` counts for every line of the definition. A finding on a
+    line of a comment or docstring passage counts for every line of the passage. Any other line counts
+    for itself, and is not in the map.
+
+    Returns:
+        The lines of the definition or the passage, by line. Empty for a file that cannot be read or parsed.
+    """
+    try:
+        source = checked_file.read_text(encoding='utf-8')
+        tree = ast.parse(source)
+    except (OSError, UnicodeDecodeError, SyntaxError):
+        return {}
+
+    spans: Spans = {}
+    for passage in [*prose.commentPassages(source), *prose.docstringPassages(tree)]:
+        spans.update(dict.fromkeys(passage.lines, frozenset(passage.lines)))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) and node.end_lineno is not None:
+            spans[node.lineno] = frozenset(range(node.lineno, node.end_lineno + 1))
+    return spans
+
+
+def inChange(changed_lines: set[int], spans: Spans, line: int) -> bool:
+    return bool(spans.get(line, frozenset({line})) & changed_lines)
+
+
+def changedLinesOf(changed: ChangedLines | None, checked_file: Path) -> set[int] | None:
+    """Return the changed lines of a Python file under --since, or None for a file that is checked whole.
+
+    With no --since, and for a page, every line is checked.
+    """
+    if changed is None or isPage(checked_file):
+        return None
+    return changed.get(checked_file.resolve(), set())
+
+
+def isPage(checked_file: Path) -> bool:
+    return checked_file.suffix.lower() in prose.PROSE_SUFFIXES
 
 
 def commentLines(source: str) -> list[tuple[int, str]]:
@@ -970,6 +1101,16 @@ class Finding:
 
     def __str__(self) -> str:
         return f'{self.checked_file}:{self.line}: {self.code} {self.detail}'
+
+
+class GitError(RuntimeError):
+    pass
+
+
+# the changed lines of each file, by resolved path
+ChangedLines = dict[Path, set[int]]
+# the lines that count for --since when a finding is on a line, by line
+Spans = dict[int, frozenset[int]]
 
 
 if __name__ == '__main__':
