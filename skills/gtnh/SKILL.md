@@ -1,5 +1,5 @@
 ---
-name: java
+name: gtnh
 description: Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods on Java 25 with jvmDowngrader. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, and when reviewing a Java diff against this style. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages.
 ---
 **Before you write or review anything, load the skill `nar:core` with the Skill tool**, unless
@@ -36,7 +36,7 @@ ids are provenance. They resolve in `benchmark/decisions.jsonl` in the source re
 
 ## Scope
 
-narrative-java checks **Java 25 projects only**: GTNHGradle projects with
+narrative-gtnh checks **Java 25 projects only**: GTNHGradle projects with
 `enableModernJavaSyntax = jvmDowngrader` or `modern` in `gradle.properties`. `verify.py` exits 2 on any
 other value, and on `forceToolchainVersion` other than `-1` or `25`. A `jabel` project has Java 17
 syntax and the Java 8 library, so records and `List.copyOf()` are not available. (J1-P05)
@@ -467,10 +467,10 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
   through a localization call: `StatCollector.translateToLocal(key)`,
   `StatCollector.translateToLocalFormatted(key, values)`, `ChatComponentTranslation`, or MUI2
   `IKey.lang(key)`. No literal user-facing text in code, so not `IKey.str("Machines")` and not
-  `new ChatComponentText("Done")`. `NAR113` flags literal text in those calls. (J1-S15)
+  `new ChatComponentText("Done")`. `NAR113-gtnh` flags literal text in those calls. (J1-S15)
 
 - **In user-facing text, never `+`.** Put `%s` placeholders in the lang entry, `%s%s` where two values
-  are joined, and pass the values to the localization call. `NAR112` flags a `+` in or after one.
+  are joined, and pass the values to the localization call. `NAR112-gtnh` flags a `+` in or after one.
   (J1-P04)
 
   ```
@@ -490,7 +490,7 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
 
 - **No allocation in a per-frame or draw method.** Reuse buffers and primitive containers. On a wrap
   or measure path, use an identity-keyed cache, `if (source == wrappedFor) return;`, with a dirty flag
-  at the source, so a steady frame recomputes nothing. `NAR114` flags `new` and `.stream()` in a
+  at the source, so a steady frame recomputes nothing. `NAR114-gtnh` flags `new` and `.stream()` in a
   `draw*` or `render*` method. (J1-S03)
 
 - **Optional instrumentation is called through an interface.** The implementation for "off" is a

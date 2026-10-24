@@ -1,4 +1,4 @@
-# Narrative Java
+# Narrative GTNH
 
 Makes Claude's Java for GTNH mods read like a reviewed upstream PR: the comment rules and NLP lint of
 [Narrative](https://github.com/OrderFromChaos/narrative), 30 Java and GTNH checks, and a `--since` mode
@@ -28,10 +28,10 @@ A run on a PlanNH clone with one method added to `MachineProfile.java` and one n
 shortened):
 
 ```
-$ python3 ~/.claude/skills/narrative-java/verify.py --since origin/dev
+$ python3 ~/.claude/skills/narrative-gtnh/verify.py --since origin/dev
 gradle         spotless, compileJava, narrativeCheckstyle and narrativePmd ran
 ./src/main/java/com/sbancuz/plannh/Planted.java:3: NAR118 Planted has no javadoc. A top-level type has one of at least one sentence
-./src/main/java/com/sbancuz/plannh/Planted.java:5: NAR124 package-private member. Make it private or public
+./src/main/java/com/sbancuz/plannh/Planted.java:5: NAR124-gtnh package-private member. Make it private or public
 ./src/main/java/com/sbancuz/plannh/data/MachineProfile.java:125: NAR017 'profile knows'
 ./src/main/java/com/sbancuz/plannh/data/MachineProfile.java:126: NAR104 fully-qualified name in code. Import the type
 4 findings, 0 warnings over 226 files
@@ -49,7 +49,7 @@ In Claude Code:
 ```
 
 Then open `/plugin`, go to **Marketplaces**, select `narrative` and select **Enable
-auto-update**. Invoke the skill as `/nar:java`, or let Claude load the skill when a task involves
+auto-update**. Invoke the skill as `/nar:gtnh`, or let Claude load the skill when a task involves
 Java for a GTNH mod. If you installed `narrative-java@narrative-java`, uninstall it first. That
 repository is archived.
 
@@ -59,12 +59,13 @@ repository is archived.
 git clone git@github.com:OrderFromChaos/narrative.git
 cd narrative
 
-./install.sh java
+./install.sh gtnh
 ```
 
-`install.sh` copies the files of `skills/java/` to `~/.claude/skills/narrative-java`, or to the
-path you give after the skill name. Invoke the skill as `/narrative-java`. **To update, run
-`git pull && ./install.sh java`.**
+`install.sh` copies the files of `skills/gtnh/` to `~/.claude/skills/narrative-gtnh`, or to the
+path you give after the skill name. Invoke the skill as `/narrative-gtnh`. **To update, run
+`git pull && ./install.sh gtnh`.** If you installed the skill by hand as `narrative-java` before,
+delete `~/.claude/skills/narrative-java`, or Claude loads both copies.
 
 ### The lint venv
 
@@ -77,7 +78,7 @@ come from Maven Central on the first run.
 # Details
 
 - [`rules/`](rules/): the rules, one module per section. `python3 build_skills.py` at the repository
-  root joins the modules into `skills/java/SKILL.md`. [`architecture.md`](architecture.md):
+  root joins the modules into `skills/gtnh/SKILL.md`. [`architecture.md`](architecture.md):
   packages and other mods. [`tooling.md`](tooling.md): the job of each tool, every NAR code, and the
   tool defaults that break a rule.
 - [`benchmark/decisions.jsonl`](../../benchmark/decisions.jsonl): one record per decision of every

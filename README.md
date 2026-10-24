@@ -73,6 +73,13 @@ Some examples of (2):
 
 ⚠️ This skill has an opinionated unidirectional ordering for code (`main()` first, then the steps `main()` calls in call order, then the types). This does produce readable and pleasing code, but may lead to stylistic differences between your PR and the rest of your codebase. **It will not force migrate the rest of your codebase to this style unless you tell the skill to.**
 
+## Usage
+
+Python: `/nar:python`
+GTNH Java: `/nar:java`
+Mixed languages: `/nar:code`
+Docs/pages: `/nar:core`
+
 ## Install
 
 ### As a plugin (updates itself)
@@ -85,17 +92,11 @@ In Claude Code:
 ```
 
 Then open `/plugin`, go to **Marketplaces**, select `narrative` and select **Enable auto-update**.
-Each push to this repository then reaches you at your next session. Invoke the skill as `/nar:python`,
-or let Claude load the skill when a task involves Python. The plugin has the Java skill for GTNH mods
-too, as `/nar:java`. If you installed the plugin under its earlier name, run
+Each push to this repository will update the skill.
+
+If you installed the plugin under its earlier name, run
 `/plugin uninstall narrative-python@narrative-python` and `/plugin marketplace remove narrative-python`
 first.
-
-The rules for comments, docstrings and pages are in a separate skill, `nar:core`. `/nar:python` and
-`/nar:java` load `nar:core` themselves, so you never invoke `nar:core`. In a repository with more
-than one language, such as a mod with Python scripts, invoke `/nar:code`. `/nar:code` counts the
-source files of each language, and Claude then loads the skill of each language with source files,
-and `nar:core` once.
 
 The first time Claude runs the checks, Claude sets up the shared lint venv in
 `~/.local/share/narrative/lintenv` (`%LOCALAPPDATA%\narrative\lintenv` on Windows), with `uv`.
@@ -131,7 +132,7 @@ shared rules of `skills/core/` to `~/.claude/skills/narrative-core`. To install
 to another path, give the skill name and then the path:
 `./install.sh python ~/.config/claude/skills/narrative-python`. Invoke the skill as
 `/narrative-python`, or let Claude load the skill when a task involves Python. For the Java skill of
-GTNH mods, run `./install.sh java`. See `lang/java/README.md`.
+GTNH mods, run `./install.sh gtnh`. See `lang/java/README.md`.
 
 `skills/` is generated. The rules shared by every language are in `core/`, the rules and tools of
 each language are in `lang/python/` and `lang/java/`, and `skills.toml` lists the modules of each

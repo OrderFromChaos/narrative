@@ -1,6 +1,6 @@
 ## Scope
 
-narrative-java checks **Java 25 projects only**: GTNHGradle projects with
+narrative-gtnh checks **Java 25 projects only**: GTNHGradle projects with
 `enableModernJavaSyntax = jvmDowngrader` or `modern` in `gradle.properties`. `verify.py` exits 2 on any
 other value, and on `forceToolchainVersion` other than `-1` or `25`. A `jabel` project has Java 17
 syntax and the Java 8 library, so records and `List.copyOf()` are not available. (J1-P05)

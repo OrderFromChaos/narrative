@@ -1,7 +1,9 @@
 # The entry skills of Narrative. A table with `modules` is the skill of one language: the rules are
 # the modules in the order given, the tools are the files in `files`, and `suffixes` names the
-# language's source files. A table with `combines` is a skill for a repository with several
-# languages: the rules of each combined language that the repository has.
+# language's source files. `marker`, when given, names build files at the repository root and a text
+# that one of them must contain, or a combined skill does not load the skill. A table with `combines`
+# is a skill for a repository with several languages: the rules of each combined language that the
+# repository has.
 #
 # build_skills.py writes skills/<name>/: a SKILL.md with the frontmatter and one line that runs
 # assemble.py when the skill loads, and a copy of each file in `files`. skills/ is generated. Edit
@@ -54,7 +56,7 @@ requires = ["core"]
 
 
 [core]
-description = "The Narrative rules for comments, docstrings, javadoc, error messages, help text and published pages such as a README, in every language. Load with nar:python or nar:java whenever code is written or reviewed, and alone to write or review a page."
+description = "The Narrative rules for comments, docstrings, javadoc, error messages, help text and published pages such as a README, in every language. Load with nar:python or nar:gtnh whenever code is written or reviewed, and alone to write or review a page."
 modules = [
     "core/rules/intro.md",
     "core/rules/comments.md",
@@ -63,7 +65,7 @@ modules = [
     "core/rules/published-prose.md",
 ]
 
-[java]
+[gtnh]
 description = "Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods on Java 25 with jvmDowngrader. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, and when reviewing a Java diff against this style. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages."
 modules = [
     "lang/java/rules/load-core.md",
@@ -106,8 +108,10 @@ files = [
     "core/tools/requirements-lock.txt",
 ]
 suffixes = [".java"]
+# a GTNH build applies the GTNH settings plugin in settings.gradle or settings.gradle.kts
+marker = { files = ["settings.gradle", "settings.gradle.kts"], contains = "com.gtnewhorizons.gtnhsettingsconvention" }
 requires = ["core"]
 
 [code]
-description = "Write or review code in the Narrative house style in a repository with more than one language, such as a Java mod with Python scripts. Loads the rules of each language the repository has, Python and Java. Use when a change spans languages; for one language, nar:python or nar:java load less."
-combines = ["python", "java"]
+description = "Write or review code in the Narrative house style in a repository with more than one language, such as a GTNH mod with Python scripts. Loads the rules of each language the repository has: Python, and Java in a GTNH build. Use when a change spans languages; for one language, nar:python or nar:gtnh load less."
+combines = ["python", "gtnh"]

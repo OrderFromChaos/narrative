@@ -30,7 +30,7 @@ PROSE_SUFFIXES = frozenset({'.md', '.markdown', '.html', '.htm', '.txt'})
 # matches:
 # `<!-- noqa -->`
 # `<!-- noqa: NAR017, NAR013 -->`
-NOQA_COMMENT = re.compile(r'<!--\s*noqa(?::\s*(?P<codes>[A-Z0-9, ]+?))?\s*-->')
+NOQA_COMMENT = re.compile(r'<!--\s*noqa(?::\s*(?P<codes>(?:[A-Z0-9]+(?:-[a-z]+)?[, ]*)+?))?\s*-->')
 # matches:
 # a fence of three or more backticks or tildes, with or without a language
 FENCE = re.compile(r'\s*(?:```|~~~)')

@@ -1,4 +1,4 @@
-"""Run the narrative-java toolchain over a GTNH mod, or the prose checks over pages.
+"""Run the narrative-gtnh toolchain over a GTNH mod, or the prose checks over pages.
 
 Use this instead of calling the tools by hand. A missing tool, report or JDK is exit 2, so a pass
 means every check ran.
@@ -71,7 +71,7 @@ EXIT_NO_TOOLCHAIN = 2
 
 def main() -> int:
     """Check the prerequisites, run Gradle with the init script, and run javachecks.py on Gradle's reports."""
-    parser = argparse.ArgumentParser(description='Run the narrative-java toolchain.')
+    parser = argparse.ArgumentParser(description='Run the narrative-gtnh toolchain.')
     parser.add_argument(
         'paths',
         nargs='*',
@@ -89,7 +89,7 @@ def main() -> int:
         help='list every entry of the review lists, not the first 1000 of each',
     )
     args = parser.parse_args()
-    print(f'narrative-java skill: {readInstalledVersion()}', flush=True)
+    print(f'narrative-gtnh skill: {readInstalledVersion()}', flush=True)
 
     venv_python = (args.venv / VENV_PYTHON).absolute()
     if missing := missingVenvModules(venv_python):
@@ -282,7 +282,7 @@ def readGradleProperties(properties_path: Path) -> GradleSettings:
     if syntax not in JAVA_25_SYNTAX:
         raise PrerequisiteError(
             f'enableModernJavaSyntax = {syntax} in {properties_path} (expected jvmDowngrader or modern). '
-            'narrative-java checks Java 25 projects only',
+            'narrative-gtnh checks Java 25 projects only',
         )
     forced = values.get('forceToolchainVersion', '-1')
     if forced not in {'-1', '25'}:

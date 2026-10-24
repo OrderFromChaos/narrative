@@ -74,6 +74,10 @@ JAVADOC_WIDTH = 120
 JAVADOC_WORD = re.compile(r'\{@[^}]*\}\S*|\S+')
 # after a javadoc line that ends with one of these, the line break stays
 SENTENCE_ENDS = ('.', '!', '?', ':', '>')
+# matches:
+# `NAR017`
+# `NAR113-gtnh`
+CODE = r'NAR\d{3}(?:-[a-z]+)?'
 # Checkstyle check name, without the Check suffix: the NAR code
 CHECKSTYLE_CODES = {
     'MethodName': 'NAR130',
@@ -95,7 +99,7 @@ EXIT_UNREADABLE = 2
 
 def main() -> int:
     """Check the Java files below the given paths, merge the tool reports, and print the findings."""
-    parser = argparse.ArgumentParser(description='Check Java sources for the narrative-java rules.')
+    parser = argparse.ArgumentParser(description='Check Java sources for the narrative-gtnh rules.')
     parser.add_argument(
         'paths',
         nargs='+',
@@ -498,15 +502,15 @@ def noqaScopes(blocks: list[list[Comment]]) -> dict[int, frozenset[str]]:
     """
     # matches:
     # `noqa: NAR017`
-    # `noqa: NAR104, NAR112`
+    # `noqa: NAR104, NAR112-gtnh`
     # `noqa`
-    NOQA = re.compile(r'\bnoqa(?::\s*(?P<codes>NAR\d{3}(?:\s*,\s*NAR\d{3})*))?')
+    NOQA = re.compile(rf'\bnoqa(?::\s*(?P<codes>{CODE}(?:\s*,\s*{CODE})*))?')
     scopes: dict[int, frozenset[str]] = {}
     for block in blocks:
         codes: set[str] = set()
         for _number, text in (pair for comment in block for pair in comment.texts):
             if pragma := NOQA.search(text):
-                codes.update(re.findall(r'NAR\d{3}', pragma['codes']) if pragma['codes'] else {'ALL'})
+                codes.update(re.findall(CODE, pragma['codes']) if pragma['codes'] else {'ALL'})
         if not codes:
             continue
         covered = set(range(block[0].first_line, block[-1].last_line + 1))
@@ -814,7 +818,8 @@ def missingThrowsTags(tool_finding: ToolFinding, lines: list[str], javadoc: str)
 
 
 def silenced(scopes: dict[int, frozenset[str]], finding: JavaFinding) -> bool:
-    return bool(scopes.get(finding.line, frozenset()) & {finding.code, 'ALL'})
+    silencing = {finding.code, 'ALL', BARE_CODES.get(finding.code, finding.code)}
+    return bool(scopes.get(finding.line, frozenset()) & silencing)
 
 
 def inChange(changed: ChangedLines | None, java_path: Path, span: set[int]) -> bool:
@@ -844,18 +849,26 @@ PMD_CODES = {
     'NAR109': ('NAR109', Scope.LINE),
     'NAR110': ('NAR110', Scope.SPAN),
     'NAR111': ('NAR111', Scope.SPAN),
-    'NAR112': ('NAR112', Scope.SPAN),
-    'NAR113': ('NAR113', Scope.SPAN),
-    'NAR114': ('NAR114', Scope.SPAN),
+    'NAR112': ('NAR112-gtnh', Scope.SPAN),
+    'NAR113': ('NAR113-gtnh', Scope.SPAN),
+    'NAR114': ('NAR114-gtnh', Scope.SPAN),
     'NAR115': ('NAR115', Scope.SPAN),
     'NAR116': ('NAR116', Scope.SPAN),
     'NAR122': ('NAR122', Scope.SPAN),
     'NAR123': ('NAR123', Scope.SPAN),
-    'NAR124': ('NAR124', Scope.LINE),
+    'NAR124': ('NAR124-gtnh', Scope.LINE),
     'LooseCoupling': ('NAR140', Scope.SPAN),
     'ImmutableField': ('NAR141', Scope.SPAN),
     'AvoidCatchingGenericException': ('NAR142', Scope.SPAN),
     'PreserveStackTrace': ('NAR144', Scope.SPAN),
+}
+# the bare code of each code of the GTNH environment, from before the -gtnh suffix. A noqa with the bare
+# code still silences the finding, so the noqa comments of merged PRs keep working
+BARE_CODES = {
+    'NAR112-gtnh': 'NAR112',
+    'NAR113-gtnh': 'NAR113',
+    'NAR114-gtnh': 'NAR114',
+    'NAR124-gtnh': 'NAR124',
 }
 
 

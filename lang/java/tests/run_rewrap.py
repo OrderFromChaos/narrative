@@ -23,7 +23,7 @@ from pathlib import Path
 
 
 TESTS_DIR = Path(__file__).resolve().parent
-JAVACHECKS_PATH = TESTS_DIR.parents[2] / 'skills' / 'java' / 'javachecks.py'
+JAVACHECKS_PATH = TESTS_DIR.parents[2] / 'skills' / 'gtnh' / 'javachecks.py'
 EXIT_SUCCESS = 0
 EXIT_MISMATCH = 1
 

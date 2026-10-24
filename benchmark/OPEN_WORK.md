@@ -7,7 +7,7 @@ from master, after the user commits the split.
 
 - `core/rules/`, `core/tools/`: the rules and the prose checks of every language. They are built
   into the skill `nar:core`.
-- `lang/python/`, `lang/java/`: the rules and tools of one language. `nar:python` and `nar:java`
+- `lang/python/`, `lang/java/`: the rules and tools of one language. `nar:python` and `nar:gtnh`
   tell the agent to load `nar:core` with the Skill tool.
 - `skills.toml`, `build_skills.py`, `assemble.py`: the build of `skills/`. When `nar:code` loads,
   Claude Code runs `assemble.py`, and the output is the list of skills to load for the repository.
@@ -38,6 +38,11 @@ Build `eval/import_pr.py` and `eval/import_transcripts.py` on the schema in `eva
   unit from the rewrite that narrative made, because the score would then compare the skill with the
   output of the skill.
   The output goes to the private store, `~/.local/share/narrative/eval-private/`.
+- **Work repos.** The importers take a repo path or a PR export that the user names on the command
+  line. No agent browses a work area unasked. The units go to `eval-private/work/<repo>/`, with
+  `confidential: true` on each unit. A review comment on a work PR, such as "remove this comment",
+  gives a bronze label to the commented lines. An agent run skips confidential units unless
+  `--allow-confidential` is given.
 - **Noise.** For each bronze source, the user labels a seeded sample of 30 units with
   `eval/label.py`. The measured accuracy of the source of the labels is next to each bronze matrix
   in the report.
@@ -53,6 +58,10 @@ The skill is at `.claude/skills/new-narrative-rule/SKILL.md`. Rewrite its steps:
 - never read test units while drafting a rule
 - compare with the human ceiling only on units that the rules were not written from, labelled at
   the current standard. The round-10 units are the material the rules were written from
+
+In the same pass, `self-consistency-narrative` scores `benchmark/round10/agentverb/gold.tsv` with
+`agentverbs.py --score`, and that check allows no drop. Replace it with the deterministic predictor
+of `eval/run.py` on the full gold set.
 
 ## 3. The colon rule and the Fence examples, through new-narrative-rule
 
@@ -92,7 +101,41 @@ as meaningful, whatever the significance. Find the cause before the composable s
 3. Test the strongest candidate on dev, such as the composable skill with the inline examples
    restored, then run both skills once on the test split.
 
-## 5. For the user
+## 5. Dead and low-impact rules
+
+Find the rules that never change an outcome, so they can be cut or merged. The user asked for this.
+Thompson sampling and ablation over rule modules were explored in a separate session. Start from
+that session's notes, then measure each candidate with `eval/run.py --skill A --skill B`.
+
+## 6. Roadmap, designed only
+
+- **Modes.** `nar:prose` for docs, READMEs and reports, from `core/` alone. `nar:pr` for a PR
+  title, body and commit messages: the core prose rules and the `--since` scope, with units imported
+  from real PRs.
+- **Long-horizon eval** (`validation/longrun/`). The roles run in this order:
+  1. A requirements agent reads commits k to k+N of a real codebase, N about 100, and writes each
+     requirement as behaviour, with no module, class or function name.
+  2. A test agent writes conformance tests from the requirements alone. The builders never see them.
+  3. A PM agent writes one message per feature-sized group of commits, 15 to 25 messages for 100
+     commits. A script fails a message with an identifier, file name or module name of the
+     real repo, and a fresh reviewer agent reads each message for architecture hints.
+  4. A builder without the skill gets the messages one at a time, each in a fresh session on its
+     previous output.
+  5. A builder with the skill, the same way.
+
+  The runs start from an empty repo (greenfield) and from the real repo at commit k (brownfield).
+  Per step and cumulative: LOC, conformance, regressions, huge refactors (`measure_change.py`),
+  token cost, and for brownfield the drift from the norms of the real repo. If the two arms converge to
+  the same design, the messages were too specific, and the PM step needs coarser groups. Each arm
+  runs at least 3 times. The pilot is about 30 commits, about 8 messages, one Python repo, greenfield.
+- **Tool reuse.** `eval/mine_tools.py` lists the scripts that agents wrote in post-narrative
+  sessions (a Write of `*.py`, a Bash heredoc) and clusters them by purpose. The user picks the
+  clusters that become shared tools in `core/tools/` or `lang/*/tools/`. bugfind records the number
+  of ad-hoc scripts per task.
+- **Task level.** A chain harness in `experiment/bugfind`, and a Java task set from GTNH repos. The
+  report has the resolved rate, the cost and the unit matrix of the comments of each run.
+
+## 7. For the user
 
 - Commit the branch, after review.
 - Archive the narrative-java repository, with a README line pointing to `nar@narrative`.

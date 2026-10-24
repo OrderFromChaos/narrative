@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ruleset name="narrative-java"
+<ruleset name="narrative-gtnh"
     xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
 
     <description>
-        The structural checks of narrative-java. Each rule name is its NAR code, which javachecks.py
+        The structural checks of narrative-gtnh. Each rule name is its NAR code, which javachecks.py
         reads from the PMD report. Built-in PMD rules keep their names, and PMD_CODES in
         javachecks.py gives each one a NAR code.
     </description>

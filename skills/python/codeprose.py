@@ -35,7 +35,7 @@ GIT_PATTERN = '*.py'
 # matches:
 # `# noqa`
 # `# noqa: NAR017, NAR020`
-NOQA = re.compile(r'#\s*noqa(?::\s*(?P<codes>[A-Z0-9, ]+))?')
+NOQA = re.compile(r'#\s*noqa(?::\s*(?P<codes>(?:[A-Z0-9]+(?:-[a-z]+)?[, ]*)+))?')
 PRAGMA = re.compile(r'(?:noqa|type:|pragma|fmt:|ruff:|pylint:|mypy:)')
 # Google-style docstring sections, whose indented entries are prose
 SECTION_HEADER = re.compile(r'(?:Args|Arguments|Returns|Yields|Raises|Attributes|Notes?):$')

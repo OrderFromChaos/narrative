@@ -3,7 +3,7 @@
 #
 # Usage:
 #     $ ./install.sh
-#     $ ./install.sh java
+#     $ ./install.sh gtnh
 #     $ ./install.sh python ~/.config/claude/skills/narrative-python
 #
 # With no name, the skill is python. The files come from skills/<name>/, which build_skills.py

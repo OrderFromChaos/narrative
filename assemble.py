@@ -98,6 +98,7 @@ def readManifest(manifest_path: Path) -> Manifest:
     try:
         for name, table in tables.items():
             if 'modules' in table:
+                marker = table.get('marker')
                 modular[name] = ModularSkill(
                     name,
                     table['description'],
@@ -105,6 +106,7 @@ def readManifest(manifest_path: Path) -> Manifest:
                     tuple(table.get('files', ())),
                     tuple(table.get('suffixes', ())),
                     tuple(table.get('requires', ())),
+                    BuildMarker(tuple(marker['files']), marker['contains']) if marker else None,
                 )
             elif 'combines' in table:
                 combined[name] = CombinedSkill(name, table['description'], tuple(table['combines']))
@@ -136,8 +138,9 @@ def loadList(manifest: Manifest, combined: CombinedSkill, directory: Path) -> st
 
     Returns:
         One paragraph: the languages with their file counts, most files first, and every skill to load,
-        each skill that a language skill requires first. Without a source file of a combined language,
-        one line about the missing files.
+        each skill that a language skill requires first. A language skill whose build marker is missing
+        is left out, with one line on why, and the skills it requires still load. Without a source file
+        of a combined language, one line about the missing files.
     """
     counts = collections.Counter(Path(name).suffix.lower() for name in sourceFiles(directory))
     skills = [manifest.modular[name] for name in combined.combines]
@@ -148,15 +151,35 @@ def loadList(manifest: Manifest, combined: CombinedSkill, directory: Path) -> st
 
     to_load: list[str] = []
     for _count, skill in found:
-        for name in [*skill.requires, skill.name]:
+        for name in [*skill.requires, skill.name] if hasMarker(skill, directory) else skill.requires:
             if name not in to_load:
                 to_load.append(name)
-    listed = ', '.join(f'{skill.name} ({count} files)' for count, skill in found)
+    fitting = [(count, skill) for count, skill in found if hasMarker(skill, directory)]
+    listed = ', '.join(f'{skill.name} ({count} files)' for count, skill in fitting)
+    paragraph = f'This repository has source files of {listed}. ' if fitting else ''
+    for count, skill in found:
+        if (marker := skill.marker) and not hasMarker(skill, directory):
+            paragraph += (
+                f'The repository has {count} {" or ".join(skill.suffixes)} files, but no'
+                f' {" or ".join(marker.files)} in the current directory contains `{marker.contains}`, so'
+                f' `{PLUGIN_NAME}:{skill.name}` does not fit those files. Do not load `{PLUGIN_NAME}:{skill.name}`. '
+            )
     commands = ', '.join(f'`{PLUGIN_NAME}:{name}`' for name in to_load)
     return (
-        f'This repository has source files of {listed}. Before you write or review anything, load each'
-        f' of these skills with the Skill tool, in this order: {commands}.\n'
+        f'{paragraph}Before you write or review anything, load each of these skills with the Skill tool,'
+        f' in this order: {commands}.\n'
     )
+
+
+def hasMarker(skill: ModularSkill, directory: Path) -> bool:
+    """Tell whether the directory has the build of the skill: a marker file that contains the marker text.
+
+    A skill with no marker, such as python, fits any directory with its source files.
+    """
+    if skill.marker is None:
+        return True
+    marker_paths = (directory / name for name in skill.marker.files)
+    return any(path.is_file() and skill.marker.contains in path.read_text(errors='replace') for path in marker_paths)
 
 
 def sourceFiles(directory: Path) -> list[str]:
@@ -172,7 +195,7 @@ def sourceFiles(directory: Path) -> list[str]:
 
     walked: list[str] = []
     for current, directories, files in os.walk(directory):
-        # a directory with its own .git entry is another checkout, such as a worktree of another branch
+        # a directory with a .git entry is another checkout, such as a worktree of another branch
         directories[:] = [
             name for name in directories
             if name not in SKIPPED_DIRECTORIES and not (Path(current) / name / '.git').exists()
@@ -210,6 +233,16 @@ class ModularSkill:
     suffixes: tuple[str, ...]
     # the skills to load before this one, such as core
     requires: tuple[str, ...]
+    # the build that a combined skill needs before it loads this skill, such as a GTNH Gradle build
+    marker: BuildMarker | None
+
+
+@dataclass(frozen=True)
+class BuildMarker:
+    """Build files at the root of a repository, one of which must contain a text."""
+
+    files: tuple[str, ...]
+    contains: str
 
 
 @dataclass(frozen=True)

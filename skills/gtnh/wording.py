@@ -196,7 +196,7 @@ def readChangedLines(since: str, any_repo_path: Path, pattern: str) -> ChangedLi
 def findFiles(directory: Path, pattern: str) -> list[Path]:
     """Find the files below a directory whose names match a glob.
 
-    A directory below with its own `.git` entry is another checkout, such as the worktree of another
+    A directory below with a `.git` entry is another checkout, such as the worktree of another
     branch in .claude/worktrees/, or a submodule. The files of another checkout are not the files of
     this one, so the walk does not enter it.
 

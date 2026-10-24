@@ -220,7 +220,7 @@ def declarationPrefix(relative: Path) -> str:
 def inOtherCheckout(doc: Path) -> bool:
     """Tell whether a file is in another checkout below ROOT, such as the worktree of another branch.
 
-    Another checkout holds its own decisions.jsonl, so its citations are checked in that checkout.
+    Another checkout has a decisions.jsonl of another branch, so the citations of that checkout are checked there.
     """
     below_root = doc.relative_to(ROOT).parents[:-1]
     return any((ROOT / directory / '.git').exists() for directory in below_root)
@@ -254,7 +254,7 @@ def main() -> int:
         if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
             rule_codes = rule_codes | {node.value.value}
     for source in JAVA_CODE_SOURCES:
-        rule_codes = rule_codes | set(re.findall(r'\bNAR\d{3}\b', (ROOT / source).read_text()))
+        rule_codes = rule_codes | set(re.findall(r'(?<![\w-])NAR\d{3}(?:-[a-z]+)?\b', (ROOT / source).read_text()))
     scopes = {str(record['id']): str(record['scope']) for record in decisions}
 
     build_command = [sys.executable, str(ROOT / 'build_skills.py'), '--check']
@@ -286,7 +286,7 @@ def main() -> int:
             elif citable is not None and scopes[token] not in citable:
                 problems.append(f'{rel}: cites {token}, a decision of scope {scopes[token]}')
 
-        for code in re.findall(r'\bNAR\d{3}\b', text):
+        for code in re.findall(r'(?<![\w-])NAR\d{3}(?:-[a-z]+)?\b', text):
             if code not in rule_codes | retired:
                 problems.append(f'{rel}: references unknown rule {code}')
 

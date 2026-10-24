@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "nar",
-      "description": "Write or review code in the Narrative house style: /nar:python, and /nar:java for GTNH mods. Each skill has a verified toolchain and NLP checks for comments.",
+      "description": "Write or review code in the Narrative house style: /nar:python, and /nar:gtnh for GTNH mods. Each skill has a verified toolchain and NLP checks for comments.",
       "author": {
         "name": "Syris Norelli"
       },
@@ -17,7 +17,7 @@
       "strict": false,
       "skills": [
         "./skills/python",
-        "./skills/java",
+        "./skills/gtnh",
         "./skills/core",
         "./skills/code"
       ]

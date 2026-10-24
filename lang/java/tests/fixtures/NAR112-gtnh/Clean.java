@@ -2,7 +2,7 @@ package fixtures.nar112;
 
 import net.minecraft.util.StatCollector;
 
-/** Fixture for NAR112: + in user-facing text. */
+/** Fixture for NAR112-gtnh: + in user-facing text. */
 public final class Clean {
 
     public static String machines(int count) {

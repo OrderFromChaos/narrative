@@ -112,7 +112,7 @@ Never a project-wide `Utils` class.
 
 **`private` or `public` only, no package-private.** (`J1-A02`) A member that no other class uses is
 `private`. Test classes and test methods are exempt, because JUnit 5 convention is package-private,
-and PlanNH follows the convention. `NAR124` flags a package-private member in main sources.
+and PlanNH follows the convention. `NAR124-gtnh` flags a package-private member in main sources.
 
 **The `@Mod` class is the entry point.** (`J1-A03`, `R7-A05-entry`) The lifecycle handlers of the
 `@Mod` class call the registration method of each subsystem and contain no other logic. For a new

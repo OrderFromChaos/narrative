@@ -1,4 +1,4 @@
-// The fixture project of narrative-java: run verify.py from this directory, as run_fixtures.py does.
+// The fixture project of narrative-gtnh: run verify.py from this directory, as run_fixtures.py does.
 plugins {
     id 'java'
 }

@@ -1,4 +1,4 @@
-// The narrative-java checks for a Java build, added by a Gradle init script so no project file changes.
+// The narrative-gtnh checks for a Java build, added by a Gradle init script so no project file changes.
 //
 // Usage, as verify.py runs it:
 //     ./gradlew --init-script <skill>/narrative.init.gradle --continue --no-configuration-cache \

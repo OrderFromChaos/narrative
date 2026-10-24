@@ -24,7 +24,7 @@ from pathlib import Path
 
 
 TESTS_DIR = Path(__file__).resolve().parent
-VERIFY_PATH = TESTS_DIR.parents[2] / 'skills' / 'java' / 'verify.py'
+VERIFY_PATH = TESTS_DIR.parents[2] / 'skills' / 'gtnh' / 'verify.py'
 EXIT_SUCCESS = 0
 EXIT_MISMATCH = 1
 EXIT_NOT_RUN = 2
@@ -70,7 +70,7 @@ def readReportedCodes(verify_output: str) -> dict[str, set[str]]:
     # matches:
     # `fixtures/NAR101/Flagged.java:6: NAR101 method above its first caller in this class`
     # `fixtures/NAR119/Flagged.java:7: warning NAR119 FIXME in a comment`  # noqa: NAR010
-    FINDING = re.compile(r'^(?P<path>\S+\.java):\d+: (?:warning )?(?P<code>NAR\d{3}) ')
+    FINDING = re.compile(r'^(?P<path>\S+\.java):\d+: (?:warning )?(?P<code>NAR\d{3}(?:-[a-z]+)?) ')
     reported: dict[str, set[str]] = defaultdict(set)
     for line in verify_output.splitlines():
         if finding := FINDING.match(line):

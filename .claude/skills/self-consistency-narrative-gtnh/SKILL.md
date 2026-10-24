@@ -1,9 +1,9 @@
 ---
-name: self-consistency-narrative-java
-description: Check the narrative-java skill's own files against its own rules, so no violation reaches agents that load it. Covers the prose of lang/java/rules/*.md, the Java documents and README, the Java code examples in those files, the Python scripts and the fixtures. Use when the user asks for a self-consistency pass, a self-evaluation, or to re-apply the rules to the skill.
+name: self-consistency-narrative-gtnh
+description: Check the narrative-gtnh skill's own files against its own rules, so no violation reaches agents that load it. Covers the prose of lang/java/rules/*.md, the Java documents and README, the Java code examples in those files, the Python scripts and the fixtures. Use when the user asks for a self-consistency pass, a self-evaluation, or to re-apply the rules to the skill.
 ---
 
-# Self-consistency of narrative-java
+# Self-consistency of narrative-gtnh
 
 Agents copy the wording and the examples of `lang/java/rules/*.md`, so a violation there is copied into
 new code. Run every step from the repository root. Edit `lang/java/`, then run `python3 build_skills.py`,
@@ -19,8 +19,8 @@ nothing.
 
    ```bash
    for code in NAR013 NAR014 NAR015 NAR016 NAR018; do python3 skills/python/checks.py --select $code lang/java/rules/*.md lang/java/architecture.md lang/java/tooling.md lang/java/README.md; done
-   ~/.local/share/narrative/lintenv/bin/python skills/java/agentverbs.py lang/java/rules/*.md lang/java/architecture.md lang/java/tooling.md lang/java/README.md
-   ~/.local/share/narrative/lintenv/bin/python skills/java/agentverbs.py --review lang/java/rules/*.md lang/java/architecture.md lang/java/tooling.md lang/java/README.md
+   ~/.local/share/narrative/lintenv/bin/python skills/gtnh/agentverbs.py lang/java/rules/*.md lang/java/architecture.md lang/java/tooling.md lang/java/README.md
+   ~/.local/share/narrative/lintenv/bin/python skills/gtnh/agentverbs.py --review lang/java/rules/*.md lang/java/architecture.md lang/java/tooling.md lang/java/README.md
    ```
 
    Known and accepted: in the rule modules, the NAR014, NAR016 and NAR018 hits on the lines with the banned
@@ -33,7 +33,7 @@ nothing.
    scratchpad, and run `javachecks.py` on them for the comment checks:
 
    ```bash
-   ~/.local/share/narrative/lintenv/bin/python skills/java/javachecks.py <scratch>/examples/
+   ~/.local/share/narrative/lintenv/bin/python skills/gtnh/javachecks.py <scratch>/examples/
    ```
 
    The blocks are fragments, so NAR118 on them is expected. Every other finding is a fault in an
@@ -56,4 +56,4 @@ nothing.
 6. **Records and build**: `python3 verify_docs.py` reports 0 problems.
 
 7. **Fix and report.** Fix a clear violation in place. A change to a rule goes to the user first.
-   Run the steps again. After the user commits, `./install.sh java` updates the installed copy.
+   Run the steps again. After the user commits, `./install.sh gtnh` updates the installed copy.

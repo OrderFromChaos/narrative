@@ -34,7 +34,7 @@ GIT_PATTERN = '*.java'
 # matches:
 # `// noqa`
 # `// noqa: NAR017, NAR020`
-NOQA = re.compile(r'//\s*noqa(?::\s*(?P<codes>[A-Z0-9, ]+))?')
+NOQA = re.compile(r'//\s*noqa(?::\s*(?P<codes>(?:[A-Z0-9]+(?:-[a-z]+)?[, ]*)+))?')
 # a text block, a string or character literal, a // comment or a /* comment. The literals are matched
 # so that a // or /* inside one is not read as a comment
 # matches:

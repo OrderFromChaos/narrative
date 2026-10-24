@@ -15,7 +15,7 @@ Use **uv** for the lint venv. Every language skill has the same `requirements-lo
 and Python skills run in one venv. (R10-uv)
 
 `wording.py`, `agentverbs.py`, `prose.py`, `words.json` and `requirements-lock.txt` are in `core/tools/`
-of the narrative repository, and `build_skills.py` copies them into `skills/java/`. Change them in
+of the narrative repository, and `build_skills.py` copies them into `skills/gtnh/`. Change them in
 `core/tools/`, then run `python3 build_skills.py`. `build_skills.py --check` exits 1 when a file in
 `skills/` differs from the source.
 
@@ -57,9 +57,9 @@ silences a code on the same line.
 | `NAR109` | an exception class whose name does not end in `Exception`, or any `Error` subclass (J1-P23) | PMD |
 | `NAR110` | a mutable static field with no comment for the reason (J1-P27) | PMD, then `javachecks.py` |
 | `NAR111` | `+` or `format()` in a log message (J1-P28) | PMD |
-| `NAR112` | `+` in user-facing text (J1-P04) | PMD |
-| `NAR113` | literal user-facing text (J1-S15) | PMD |
-| `NAR114` | `new` or `.stream()` in a `draw*` or `render*` method (J1-S03) | PMD |
+| `NAR112-gtnh` | `+` in user-facing text (J1-P04) | PMD |
+| `NAR113-gtnh` | literal user-facing text (J1-S15) | PMD |
+| `NAR114-gtnh` | `new` or `.stream()` in a `draw*` or `render*` method (J1-S03) | PMD |
 | `NAR115` | a `java.io.File` operation (J1-P14) | PMD |
 | `NAR116` | a method with more than 3 parameters or more than 20 body lines and no javadoc (J1-P34) | PMD, then `javachecks.py` |
 | `NAR117` | a `throw new X` with no `@throws X` line in the javadoc of such a method (J1-P34) | `javachecks.py` |
@@ -69,7 +69,7 @@ silences a code on the same line.
 | `NAR121` | a raw-type or unchecked warning of javac (J1-P10) | javac |
 | `NAR122` | a type with more than 4 names below the outermost one (NAR005) | PMD |
 | `NAR123` | `&&` inside `\|\|` without parentheses (R2b-B4) | PMD |
-| `NAR124` | a package-private member in main sources (J1-A02) | PMD |
+| `NAR124-gtnh` | a package-private member in main sources (J1-A02) | PMD |
 | `NAR125` | a javadoc line with room for the first word of the next line (J1-F02). `javachecks.py --rewrap` re-wraps the paragraph (J1-F08) | `javachecks.py` |
 | `NAR130` | a name outside the Java convention (J1-P01) | Checkstyle |
 | `NAR131` | more than 3 parameters (J1-P03) | Checkstyle |
@@ -77,6 +77,10 @@ silences a code on the same line.
 | `NAR141` | a field that could be `final` (J1-P21) | PMD ImmutableField |
 | `NAR142` | a catch of `Exception`, `RuntimeException`, `NullPointerException`, `Throwable` or `Error` (J1-P24, J1-F04) | PMD AvoidCatchingGenericException |
 | `NAR144` | a rethrow that drops the cause (Q21) | PMD PreserveStackTrace |
+
+A code with `-gtnh` is a rule of the GTNH environment, such as the lang file or the draw loop. A new
+rule of Java itself, with no Python form, gets `-java`. Each `-gtnh` code had a bare code before the
+suffix, and a `noqa` with the bare code, such as `// noqa: NAR113`, still silences the finding.
 
 A PMD rule or a Checkstyle check with no entry in `PMD_CODES` or `CHECKSTYLE_CODES` of
 `javachecks.py` is exit 2, so no finding of a new rule is printed without a code.
