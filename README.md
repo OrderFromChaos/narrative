@@ -77,7 +77,7 @@ Some examples of (2):
 
 - Python: `/nar:python`
 - Docs/pages: `/nar:core`
-- GTNH Java: `/nar:java`
+- GTNH Java: `/nar:gtnh`
 - Mixed languages: `/nar:code`
 
 ## Install
@@ -116,30 +116,11 @@ To roll the plugin out to a whole team, a Claude Code admin can add this to mana
 }
 ```
 
-### By hand
-
-Clone the repository and run the installer:
-
-```bash
-git clone git@github.com:OrderFromChaos/narrative.git
-cd narrative
-
-./install.sh
-```
-
-`install.sh` copies the files of `skills/python/` to `~/.claude/skills/narrative-python`, and the
-shared rules of `skills/core/` to `~/.claude/skills/narrative-core`. To install
-to another path, give the skill name and then the path:
-`./install.sh python ~/.config/claude/skills/narrative-python`. Invoke the skill as
-`/narrative-python`, or let Claude load the skill when a task involves Python. For the Java skill of
-GTNH mods, run `./install.sh gtnh`. See `lang/java/README.md`.
+## Changing the skills
 
 `skills/` is generated. The rules shared by every language are in `core/`, the rules and tools of
 each language are in `lang/python/` and `lang/java/`, and `skills.toml` lists the modules of each
 skill. After a change to `core/`, `lang/` or `skills.toml`, run `python3 build_skills.py`.
-
-**To update, run `git pull && ./install.sh`.** If you change to the plugin, delete
-`~/.claude/skills/narrative-python`, or Claude loads both copies.
 
 # Details
 

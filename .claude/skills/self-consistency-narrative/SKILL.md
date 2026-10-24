@@ -110,4 +110,4 @@ mind does?
 - Report in plain language: what was fixed (before → after for the notable ones), what a check
   missed, judgement calls left alone, and proposals. Check the report's own sentences for agent
   verbs before sending.
-- Never commit. After the user commits, `./install.sh` updates the installed copy.
+- Never commit. After the user commits and pushes, the plugin `nar@narrative` updates itself.

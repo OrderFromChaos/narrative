@@ -56,4 +56,4 @@ nothing.
 6. **Records and build**: `python3 verify_docs.py` reports 0 problems.
 
 7. **Fix and report.** Fix a clear violation in place. A change to a rule goes to the user first.
-   Run the steps again. After the user commits, `./install.sh gtnh` updates the installed copy.
+   Run the steps again. After the user commits and pushes, the plugin `nar@narrative` updates itself.

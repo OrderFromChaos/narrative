@@ -53,20 +53,6 @@ auto-update**. Invoke the skill as `/nar:gtnh`, or let Claude load the skill whe
 Java for a GTNH mod. If you installed `narrative-java@narrative-java`, uninstall it first. That
 repository is archived.
 
-### By hand
-
-```bash
-git clone git@github.com:OrderFromChaos/narrative.git
-cd narrative
-
-./install.sh gtnh
-```
-
-`install.sh` copies the files of `skills/gtnh/` to `~/.claude/skills/narrative-gtnh`, or to the
-path you give after the skill name. Invoke the skill as `/narrative-gtnh`. **To update, run
-`git pull && ./install.sh gtnh`.** If you installed the skill by hand as `narrative-java` before,
-delete `~/.claude/skills/narrative-java`, or Claude loads both copies.
-
 ### The lint venv
 
 The Java skill uses the same lint venv as the Python skill, one per machine, at

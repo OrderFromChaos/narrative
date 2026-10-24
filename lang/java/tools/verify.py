@@ -238,12 +238,18 @@ def rewrapComments(venv_python: Path, sources: list[Path], since: str | None) ->
 
 
 def readInstalledVersion() -> str:
-    """Return the commit and date that install.sh wrote to INSTALLED beside this script."""
-    stamp = SKILL_DIR / 'INSTALLED'
+    """Name the installed version: the plugin and its commit, the stamp of install.sh, or the directory.
+
+    The plugin cache keeps each version at `<cache>/<marketplace>/<plugin>/<commit>/skills/<skill>/`.
+    """
+    in_cache = len(SKILL_DIR.parents) > 4 and SKILL_DIR.parents[4].name == 'cache' and SKILL_DIR.parent.name == 'skills'
+    if in_cache:
+        plugin_root = SKILL_DIR.parents[1]
+        return f'plugin {plugin_root.parent.name}@{plugin_root.parents[1].name} at {plugin_root.name}'
     try:
-        return stamp.read_text(encoding='utf-8').strip()
+        return (SKILL_DIR / 'INSTALLED').read_text(encoding='utf-8').strip()
     except FileNotFoundError:
-        return f'not installed by install.sh, running from {SKILL_DIR}'
+        return f'running from {SKILL_DIR}'
 
 
 def missingVenvModules(venv_python: Path) -> list[str]:

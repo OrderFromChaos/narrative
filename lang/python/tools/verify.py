@@ -454,12 +454,19 @@ def missingConfigSections(pyproject_path: Path) -> list[str]:
 
 
 def readInstalledVersion() -> str:
-    """Return the commit and date that install.sh wrote to INSTALLED beside this script."""
-    stamp = Path(__file__).resolve().parent / 'INSTALLED'
+    """Name the installed version: the plugin and its commit, the stamp of install.sh, or the directory.
+
+    The plugin cache keeps each version at `<cache>/<marketplace>/<plugin>/<commit>/skills/<skill>/`.
+    """
+    skill_dir = Path(__file__).resolve().parent
+    in_cache = len(skill_dir.parents) > 4 and skill_dir.parents[4].name == 'cache' and skill_dir.parent.name == 'skills'
+    if in_cache:
+        plugin_root = skill_dir.parents[1]
+        return f'plugin {plugin_root.parent.name}@{plugin_root.parents[1].name} at {plugin_root.name}'
     try:
-        return stamp.read_text(encoding='utf-8').strip()
+        return (skill_dir / 'INSTALLED').read_text(encoding='utf-8').strip()
     except FileNotFoundError:
-        return f'not installed by install.sh, running from {stamp.parent}'
+        return f'running from {skill_dir}'
 
 
 def resolveToolchain(venv: Path) -> Toolchain:
