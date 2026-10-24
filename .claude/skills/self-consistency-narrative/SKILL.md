@@ -1,23 +1,24 @@
 ---
 name: self-consistency-narrative
-description: Check the Narrative skill's own files against its own rules, so no violation reaches agents that load it. Covers the prose, headings and comment examples of skill/*.md, the comments, docstrings and messages of skill/*.py, and the shipped config comments, and applies every rule added since the last pass. Use when the user asks for a self-consistency pass, a self-evaluation, or to re-apply the rules to the skill.
+description: Check the Narrative skill's own files against its own rules, so no violation reaches agents that load it. Covers the prose, headings and comment examples of the rule modules in core/ and lang/, the comments, docstrings and messages of the tools in core/tools/ and lang/*/tools/, and the shipped config comments, and applies every rule added since the last pass. Use when the user asks for a self-consistency pass, a self-evaluation, or to re-apply the rules to the skill.
 ---
 
 # Self-consistency pass on the Narrative skill
 
-Agents copy the skill's examples and wording. A violation in `skill/` teaches the violation, so the
+Agents copy the skill's examples and wording. A violation in `core/` or `lang/` teaches the violation, so the
 skill's own text must pass the skill's rules. This pass finds the violations, fixes the clear ones
 and reports the rest.
 
-Repository root: the directory with `skill/`, `benchmark/` and `verify_docs.py`. `S` below is a
+Repository root: the directory with `core/`, `lang/`, `benchmark/` and `verify_docs.py`. Edit `core/` and
+`lang/`, then run `python3 build_skills.py`. `skills/` is generated. `S` below is a
 directory in the scratchpad.
 
 ## 1. Rules added since the last pass
 
-List the decisions added since the last commit that touched `skill/`:
+List the decisions added since the last commit that touched the skill sources:
 
 ```bash
-git log -1 --format=%cs -- skill/
+git log -1 --format=%cs -- core lang mode skills.toml skill
 ```
 
 Read every record in `benchmark/decisions.jsonl` with that date or later. For each rule, search the
@@ -28,25 +29,26 @@ makes some older example wrong.
 
 ```bash
 .lintenv/bin/python .claude/skills/self-consistency-narrative/prose_as_comments.py S
-.lintenv/bin/python skill/agentverbs.py skill/SKILL.md skill/architecture.md skill/tooling.md S
-.lintenv/bin/python skill/checks.py skill/SKILL.md skill/architecture.md skill/tooling.md S --select NAR013 --select NAR014 --select NAR015 --select NAR016 --select NAR018
+.lintenv/bin/python skills/python/agentverbs.py core/rules/*.md lang/python/rules/*.md lang/python/*.md S
+.lintenv/bin/python skills/python/checks.py core/rules/*.md lang/python/rules/*.md lang/python/*.md S --select NAR013 --select NAR014 --select NAR015 --select NAR016 --select NAR018
 ```
 
-`agentverbs.py` and `checks.py` read the Markdown prose directly, through `skill/prose.py`.
-`prose_as_comments.py` writes `SKILL_examples.py`, every comment example of a document, keeping line
-numbers, so a finding at `SKILL_examples.py:769` is line 769 of `skill/SKILL.md`.
+`agentverbs.py` and `checks.py` read the Markdown prose directly, through `core/tools/prose.py`.
+`prose_as_comments.py` writes one examples file per document, every comment example of the document,
+keeping line numbers, so a finding at `core__rules__comments_examples.py:57` is line 57 of
+`core/rules/comments.md`.
 
 Then the scripts, from a directory whose `pyproject.toml` is the skill's config:
 
 ```bash
-cp skill/pyproject-snippet.toml S/pyproject.toml
-cd S && PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skill/verify.py --venv <repo>/.lintenv <repo>/skill/verify.py <repo>/skill/checks.py <repo>/skill/agentverbs.py <repo>/skill/prose.py
+cp lang/python/tools/pyproject-snippet.toml S/pyproject.toml
+cd S && PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skills/python/verify.py --venv <repo>/.lintenv <repo>/core/tools/*.py <repo>/lang/python/tools/*.py <repo>/build_skills.py
 ```
 
 All 7 checks must pass. Read the comment and docstring list `verify.py` prints, and the scripts' error messages and `--help` text, through the steps of **Prose review** under **Procedures**.
 
 ```bash
-.lintenv/bin/python skill/agentverbs.py --score benchmark/round10/agentverb/gold.tsv
+.lintenv/bin/python skills/python/agentverbs.py --score benchmark/round10/agentverb/gold.tsv
 .lintenv/bin/python verify_docs.py
 ```
 
@@ -61,7 +63,7 @@ decision count.
 names the expected form`) and anything in backticks in prose. Search for those directly:
 
 ```bash
-grep -nE "\b(error|guard|message|comment|function|module|test|file|docstring|name|check|rule|code|type|key|record|sample|example|regex|line|branch|table|value|field|report|log|plan|policy|config|tool|program|class|section|annotation|signature)s? (names|says|states|tells|knows|wants|needs|decides|shows|records|documents|describes|explains|expects|assumes|reports|sees|finds|holds|carries|keeps|owns)\b" skill/*.md
+grep -nE "\b(error|guard|message|comment|function|module|test|file|docstring|name|check|rule|code|type|key|record|sample|example|regex|line|branch|table|value|field|report|log|plan|policy|config|tool|program|class|section|annotation|signature)s? (names|says|states|tells|knows|wants|needs|decides|shows|records|documents|describes|explains|expects|assumes|reports|sees|finds|holds|carries|keeps|owns)\b" core/rules/*.md lang/python/rules/*.md lang/python/*.md
 ```
 
 Read for these by eye, in prose, headings, comment examples, example docstrings, finding messages
@@ -71,7 +73,7 @@ in `checks.py` and comments in `pyproject-snippet.toml` and `requirements-lock.t
 - `without X,` and `X would` in a comment example, where the fact can be stated directly
 - spoken or physical metaphors (`said slowly`, `anchors it`, `a file records`), personified
   placement (`Where a constant lives`, `it lives in`, `its only home`), and vague `it` or `them`.
-  `grep -nE '\blives?\b|\bhome\b|, which |, since ' skill/*.md` finds most of them
+  `grep -nE '\blives?\b|\bhome\b|, which |, since ' core/rules/*.md lang/python/rules/*.md lang/python/*.md` finds most of them
 - intensifiers (`perfectly`, `genuinely`, `actually`)
 - `its own`, `their own`, `on its own` anywhere in prose, not only in comments
 - a comment example that breaks a rule beside the example, such as a one-line comment with a capital

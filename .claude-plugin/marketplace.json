@@ -1,22 +1,25 @@
 {
-  "name": "narrative-python",
-  "description": "The Narrative Python house style as a Claude Code skill.",
+  "name": "narrative",
+  "description": "The Narrative house style for code and comments, as Claude Code skills.",
   "owner": {
     "name": "Syris Norelli"
   },
   "plugins": [
     {
-      "name": "narrative-python",
-      "description": "Write or review Python in the Narrative house style, with a verified ruff/pylint/mypy toolchain.",
+      "name": "nar",
+      "description": "Write or review code in the Narrative house style: /nar:python, and /nar:java for GTNH mods. Each skill has a verified toolchain and NLP checks for comments.",
       "author": {
         "name": "Syris Norelli"
       },
-      "homepage": "https://github.com/OrderFromChaos/narrative-python",
+      "homepage": "https://github.com/OrderFromChaos/narrative",
       "license": "Apache-2.0",
       "source": "./",
       "strict": false,
       "skills": [
-        "./skill"
+        "./skills/python",
+        "./skills/java",
+        "./skills/core",
+        "./skills/code"
       ]
     }
   ]

@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="narrative-java"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        The structural checks of narrative-java. Each rule name is its NAR code, which javachecks.py
+        reads from the PMD report. Built-in PMD rules keep their names, and PMD_CODES in
+        javachecks.py gives each one a NAR code.
+    </description>
+
+    <rule name="NAR101" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="method above its first caller in this class. Order methods by first call">
+        <description>P02: caller before callee. A method that this class calls goes below its first caller.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//ClassBody/MethodDeclaration[@Override = false()]
+  [
+    let $method := .,
+        $name := @Name,
+        $calls := ancestor::ClassBody[1]//MethodCall[@MethodName = $name]
+                    [*[1][self::ArgumentList or self::ThisExpression]]
+                    [not(ancestor::MethodDeclaration[1] is $method)]
+    return exists($calls) and @BeginLine < min($calls/@BeginLine)
+  ]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR102" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="two or more null arguments. Use a builder or a parameter record">
+        <description>P03: a call with a null for each skipped argument.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[//ArgumentList[count(NullLiteral) >= 2]]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR103" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="stream inside a stream lambda. Write a loop">
+        <description>P06: one level of filter and map in a stream.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//MethodCall[*[1][pmd-java:typeIs('java.util.stream.BaseStream')]]
+  /ArgumentList/LambdaExpression//MethodCall[@MethodName = 'stream']
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR104" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="fully-qualified name in code. Import the type">
+        <description>P08: no fully-qualified name outside the imports.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[//ClassType[@FullyQualified = true()][not(ancestor::ImportDeclaration)]]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR105" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="ordinal() written to NBT, a packet or JSON. Write name() or an explicit code field">
+        <description>P17: ordinal() is not a serialised form of an enum.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//MethodCall[@MethodName = 'ordinal']
+  [
+    ancestor::MethodCall[@MethodName = ('setInteger', 'setByte', 'setShort', 'setLong', 'writeInt', 'writeByte',
+                                        'writeShort', 'writeVarInt', 'writeVarShort', 'addProperty')]
+    or ancestor::MethodDeclaration[matches(@Name, '^(writeToNBT|writeNBT|toBytes|encode|serialize|serialise)')]
+  ]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR106" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="abstract class. Use an interface, or extend only a class the platform requires">
+        <description>P18: composition over inheritance. A sealed abstract class is allowed: its permitted subclasses share its fields.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[//ClassDeclaration[@Abstract = true()][@RegularClass = true()][not(pmd-java:modifiers() = 'sealed')]]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR107" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="default arm in a switch over an enum or sealed type. List every constant, so a missing one is a compile error">
+        <description>
+            P19: exhaustive dispatch with no fallback arm. verify.py replaces the comment
+            SEALED_TYPES with one typeIs test per sealed type of the project.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//(SwitchStatement | SwitchExpression)
+  [*[1][pmd-java:typeIs('java.lang.Enum') (: SEALED_TYPES :)]]
+  /*/SwitchLabel[@Default = true()]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR108" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="array component in a record. equals() and hashCode() compare arrays by identity. Use a List">
+        <description>P22: no array component in a record.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[//RecordComponent[ArrayType]]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR109" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="exception class name. The name of an exception class ends in Exception, and no class extends Error">
+        <description>P23: the name of an exception class ends in Exception.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//ClassDeclaration[pmd-java:typeIs('java.lang.Throwable')]
+  [not(ends-with(@SimpleName, 'Exception')) or pmd-java:typeIs('java.lang.Error')]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR110" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="mutable static field. Write the reason in a comment, or make it an instance field of the object with the same lifetime">
+        <description>
+            P27: a mutable static field needs a reason. javachecks.py drops the finding when a comment
+            is above the field or after it on the same line.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//FieldDeclaration[@Static = true()]
+  [not(pmd-java:modifiers() = 'final')
+   or VariableDeclarator/ConstructorCall[pmd-java:typeIs('java.util.Collection') or pmd-java:typeIs('java.util.Map')]]
+  [not(ModifierList/Annotation[@SimpleName = ('Instance', 'SidedProxy')])]
+  [not(pmd-java:typeIs('org.apache.logging.log4j.Logger'))]
+  [not(ancestor::ClassDeclaration[1][ModifierList/Annotation[@SimpleName = 'Config']
+                                     or matches(@SimpleName, 'Config(uration)?$')])]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR111" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="log message built with + or format(). Use a stable event name and placeholder parameters">
+        <description>P28: one stable event name plus parameters.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//MethodCall[@MethodName = ('trace', 'debug', 'info', 'warn', 'error', 'fatal')]
+  [*[1][pmd-java:typeIs('org.apache.logging.log4j.Logger')]]
+  /ArgumentList/*[1][self::InfixExpression[@Operator = '+'] or self::MethodCall[@MethodName = ('format', 'formatted')]]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR112" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="+ in user-facing text. Put %s placeholders in the lang entry, and pass the values to the localization call">
+        <description>P04: no + in user-facing text.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//MethodCall[@MethodName = ('translateToLocal', 'translateToLocalFormatted', 'addChatMessage', 'addChatComponentMessage',
+                           'drawString', 'drawCenteredString', 'drawStringWithShadow')]
+  /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+|
+//MethodCall[@MethodName = 'format'][*[1][pmd-java:typeIs('net.minecraft.client.resources.I18n')]]
+  /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+|
+//MethodCall[@MethodName = ('str', 'lang')][*[1][pmd-java:typeIs('com.cleanroommc.modularui.api.drawable.IKey')]]
+  /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+|
+//ConstructorCall[pmd-java:typeIs('net.minecraft.util.ChatComponentText') or pmd-java:typeIs('net.minecraft.util.ChatComponentTranslation')]
+  /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+|
+//InfixExpression[@Operator = '+'][*[self::MethodCall[@MethodName = ('translateToLocal', 'translateToLocalFormatted')]]]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR113" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="literal user-facing text. Put it in the lang file and read it through a localization call">
+        <description>S15: every user-facing string is a lang file key.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//MethodCall[@MethodName = 'str'][*[1][pmd-java:typeIs('com.cleanroommc.modularui.api.drawable.IKey')]]
+  /ArgumentList/StringLiteral[matches(@Image, '[A-Za-z]{2}')]
+|
+//ConstructorCall[pmd-java:typeIs('net.minecraft.util.ChatComponentText')]/ArgumentList/StringLiteral[matches(@Image, '[A-Za-z]{2}')]
+|
+//MethodCall[@MethodName = ('drawString', 'drawCenteredString', 'drawStringWithShadow')]
+  /ArgumentList/StringLiteral[matches(@Image, '[A-Za-z]{2}')]
+|
+//MethodDeclaration[@Name = 'addInformation']//MethodCall[@MethodName = 'add']/ArgumentList/StringLiteral[matches(@Image, '[A-Za-z]{2}')]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR114" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="allocation or stream in a draw or render method. Reuse a buffer, or cache with a dirty flag">
+        <description>S03 and P06: nothing allocated per frame.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//MethodDeclaration[matches(@Name, '^(draw|render)')]//(ConstructorCall | ArrayAllocation | MethodCall[@MethodName = 'stream'])
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR115" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="java.io.File operation. It returns false or null on failure. Use the Files method on a Path">
+        <description>P14: file operations through Files.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//MethodCall[@MethodName = ('delete', 'renameTo', 'mkdir', 'mkdirs', 'listFiles', 'list', 'createNewFile',
+                           'setLastModified', 'setReadable', 'setWritable', 'setExecutable')]
+  [*[1][pmd-java:typeIs('java.io.File')]]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR116" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="method with more than 3 parameters or more than 20 body lines and no javadoc">
+        <description>
+            P34: the javadoc threshold. javachecks.py drops the finding when a javadoc is above the
+            method, and then checks its @throws lines (NAR117).
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//(MethodDeclaration | ConstructorDeclaration)[@Arity > 3 or Block[@EndLine - @BeginLine - 1 > 20]]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR122" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="type with more than 4 names below the outermost. Name it: a record, or a functional interface for a callable">
+        <description>NAR005 in Java: an annotation you cannot say out loud needs a name.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//(FieldDeclaration | FormalParameter | LocalVariableDeclaration | MethodDeclaration | RecordComponent)
+  /ClassType[count(.//(ClassType | PrimitiveType)) > 4]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR123" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="&amp;&amp; inside || without parentheses. Parenthesise each group">
+        <description>NAR007 in Java: mixed &amp;&amp; and || parenthesise each group.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[//InfixExpression[@Operator = '||']/InfixExpression[@Operator = '&&'][@Parenthesized = false()]]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NAR124" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="package-private member. Make it private or public">
+        <description>A02: private or public only. Test sources are not analysed.</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//(MethodDeclaration | FieldDeclaration | ConstructorDeclaration | ClassDeclaration | RecordDeclaration | EnumDeclaration)
+  [@Visibility = 'package']
+  [not(ancestor::ClassDeclaration[@Interface = true()])]
+  [not(self::ConstructorDeclaration and parent::EnumBody)]
+  [not(parent::EnumBody/parent::EnumDeclaration and self::ConstructorDeclaration)]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- EnumMap(Map) and EnumSet.copyOf(Collection) throw on an empty argument of another type, so the
+         enum types are part of the contract -->
+    <rule ref="category/java/bestpractices.xml/LooseCoupling">
+        <properties>
+            <property name="allowedTypes" value="java.util.Properties,java.util.EnumMap,java.util.EnumSet"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/ImmutableField"/>
+    <rule ref="category/java/errorprone.xml/AvoidCatchingGenericException"/>
+    <rule ref="category/java/bestpractices.xml/PreserveStackTrace"/>
+</ruleset>

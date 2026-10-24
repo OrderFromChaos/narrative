@@ -22,6 +22,8 @@ round8/                  red team: 35 defects from four fresh-context agents, pl
 round9/                  the skill read as a text: four defects in it, and V4 as the held-out test
 round10/                 comments: the corpus, the profile against human code, 13 cycles of agent runs and ratings
 validation/              held-out tasks for the blind skill-vs-doc comparison
+java/                    narrative-java round j1: the Java mapping, the toolchain spikes, the GT5 run feedback
+java-merge/              the merge of narrative-java: the drift between the two copies of the shared rules, the rulings, the example rewrites
 decisions.jsonl          the evidence base, one answer per line
 ```
 
@@ -86,14 +88,14 @@ directory when the round produces material a later reader must see to judge the 
 
 ## decisions.jsonl schema
 
-One object per line. Every rule in `skill/SKILL.md` must cite an `id` from this file. A rule
-with no `id` and no linter behind the rule does not ship.
+One object per line. Every rule in the skill's rule modules (`core/rules/`, `lang/*/rules/`) must
+cite an `id` from this file. A rule with no `id` and no linter behind the rule does not ship.
 
 | field | type | notes |
 |---|---|---|
 | `id` | str | `Q07`, `R2-03`, `R3-P1-rank`, `R5-06`, `V-03` |
 | `dimension` | str | dotted, e.g. `errors.chaining` |
-| `round` | str | `1`, `2`, `2b`, `3`, `3a`, `4`, `5`, `6`, `7`, `8`, `9`, `10`, `11`, `validation` |
+| `round` | str | `1`, `2`, `2b`, `3`, `3a`, `4`, `5`, `6`, `7`, `8`, `9`, `10`, `11`, `validation`, and `j1` for the first round of narrative-java |
 | `kind` | str | `control` \| `gap` \| `provocation` \| `derived` |
 | `options` | list[str] | short labels in the order presented |
 | `choice` | str | chosen label, or `depends` |
@@ -101,6 +103,7 @@ with no `id` and no linter behind the rule does not ship.
 | `condition` | str \| null | set when `choice` is `depends` or the rule is contextual |
 | `note` | str \| null | verbatim user reasoning, where given |
 | `date` | str | ISO date |
+| `scope` | str | `core` \| `python` \| `java` \| `project`. Where the decision applies: every language, one language, or the benchmark itself. A rule module in `core/rules/` cites only `core` and `project` decisions, and a module of one language cites no decision of another language |
 | `supersedes` | list[str] | optional. Ids this decision replaces. `verify_docs.py` fails any document that states current rules and cites a superseded id |
 
 ## Validation

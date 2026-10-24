@@ -1,7 +1,8 @@
 # Gaps found by writing real programs against the skill
 
-**This is a round writeup, not a rule document.** Read the rules from `skill/SKILL.md`, which is the
-only place that states them. This file ships with the benchmark and not with the skill.
+**This is a round writeup, not a rule document.** The rules are in `skills/python/SKILL.md`,
+built from `core/rules/` and `lang/python/rules/`. This file ships with the benchmark and not with
+the skill.
 
 Agents wrote programs against `SKILL.md` and reported every place the skill was ambiguous,
 contradictory, or impossible to follow. That report found more defects than any review of the text.

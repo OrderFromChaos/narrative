@@ -1,0 +1,95 @@
+// The narrative-java checks for a Java build, added by a Gradle init script so no project file changes.
+//
+// Usage, as verify.py runs it:
+//     ./gradlew --init-script <skill>/narrative.init.gradle --continue --no-configuration-cache \
+//         -Pnarrative.skillDir=<skill> -Pnarrative.reportDir=build/narrative \
+//         -Pnarrative.pmdRuleset=build/narrative/pmd-ruleset.xml \
+//         [-Pnarrative.files=build/narrative/changed-files.txt] compileJava narrativeCheck
+//
+// narrativeCheck runs two tasks, and each one writes an XML report to narrative.reportDir:
+//     narrativeCheckstyle  -> checkstyle.xml, with <skill>/checkstyle.xml
+//     narrativePmd         -> pmd.xml, with the ruleset in narrative.pmdRuleset
+// compileJava gets -Xlint:rawtypes,unchecked. javac prints each warning with the full path of its file.
+//
+// The tasks are registered in projectsEvaluated. GTNHGradle configures the checkstyle extension
+// after an allprojects block runs, so this script changes no extension and adds tasks of its own.
+
+// Gradle also runs an init script for buildSrc, and passes buildSrc none of the -P properties. The
+// script skips buildSrc and every other nested build.
+if (gradle.parent != null) {
+    return
+}
+
+def properties = gradle.startParameter.projectProperties
+def skillDir = new File(properties['narrative.skillDir'] ?: { throw new GradleException('narrative.init.gradle: pass -Pnarrative.skillDir') }())
+def reportDir = new File(properties['narrative.reportDir'] ?: 'build/narrative')
+def rulesetFile = new File(properties['narrative.pmdRuleset'] ?: new File(skillDir, 'pmd-ruleset.xml').path)
+// the first PMD 7 release that parses Java 25 is 7.16.0. benchmark/spikes.md has the test of 7.28.0
+def pmdVersion = properties['narrative.pmdVersion'] ?: '7.28.0'
+// the version GTNHGradle 2.0.26 pins, in UpdateableConstants.NEWEST_CHECKSTYLE
+def checkstyleVersion = properties['narrative.checkstyleVersion'] ?: '13.5.0'
+// under --since, verify.py lists the changed files here, and Checkstyle and PMD read only those
+def changedFiles = properties['narrative.files'] ? new File(properties['narrative.files']).readLines().collect { new File(it) } as Set : null
+
+gradle.projectsEvaluated {
+    gradle.rootProject.allprojects { project ->
+        project.plugins.withId('java') {
+            def main = project.sourceSets.main
+            def projectReportDir = reportDir.isAbsolute() ? reportDir : project.file(reportDir.path)
+
+            project.tasks.named('compileJava', JavaCompile) { task ->
+                task.options.compilerArgs.addAll(['-Xlint:rawtypes,unchecked', '-Xmaxwarns', '100000'])
+                // every file or none, so the javac warnings of the last compile cover every file
+                task.options.incremental = false
+            }
+
+            project.pluginManager.apply('pmd')
+            project.pmd.toolVersion = pmdVersion
+
+            def checkstyleTool = project.configurations.detachedConfiguration(
+                project.dependencies.create("com.puppycrawl.tools:checkstyle:${checkstyleVersion}"))
+
+            def checkedSources = changedFiles == null ? main.allJava : main.allJava.filter { changedFiles.contains(it) }
+
+            def narrativeCheckstyle = project.tasks.register('narrativeCheckstyle', Checkstyle) {
+                source = checkedSources
+                classpath = project.files()
+                checkstyleClasspath = checkstyleTool
+                configFile = new File(skillDir, 'checkstyle.xml')
+                configDirectory = skillDir
+                configProperties = ['narrative.checkstyleCache': new File(projectReportDir, 'checkstyle.cache').path]
+                ignoreFailures = true
+                showViolations = false
+                maxHeapSize = '1g'
+                reports {
+                    xml.required = true
+                    xml.outputLocation = new File(projectReportDir, 'checkstyle.xml')
+                    html.required = false
+                    sarif.required = false
+                }
+            }
+
+            def narrativePmd = project.tasks.register('narrativePmd', Pmd) {
+                source = checkedSources
+                classpath = main.output + main.compileClasspath
+                pmdClasspath = project.configurations.pmd
+                ruleSetFiles = project.files(rulesetFile)
+                ruleSets = []
+                ignoreFailures = true
+                consoleOutput = false
+                incrementalAnalysis = true
+                maxHeapSize = '2g'
+                threads = 2
+                reports {
+                    xml.required = true
+                    xml.outputLocation = new File(projectReportDir, 'pmd.xml')
+                    html.required = false
+                }
+            }
+
+            project.tasks.register('narrativeCheck') {
+                dependsOn narrativeCheckstyle, narrativePmd
+            }
+        }
+    }
+}

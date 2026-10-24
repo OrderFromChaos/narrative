@@ -1,0 +1,68 @@
+# The user's verdicts on the blind ratings in benchmark/round10/rating*.md, one row per rated comment.
+# Transcribed from the user's replies, which decisions.jsonl summarises as R10-rating to R10-rating5.
+# A placement remark ("should be above the if") with no change to the text is a keep.
+# R10-X11b is the second comment in the R10-X11 snippet, which the user kept in the same reply.
+# item	verdict	rewrite
+R10-V01	cut
+R10-V02	cut
+R10-V03	keep
+R10-V04	cut
+R10-V05	keep
+R10-V06	cut
+R10-V07	rewrite	DB-API doesn't allow dataclasses, so tuple
+R10-V08	cut
+R10-V09	cut
+R10-V10	cut
+R10-V11	cut
+R10-V12	cut
+R10-V13	cut
+R10-V14	rewrite	databases written before 2026/10/01 lack the account_id column
+R10-V15	cut
+R10-W01	rewrite	read-only: NEVER write inside the input directory
+R10-W02	keep
+R10-W03	cut
+R10-W04	cut
+R10-W05	cut
+R10-W06	cut
+R10-W07	cut
+R10-W08	cut
+R10-W09	rewrite	the rules file is typed by hand; team names might not match the scanner's case or spacing
+R10-W10	cut
+R10-W11	keep
+R10-W12	cut
+R10-W13	keep
+R10-W14	cut
+R10-W15	cut
+R10-X01	keep
+R10-X02	rewrite	names can have one hop aliases
+R10-X03	rewrite
+R10-X04	cut
+R10-X05	cut
+R10-X06	keep
+R10-X07	keep
+R10-X08	keep
+R10-X09	keep
+R10-X10	cut
+R10-X11	cut
+R10-X11b	keep
+R10-X12	cut
+R10-X13	cut
+R10-X14	keep
+R10-X15	keep
+R10-X16	cut
+R10-X17	keep
+R10-X18	rewrite	states the billing sku when two sides disagree
+R10-Y01	rewrite
+R10-Y02	keep
+R10-Y03	rewrite
+R10-Y04	keep
+R10-Y05	rewrite	member order matches the report's order
+R10-Y06	cut
+R10-Y07	keep
+R10-Y08	cut
+R10-Y09	keep
+R10-Y10	cut
+R10-Z01	cut
+R10-Z02	keep
+R10-Z03	cut
+R10-Z04	cut

@@ -80,13 +80,22 @@ Some examples of (2):
 In Claude Code:
 
 ```
-/plugin marketplace add OrderFromChaos/narrative-python
-/plugin install narrative-python@narrative-python
+/plugin marketplace add OrderFromChaos/narrative
+/plugin install nar@narrative
 ```
 
-Then open `/plugin`, go to **Marketplaces**, select `narrative-python` and select **Enable auto-update**.
-Each push to this repository then reaches you at your next session. Invoke the skill as
-`/narrative-python:narrative-python`, or let Claude load the skill when a task involves Python.
+Then open `/plugin`, go to **Marketplaces**, select `narrative` and select **Enable auto-update**.
+Each push to this repository then reaches you at your next session. Invoke the skill as `/nar:python`,
+or let Claude load the skill when a task involves Python. The plugin has the Java skill for GTNH mods
+too, as `/nar:java`. If you installed the plugin under its earlier name, run
+`/plugin uninstall narrative-python@narrative-python` and `/plugin marketplace remove narrative-python`
+first.
+
+The rules for comments, docstrings and pages are in a separate skill, `nar:core`. `/nar:python` and
+`/nar:java` load `nar:core` themselves, so you never invoke `nar:core`. In a repository with more
+than one language, such as a mod with Python scripts, invoke `/nar:code`. `/nar:code` counts the
+source files of each language, and Claude then loads the skill of each language with source files,
+and `nar:core` once.
 
 The first time Claude runs the checks, Claude sets up the shared lint venv in
 `~/.local/share/narrative/lintenv` (`%LOCALAPPDATA%\narrative\lintenv` on Windows), with `uv`.
@@ -97,12 +106,12 @@ To roll the plugin out to a whole team, a Claude Code admin can add this to mana
 ```json
 {
   "extraKnownMarketplaces": {
-    "narrative-python": {
-      "source": { "source": "github", "repo": "OrderFromChaos/narrative-python" },
+    "narrative": {
+      "source": { "source": "github", "repo": "OrderFromChaos/narrative" },
       "autoUpdate": true
     }
   },
-  "enabledPlugins": { "narrative-python@narrative-python": true }
+  "enabledPlugins": { "nar@narrative": true }
 }
 ```
 
@@ -111,15 +120,22 @@ To roll the plugin out to a whole team, a Claude Code admin can add this to mana
 Clone the repository and run the installer:
 
 ```bash
-git clone git@github.com:OrderFromChaos/narrative-python.git
-cd narrative-python
+git clone git@github.com:OrderFromChaos/narrative.git
+cd narrative
 
 ./install.sh
 ```
 
-`install.sh` copies the skill's ten files to `~/.claude/skills/narrative-python`, or to a path you
-give `install.sh`. Invoke the skill as `/narrative-python`, or let Claude load the skill when a task
-involves Python.
+`install.sh` copies the files of `skills/python/` to `~/.claude/skills/narrative-python`, and the
+shared rules of `skills/core/` to `~/.claude/skills/narrative-core`. To install
+to another path, give the skill name and then the path:
+`./install.sh python ~/.config/claude/skills/narrative-python`. Invoke the skill as
+`/narrative-python`, or let Claude load the skill when a task involves Python. For the Java skill of
+GTNH mods, run `./install.sh java`. See `lang/java/README.md`.
+
+`skills/` is generated. The rules shared by every language are in `core/`, the rules and tools of
+each language are in `lang/python/` and `lang/java/`, and `skills.toml` lists the modules of each
+skill. After a change to `core/`, `lang/` or `skills.toml`, run `python3 build_skills.py`.
 
 **To update, run `git pull && ./install.sh`.** If you change to the plugin, delete
 `~/.claude/skills/narrative-python`, or Claude loads both copies.
@@ -233,5 +249,5 @@ guided arm's files changed only to re-paste a stale docstring sample (required b
 
 ## License
 
-Apache-2.0. See `LICENSE`. `skill/words.json` has word lists derived from WordNet 3.0 and VerbNet 3,
-under their licenses. The text of both licenses is in the `license` field of `skill/words.json`.
+Apache-2.0. See `LICENSE`. `core/tools/words.json` has word lists derived from WordNet 3.0 and VerbNet
+3, under their licenses. The text of both licenses is in the `license` field of `core/tools/words.json`.

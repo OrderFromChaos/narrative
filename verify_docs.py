@@ -11,6 +11,7 @@ import ast
 import contextlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -22,14 +23,50 @@ ROOT = Path(__file__).resolve().parent
 ### compared by a human when either changes. That is cheap, and it already drifted three ways
 ### without one.
 
-DECISION_FIELDS = ('id', 'dimension', 'round', 'kind', 'options', 'choice', 'strength', 'condition', 'note', 'date')
-DECISION_ROUNDS = frozenset({'1', '2', '2b', '3', '3a', '4', '5', '6', '7', '8', '9', '10', '11', 'validation'})
+DECISION_FIELDS = (
+    'id',
+    'dimension',
+    'round',
+    'kind',
+    'options',
+    'choice',
+    'strength',
+    'condition',
+    'note',
+    'date',
+    'scope',
+)
+DECISION_ROUNDS = frozenset({'1', '2', '2b', '3', '3a', '4', '5', '6', '7', '8', '9', '10', '11', 'validation', 'j1'})
+# where a decision applies: every language, one language, or the benchmark and the project itself
+DECISION_SCOPES = frozenset({'core', 'python', 'java', 'project'})
 DECISION_KINDS = frozenset({'control', 'gap', 'provocation', 'derived'})
 DECISION_STRENGTHS = frozenset({'strong', 'weak'})
 NULLABLE_FIELDS = frozenset({'condition', 'note', 'strength'})
 LIST_FIELDS = frozenset({'options', 'supersedes'})
 OPTIONAL_FIELDS = ('supersedes',)
 MIN_ROUND_PATH_PARTS = 2
+# the checkers whose RULES and RETIRED dicts list every NAR code
+RULE_REGISTRIES = ('core/tools/wording.py', 'lang/python/tools/checks.py')
+# the Java checks. Their NAR codes are read from the text of each file, such as a PMD rule name
+JAVA_CODE_SOURCES = ('lang/java/tools/javachecks.py', 'lang/java/tools/pmd-ruleset.xml')
+# matches:
+# `R10-fence-form`  # noqa: NAR012
+# `J1-P31b`
+# `Q08`  # noqa: NAR012
+# `V-03`  # noqa: NAR012
+# rejects:
+# `Q8`
+DECISION_ID = re.compile(
+    r'\b(?:J1-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*|Q\d{2}|R\d{1,2}[a-z]?-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*|V-\d\d)\b',
+)
+# the decision scopes allowed in the citations of a rule module, by the first directories of the module's path
+CITABLE_SCOPES = {
+    ('core', 'rules'): frozenset({'core', 'project'}),
+    ('lang', 'python'): frozenset({'core', 'python', 'project'}),
+    ('lang', 'java'): frozenset({'core', 'java', 'project'}),
+}
+# the directories of the documents of the current rules
+SKILL_SOURCE_DIRECTORIES = frozenset({'core', 'lang', 'mode', 'skills'})
 
 
 def schemaProblems(decisions: list[dict[str, object]]) -> list[str]:
@@ -61,7 +98,13 @@ def schemaProblems(decisions: list[dict[str, object]]) -> list[str]:
             elif field not in LIST_FIELDS and value is not None and not isinstance(value, str):
                 problems.append(f'decisions.jsonl {name}: {field} is {type(value).__name__}, schema says str')
 
-        for field, allowed in (('round', DECISION_ROUNDS), ('kind', DECISION_KINDS), ('strength', DECISION_STRENGTHS)):
+        checked = (
+            ('round', DECISION_ROUNDS),
+            ('kind', DECISION_KINDS),
+            ('strength', DECISION_STRENGTHS),
+            ('scope', DECISION_SCOPES),
+        )
+        for field, allowed in checked:
             value = record[field]
             if value is not None and value not in allowed:
                 problems.append(f'decisions.jsonl {name}: {field} is {value!r}, not one of {sorted(allowed)}')
@@ -109,10 +152,55 @@ def supersessions(decisions: list[dict[str, object]]) -> dict[str, str]:
 def statesCurrentRules(relative: Path) -> bool:
     """Report whether a document is a description of the current rules.
 
-    The skill and the top-level README are. A round writeup is not: it is a record of what was
-    decided then, so naming a decision that a later round replaced is the point rather than a defect.
+    The rule modules, the built skills and the top-level README are. A round writeup is not: it is a
+    record of what was decided then, so naming a decision that a later round replaced is the point
+    rather than a defect.
     """
-    return relative.parts[0] == 'skill' or str(relative) == 'README.md'
+    return relative.parts[0] in SKILL_SOURCE_DIRECTORIES or str(relative) == 'README.md'
+
+
+def citableScopes(relative: Path) -> frozenset[str] | None:
+    """Return the decision scopes allowed in the citations of one document of the skill sources.
+
+    A rule in core/rules/ applies to every language, so the citations of the rule are decisions of
+    scope core or project. The citations of a rule of one language can also be decisions of that
+    language.
+
+    Returns:
+        The scopes, or None for a document outside core/rules/ and lang/. Any decision is allowed there.
+    """
+    for prefix, allowed in CITABLE_SCOPES.items():
+        if relative.parts[: len(prefix)] == prefix:
+            return allowed
+    return None
+
+
+def pointerProblems() -> list[str]:
+    """Report each pointer in core/rules/ to a heading that the comments module of a language lacks.
+
+    A pointer reads `under **Source facts** in **Comments in <language>**`. Every language has the
+    heading `### Source facts` in lang/<language>/rules/comments-<language>.md.
+
+    Returns:
+        One problem per pointer and language without the heading.
+    """
+    # matches:
+    # `under **Source facts** in **Comments in <language>**`
+    POINTER = re.compile(r'under \*\*(?P<section>[^*]+)\*\* in \*\*Comments in <language>\*\*')
+    modules = sorted((ROOT / 'lang').glob('*/rules/comments-*.md'))
+    headings = {module: set(re.findall(r'^### (.+)$', module.read_text(), re.M)) for module in modules}
+    problems: list[str] = []
+    for rule_module in sorted((ROOT / 'core' / 'rules').glob('*.md')):
+        text = ' '.join(rule_module.read_text().split())
+        source = rule_module.relative_to(ROOT)
+        for pointer in POINTER.finditer(text):
+            section = pointer['section']
+            problems.extend(
+                f'{source}: points to {section}, which {module.relative_to(ROOT)} has no heading for'
+                for module in modules
+                if section not in headings[module]
+            )
+    return problems
 
 
 def declarationPrefix(relative: Path) -> str:
@@ -129,6 +217,15 @@ def declarationPrefix(relative: Path) -> str:
     return f'R{parts[1].removeprefix("round")}-'
 
 
+def inOtherCheckout(doc: Path) -> bool:
+    """Tell whether a file is in another checkout below ROOT, such as the worktree of another branch.
+
+    Another checkout holds its own decisions.jsonl, so its citations are checked in that checkout.
+    """
+    below_root = doc.relative_to(ROOT).parents[:-1]
+    return any((ROOT / directory / '.git').exists() for directory in below_root)
+
+
 def main() -> int:
     """Report any citation, code block or count in the docs that doesn't match the source of truth."""
     problems: list[str] = []
@@ -137,26 +234,35 @@ def main() -> int:
     problems.extend(schemaProblems(decisions))
     decision_ids = {record['id'] for record in decisions}
     replaced = supersessions(decisions)
-    tree = ast.parse((ROOT / 'skill/checks.py').read_text())
     registries: dict[str, set[str]] = {'RULES': set(), 'RETIRED': set()}
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Dict):
-            continue
-        name = getattr(node.targets[0], 'id', '')
-        if name in registries:
-            keys = node.value.keys
-            registries[name] = {k.value for k in keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+    for checker in RULE_REGISTRIES:
+        for node in ast.parse((ROOT / checker).read_text()).body:
+            if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Dict):
+                continue
+            name = getattr(node.targets[0], 'id', '')
+            if name in registries:
+                # a `**` entry has the key None. Its codes are read from the module it comes from
+                keys = node.value.keys
+                registries[name] |= {k.value for k in keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
 
     rule_codes, retired = registries['RULES'], registries['RETIRED']
     # the codes of agentverbs.py findings are the CODE, FRAGMENT_CODE, CONNECTIVE_CODE and PRONOUN_CODE constants
     code_names = ('CODE', 'FRAGMENT_CODE', 'CONNECTIVE_CODE', 'PRONOUN_CODE')
-    for node in ast.parse((ROOT / 'skill/agentverbs.py').read_text()).body:
+    for node in ast.parse((ROOT / 'core/tools/agentverbs.py').read_text()).body:
         if not isinstance(node, ast.Assign) or getattr(node.targets[0], 'id', '') not in code_names:
             continue
         if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
             rule_codes = rule_codes | {node.value.value}
+    for source in JAVA_CODE_SOURCES:
+        rule_codes = rule_codes | set(re.findall(r'\bNAR\d{3}\b', (ROOT / source).read_text()))
+    scopes = {str(record['id']): str(record['scope']) for record in decisions}
 
-    docs = [p for p in ROOT.rglob('*.md') if '.lintenv' not in str(p)]
+    build_command = [sys.executable, str(ROOT / 'build_skills.py'), '--check']
+    build = subprocess.run(build_command, capture_output=True, text=True, check=False)
+    build_lines = [*build.stdout.splitlines(), *build.stderr.splitlines()]
+    problems.extend(f'build_skills.py --check: {line}' for line in build_lines)
+
+    docs = [p for p in ROOT.rglob('*.md') if '.lintenv' not in str(p) and not inOtherCheckout(p)]
     cited_ids: set[str] = set()
     declared_ids: set[str] = set()
     blocks = 0
@@ -166,7 +272,8 @@ def main() -> int:
         rel = doc.relative_to(ROOT)
         own_prefix = declarationPrefix(rel)
 
-        for token in re.findall(r'\b(?:Q\d{2}|R\d{1,2}[a-z]?-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*|V-\d\d)\b', text):
+        citable = citableScopes(rel)
+        for token in DECISION_ID.findall(text):
             if own_prefix and token.startswith(own_prefix):
                 declared_ids.add(token)
                 continue
@@ -176,6 +283,8 @@ def main() -> int:
                 problems.append(f'{rel}: cites unknown decision {token}')
             elif token in replaced and statesCurrentRules(rel):
                 problems.append(f'{rel}: cites {token}, which {replaced[token]} superseded')
+            elif citable is not None and scopes[token] not in citable:
+                problems.append(f'{rel}: cites {token}, a decision of scope {scopes[token]}')
 
         for code in re.findall(r'\bNAR\d{3}\b', text):
             if code not in rule_codes | retired:
@@ -192,6 +301,8 @@ def main() -> int:
     claimed = re.search(r'(\d+) (?:forced|human-selected) choices', readme)
     if claimed and int(claimed.group(1)) != len(decision_ids):
         problems.append(f'README claims {claimed.group(1)} decisions, decisions.jsonl has {len(decision_ids)}')
+
+    problems.extend(pointerProblems())
 
     print(f'checked {len(docs)} documents, {len(cited_ids)} distinct decision citations, {blocks} python blocks')
     print(f'decisions.jsonl: {len(decision_ids)} ids;  checks.py: {len(rule_codes)} rule codes, {len(retired)} retired')

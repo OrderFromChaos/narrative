@@ -1,4 +1,4 @@
-"""Run SWE-rebench tasks under Claude Code with and without /narrative-python, and grade each patch.
+"""Run SWE-rebench tasks under Claude Code with and without /nar:python, and grade each patch.
 
 For each task, `claude -p` runs on the host in a copy of the task's /testbed, under the login in
 --config-dir. The session has no shell or web tools. Its commands go through container_tool.py to a
@@ -54,7 +54,10 @@ import container_tool
 
 
 SAMPLE_PATH = Path(__file__).resolve().parent / 'sample.json'
-SKILL_SOURCE_DIR = Path(__file__).resolve().parents[2] / 'skill'
+REPO_DIR = Path(__file__).resolve().parents[2]
+# the plugin of the skill arm, and the built skills of skills/ in the plugin: python and the skills python requires
+PLUGIN_NAME = 'nar'
+PLUGIN_SKILLS = ('python', 'core')
 DEFAULT_OUT_DIR = Path.home() / '.cache' / 'narrative-bugfind'
 DEFAULT_CONFIG_DIR = Path.home() / '.config' / 'narrative-bugfind' / 'claude-config'
 CONTAINER_TOOL_PATH = Path(__file__).resolve().parent / 'container_tool.py'
@@ -412,25 +415,32 @@ def loggedIn(config_dir: Path) -> bool:
 async def prepareAgent(arguments: argparse.Namespace) -> AgentSettings:
     """Build the skill plugin for this batch and collect the settings every arm shares.
 
-    The plugin is rebuilt from the repository's skill/ for each batch, so a batch runs the skill of the
-    working tree. The commit goes in each result file.
+    The plugin is rebuilt from the repository's skills/ for each batch, so a batch runs the skills of
+    the working tree. The plugin is `nar`, as in .claude-plugin/marketplace.json, with the skill
+    `python` and each skill `python` requires, such as `core`. So the command is `/nar:python`, and
+    the instruction in `nar:python` to load `nar:core` names a skill of the plugin. The commit goes in
+    each result file.
 
     Raises:
-        HarnessError: install.sh failed.
+        HarnessError: skills/ has no built skill of that name.
     """
     plugin_dir = arguments.out / 'plugin'
     if plugin_dir.exists():
         shutil.rmtree(plugin_dir)
     (plugin_dir / '.claude-plugin').mkdir(parents=True)
-    (plugin_dir / '.claude-plugin' / 'plugin.json').write_text('{"name": "narrative-python"}\n', encoding='utf-8')
-    await runHost(str(SKILL_SOURCE_DIR.parent / 'install.sh'), str(plugin_dir / 'skills' / 'narrative-python'))
+    (plugin_dir / '.claude-plugin' / 'plugin.json').write_text(f'{{"name": "{PLUGIN_NAME}"}}\n', encoding='utf-8')
+    for skill in PLUGIN_SKILLS:
+        built = REPO_DIR / 'skills' / skill
+        if not (built / 'SKILL.md').is_file():
+            raise HarnessError(f'{built} has no SKILL.md. Run python3 build_skills.py')
+        shutil.copytree(built, plugin_dir / 'skills' / skill, ignore=shutil.ignore_patterns('__pycache__'))
     return AgentSettings(
         claude_binary=arguments.claude or findNewestClaude(),
         config_dir=arguments.config_dir,
         plugin_dir=plugin_dir,
         work_root=arguments.out / 'work',
         run_dir=arguments.out / f'run{arguments.run}',
-        skill_commit=await runHost('git', '-C', str(SKILL_SOURCE_DIR), 'rev-parse', '--short', 'HEAD'),
+        skill_commit=await runHost('git', '-C', str(REPO_DIR), 'rev-parse', '--short', 'HEAD'),
     )
 
 
@@ -696,7 +706,7 @@ def buildPrompt(task: Task, arm: Arm) -> str:
         case Arm.BASE:
             return prompt
         case Arm.SKILL:
-            return f'/narrative-python:narrative-python {prompt}'
+            return f'/{PLUGIN_NAME}:python {prompt}'
 
 
 def summariseLog(log_path: Path, diff: str, *, exit_code: int, timed_out: bool) -> AgentOutcome:

@@ -1,0 +1,16 @@
+// The fixture project of narrative-java: run verify.py from this directory, as run_fixtures.py does.
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['fixtures', 'stubs']
+        }
+    }
+}

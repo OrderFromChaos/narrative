@@ -15,8 +15,9 @@ is no published score for Opus 5.5.
 ## Control
 
 Two arms. Same Claude Code binary, model `claude-opus-5-5`, `--effort high`, prompt, tools and
-container limits. In the skill arm, the skill is loaded as a session plugin, and the prompt starts
-with `/narrative-python:narrative-python`. Each result file has the model named in the session's
+container limits. In the skill arm, the skills `python` and `core` of `skills/` are loaded as the
+session plugin `nar`, and the prompt starts with `/nar:python`. The pilot below ran the earlier
+single skill as `/narrative-python:narrative-python`. Each result file has the model named in the session's
 init event, the models billed, and the input tokens of the first API call. The skill arm's first
 call is larger by the size of SKILL.md, about 25,000 tokens.
 

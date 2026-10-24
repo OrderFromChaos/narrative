@@ -1,0 +1,113 @@
+# The entry skills of Narrative. A table with `modules` is the skill of one language: the rules are
+# the modules in the order given, the tools are the files in `files`, and `suffixes` names the
+# language's source files. A table with `combines` is a skill for a repository with several
+# languages: the rules of each combined language that the repository has.
+#
+# build_skills.py writes skills/<name>/: a SKILL.md with the frontmatter and one line that runs
+# assemble.py when the skill loads, and a copy of each file in `files`. skills/ is generated. Edit
+# core/, lang/ and this file, then run build_skills.py.
+#
+# The plugin `nar` loads each skill as /nar:<name>. install.sh installs a language skill by hand as
+# narrative-<name>, so the skill is /narrative-<name> there, with the rules written into SKILL.md.
+
+[python]
+description = "Write or review Python in the Narrative house style, with mixedCase functions, main() first with types last, parse-at-the-boundary dataclasses, no ORM that re-validates what the database checks, explicit global on mutation, exhaustive match without a fallback arm, and a verified ruff/pylint/mypy toolchain. Covers multi-module architecture too. Which module may import which, when one file becomes several, what goes in a package __init__.py, where a shared type belongs, and when to take or contain a third-party dependency. Use for any Python written in or for this codebase, when laying out modules or packages, and when reviewing a diff against this style. Always load nar:core with this skill: nar:core has the rules for comments, docstrings and error messages."
+modules = [
+    "lang/python/rules/load-core.md",
+    "lang/python/rules/intro.md",
+    "lang/python/rules/file-layout.md",
+    "lang/python/rules/python-floor.md",
+    "lang/python/rules/structure.md",
+    "lang/python/rules/naming.md",
+    "lang/python/rules/constants.md",
+    "lang/python/rules/types.md",
+    "lang/python/rules/data-at-boundaries.md",
+    "lang/python/rules/errors.md",
+    "lang/python/rules/module-state.md",
+    "lang/python/rules/logging.md",
+    "lang/python/rules/configuration.md",
+    "lang/python/rules/concurrency.md",
+    "lang/python/rules/testing.md",
+    "lang/python/rules/module-docstring.md",
+    "lang/python/rules/show-the-thing.md",
+    "lang/python/rules/docstring-rules.md",
+    "lang/python/rules/comments-python.md",
+    "lang/python/rules/procedures.md",
+    "lang/python/rules/setup.md",
+    "lang/python/rules/verify.md",
+]
+files = [
+    "lang/python/architecture.md",
+    "lang/python/tooling.md",
+    "lang/python/tools/checks.py",
+    "lang/python/tools/codeprose.py",
+    "lang/python/tools/verify.py",
+    "lang/python/tools/pyproject-snippet.toml",
+    "core/tools/agentverbs.py",
+    "core/tools/prose.py",
+    "core/tools/wording.py",
+    "core/tools/words.json",
+    "core/tools/requirements-lock.txt",
+]
+suffixes = [".py"]
+requires = ["core"]
+
+
+[core]
+description = "The Narrative rules for comments, docstrings, javadoc, error messages, help text and published pages such as a README, in every language. Load with nar:python or nar:java whenever code is written or reviewed, and alone to write or review a page."
+modules = [
+    "core/rules/intro.md",
+    "core/rules/comments.md",
+    "core/rules/writing-a-comment.md",
+    "core/rules/prose-review.md",
+    "core/rules/published-prose.md",
+]
+
+[java]
+description = "Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods on Java 25 with jvmDowngrader. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, and when reviewing a Java diff against this style. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages."
+modules = [
+    "lang/java/rules/load-core.md",
+    "lang/java/rules/intro.md",
+    "lang/java/rules/scope.md",
+    "lang/java/rules/class-layout.md",
+    "lang/java/rules/structure.md",
+    "lang/java/rules/naming.md",
+    "lang/java/rules/constants.md",
+    "lang/java/rules/types.md",
+    "lang/java/rules/data-at-boundaries.md",
+    "lang/java/rules/errors.md",
+    "lang/java/rules/static-state.md",
+    "lang/java/rules/logging.md",
+    "lang/java/rules/configuration.md",
+    "lang/java/rules/concurrency.md",
+    "lang/java/rules/testing.md",
+    "lang/java/rules/gtnh.md",
+    "lang/java/rules/javadoc.md",
+    "lang/java/rules/show-the-thing.md",
+    "lang/java/rules/javadoc-rules.md",
+    "lang/java/rules/comments-java.md",
+    "lang/java/rules/procedures.md",
+    "lang/java/rules/setup.md",
+    "lang/java/rules/verify.md",
+]
+files = [
+    "lang/java/architecture.md",
+    "lang/java/tooling.md",
+    "lang/java/tools/javachecks.py",
+    "lang/java/tools/codeprose.py",
+    "lang/java/tools/verify.py",
+    "lang/java/tools/narrative.init.gradle",
+    "lang/java/tools/checkstyle.xml",
+    "lang/java/tools/pmd-ruleset.xml",
+    "core/tools/agentverbs.py",
+    "core/tools/prose.py",
+    "core/tools/wording.py",
+    "core/tools/words.json",
+    "core/tools/requirements-lock.txt",
+]
+suffixes = [".java"]
+requires = ["core"]
+
+[code]
+description = "Write or review code in the Narrative house style in a repository with more than one language, such as a Java mod with Python scripts. Loads the rules of each language the repository has, Python and Java. Use when a change spans languages; for one language, nar:python or nar:java load less."
+combines = ["python", "java"]

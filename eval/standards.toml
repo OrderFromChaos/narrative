@@ -1,0 +1,7 @@
+# Dates on which the labelling standard became stricter, as YYYY-MM-DD strings, set by the user.
+# label.py queues each unit whose latest gold label is older than the latest date for a re-label.
+# 2026-10-24: the user re-labelled 78 whole-unit gold labels without seeing the earlier labels, then
+# settled the unclear ones with reasons, in the note of each label. The earlier labels match the
+# current verdict on 63 of 78 (81%, kappa 0.32), with 14 changes stricter and 1 looser. That is the
+# human ceiling. The first pass alone matched on 58 of 77 (75%).
+changes = ["2026-10-24"]
