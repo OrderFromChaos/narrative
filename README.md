@@ -75,10 +75,10 @@ Some examples of (2):
 
 ## Usage
 
-Python: `/nar:python`
-GTNH Java: `/nar:java`
-Mixed languages: `/nar:code`
-Docs/pages: `/nar:core`
+- Python: `/nar:python`
+- Docs/pages: `/nar:core`
+- GTNH Java: `/nar:java`
+- Mixed languages: `/nar:code`
 
 ## Install
 
