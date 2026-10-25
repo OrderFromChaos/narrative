@@ -74,6 +74,14 @@ From the user's notes on the gold labels, in `eval/units/labels.jsonl`:
     well (bools are ints in Python)`
   - `# isdigit() admits non-ASCII digits such as '²'. Check isascii() too` against the gold: use
     `re.compile('[0-9]+')`, and write no comment
+    The user also rates this example acceptable as a comment. The point of the example is the named
+    alternative, `Check isascii() too`, because agents often name the fence and leave out the
+    alternative. For now, the gold label of the unit `isdigit() alone admits non-ASCII digits such as
+    '²'` is a rewrite into this example, although the original is acceptable too. In every run, the
+    agent with the skill rewrites that unit to this example word for word. Finer metric rules for such
+    cases come later.
+- The `as X, for Y` form, such as `as typed, for the report's input_dir`. The user would write
+  `as originally typed`, and still rated the comment acceptable.
 - Other notes for the same pass: `identical`, not `byte-identical`, for a text report. `two` and
   `implementations` in `two implementations must write …` are vague or over-specific.
 
@@ -135,7 +143,51 @@ that session's notes, then measure each candidate with `eval/run.py --skill A --
 - **Task level.** A chain harness in `experiment/bugfind`, and a Java task set from GTNH repos. The
   report has the resolved rate, the cost and the unit matrix of the comments of each run.
 
-## 7. For the user
+## 7. Outside the scope of the unit matrix
+
+The confusion matrix of `eval/run.py` scores one thing: whether an agent with the skill marks an
+existing comment, written by a model without the skill, as needing action. These are not measured:
+
+1. **Code written with the skill from the plan stage on.** Every unit was written without the skill.
+   The comments of bugfind runs and of the long-horizon builders (section 6), labelled with
+   `eval/label.py`, are the material for this measure.
+2. **The action taken, cut or rewrite.** Each prediction has an `action` field, and the saved runs
+   in `~/.cache/narrative-eval/runs/` have the field, but in the report, cut and rewrite are one
+   class. A matrix of action against the gold verdict can be built from the saved runs, with no new
+   run.
+3. **The quality of a rewrite.** A rewrite can be slop in other words. The saved runs have each
+   `new_text`. Run the deterministic checks on those texts, and label a sample with `eval/label.py`.
+4. **Durability.** Whether a later agent with the skill flags or rewrites the same comment again.
+   Run the skill on the rewrites of an earlier run, and count the share of those rewrites that the
+   skill changes a second time. The long-horizon eval measures the same across real steps.
+5. **Code choices outside comments**, such as layout, types and errors. Only bugfind and the
+   long-horizon eval have measures for these.
+6. **Docs and PRs.** The units are code comments and docstrings. For pages, PR bodies and commit
+   messages, units of those kinds can come from the bronze PR importer (section 1), the `nar:pr`
+   mode (section 6), and `~/.cache/narrative-agentverb-case/gold_gtnh.tsv`, 341 NAR017 sentence
+   labels (87 agent, 254 ok) from a published page about GTNH planner mods. No importer reads that
+   file yet.
+7. **The checkers and the setting of use.** In `eval/run.py agent --mode edit`, the default since
+   2026-10-24, the session gets the units' files, the file tools, the whole shell and the skill's
+   `verify.py`, with a request to fix the comments in place. `eval/edits.py` reads each unit's
+   verdict from the diff. Only 17 of the 63 gold units with context still have their whole file in
+   the repository. The files of the others were in deleted scratch directories, so the file of each
+   of those units is built from the rated snippets. `--mode review` is the earlier JSON review, kept
+   for comparison. In that mode on gold dev (report `20261024-172801-compare-dev`), letting the agent
+   run `verify.py` raised sensitivity from 0.754 to 0.841 on the units in context, and from 0.608 to
+   0.980 on the NAR017 sentences of gold.tsv. The rules were tuned on those sentences.
+
+   In the edit mode, on the same 51 gold dev units in context (report
+   `20261024-194708-agent-edit-dev-0`, 3 runs, the whole shell, and a separate grader that reads the
+   git diff for the rules), sensitivity was 0.906 (125/138) and specificity 0.600 (9/15). The diff
+   reader and the grader agreed on all 131 changed units. With three labels revised by the user
+   (`stripped and casefolded` and `as typed, for the report's input_dir` to keep, and `isdigit()
+   alone admits non-ASCII digits such as '²'` to a rewrite), the same run has sensitivity 0.948
+   (128/135) and specificity 0.833 (15/18), in report `20261024-221837-agent-edit-dev`. These units
+   are the material the rules were written from, so the numbers are agreement on that material, not
+   on new code.
+
+## 8. For the user
 
 - Commit the branch, after review.
 - Archive the narrative-java repository, with a README line pointing to `nar@narrative`.

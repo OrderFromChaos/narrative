@@ -124,7 +124,7 @@ skill. After a change to `core/`, `lang/` or `skills.toml`, run `python3 build_s
 
 # Details
 
-![Confusion matrix of /nar:python on the gold dev units](eval/reports/confusion-matrix-gold-dev-2026-10-24.png)
+![Confusion matrix of /nar:python on the gold dev units](eval/reports/confusion-matrix-gold-dev-edit-2026-10-24.png)
 
 ## Claudish Begone
 

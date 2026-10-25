@@ -37,10 +37,8 @@ from __future__ import annotations
 
 import argparse
 import ast
-import io
 import re
 import sys
-import tokenize
 from pathlib import Path
 
 import codeprose
@@ -728,7 +726,10 @@ def checkProseWording(tree: ast.Module, source: str, checked_file: Path) -> list
     Returns:
         One finding per rule and line.
     """
-    prose_lines = [*commentLines(source), *docstringLines(tree)]
+    return proseWording([*commentLines(source), *docstringLines(tree)], checked_file)
+
+
+def proseWording(prose_lines: list[tuple[int, str]], checked_file: Path) -> list[Finding]:
     list_items = {number for number, text in prose_lines if re.match(r'[*-]\s', text)}
     return wordingFindings(prose_lines, list_items, checked_file)
 
@@ -792,10 +793,7 @@ def proseInventory(checked_file: Path, changed_lines: set[int] | None = None) ->
 
 def commentLines(source: str) -> list[tuple[int, str]]:
     lines: list[tuple[int, str]] = []
-    for token in tokenize.generate_tokens(io.StringIO(source).readline):
-        if token.type != tokenize.COMMENT:
-            continue
-
+    for token in codeprose.commentTokens(source):
         text = token.string.lstrip('#').strip()
         pragma = codeprose.PRAGMA.match(text)
         divider = DIVIDER.search(text)
@@ -836,7 +834,7 @@ def suppressedLines(source: str) -> dict[int, set[str]]:
     """
     suppressed: dict[int, set[str]] = {}
     for number, text in enumerate(source.splitlines(), start=1):
-        found = re.search(r'#\s*noqa(?::\s*(?P<codes>[A-Z0-9, ]+))?', text)
+        found = codeprose.NOQA.search(text)
         if not found:
             continue
 
@@ -853,7 +851,8 @@ def checkFile(checked_file: Path) -> list[Finding]:
     the first bad path.
 
     Returns:
-        Every finding for this file, or a single NAR000 if the file could not be read or parsed.
+        Every finding for this file. For a file that cannot be read, a single NAR000. For a file that does
+        not parse, a NAR000 and the wording findings of the comments.
     """
     if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
         return checkPage(checked_file)
@@ -864,12 +863,16 @@ def checkFile(checked_file: Path) -> list[Finding]:
     except UnicodeDecodeError as exc:
         return [Finding(checked_file, 0, 'NAR000', f'not UTF-8: {exc.reason}')]
 
+    suppressed = suppressedLines(source)
     try:
         tree = ast.parse(source, filename=str(checked_file))
     except SyntaxError as exc:
-        return [Finding(checked_file, exc.lineno or 0, 'NAR000', f'syntax error: {exc.msg}')]
+        # the comments of a file that does not parse, such as a file in the middle of an edit, still get
+        # the wording checks
+        syntax = Finding(checked_file, exc.lineno or 0, 'NAR000', f'syntax error: {exc.msg}')
+        worded = proseWording(commentLines(source), checked_file)
+        return [syntax, *(f for f in worded if not (suppressed.get(f.line, set()) & {f.code, 'ALL'}))]
 
-    suppressed = suppressedLines(source)
     findings = [
         *checkGlobalDeclarations(tree, checked_file),
         *checkHasattrSelf(tree, checked_file),

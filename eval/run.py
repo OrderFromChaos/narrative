@@ -6,8 +6,17 @@ Predictors:
     agent          a fresh `claude -p` session per batch of units, with the skill loaded as a
                    plugin and the prompt opening with the skill's command. The session has the
                    Skill tool, so a skill that requires another skill loads the other skill, as in
-                   use. The prompt has each unit in the unit's file context, and no label.
-                   Confidential units are skipped unless --allow-confidential.
+                   use. Confidential units are skipped unless --allow-confidential.
+                   --mode edit is the default, and the closest to normal use. The session gets the
+                   units' files, with the file tools, the whole shell and the skill's verify.py,
+                   and is asked to review the comments and fix them in place. Each unit's verdict
+                   comes from the diff, through edits.py, and the rules of each change from a separate
+                   grader session that reads the diff. In --mode review, the units are in the prompt
+                   instead, with a request for a JSON verdict per unit, and the session has no file
+                   and no checker.
+    union          an agent run file, with each prediction of keep turned to a rewrite when the
+                   unit has a finding of the deterministic checks. The report has the agent run and
+                   the union side by side.
 
 The claude binary, the login directory, the model and the effort of the agent predictor come from
 experiment/bugfind/run.py, so the agent runs under the isolated login of the bugfind pilot. With two
@@ -22,11 +31,17 @@ skills of skills/, as the plugin `nar`, with the prompt opening with `/nar:pytho
 is a skill directory, loaded as the plugin `narrative-python`, with the prompt opening with
 `/narrative-python:narrative-python`.
 
+In --mode review, a --skill of `nar:python+verify` is `nar:python`, and the session may also run
+the skill's verify.py. Each unit of a batch is written alone to a file of the session's directory, as
+a comment, with the skill's pyproject-snippet.toml as pyproject.toml, so verify.py can parse the file.
+
 Usage:
     $ uv run --python ~/.local/share/narrative/lintenv/bin/python eval/run.py deterministic
     $ uv run eval/run.py --tier gold agent --split dev
     $ uv run eval/run.py --tier gold agent --skill /tmp/skill-at-head --skill nar:python --split dev
     $ uv run eval/run.py agent --skill none --split dev --sample 20 --runs 1
+    $ uv run eval/run.py --tier gold agent --mode review --skill nar:python --skill nar:python+verify
+    $ uv run --python ~/.local/share/narrative/lintenv/bin/python eval/run.py union RUN_FILE
 
 Exit codes:
     0  the report was written
@@ -40,23 +55,27 @@ import argparse
 import asyncio
 import hashlib
 import importlib.util
+import itertools
 import json
 import random
 import shutil
 import subprocess
 import sys
+import textwrap
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from types import ModuleType
 
-from matrix import Prediction, Report, RunRecord, buildReport, writeReport, writeRun
+import edits
+from matrix import Prediction, Report, RunRecord, buildReport, readRun, writeReport, writeRun
 from predictors import DeterministicChecks
 from schema import (
     PRIVATE_DIR,
     REPO_ROOT,
     REPORTS_DIR,
     UNITS_DIR,
+    ContextLevel,
     Kind,
     Unit,
     UnitFileError,
@@ -74,6 +93,53 @@ SKILL_NAME = 'narrative-python'
 # the plugin of this repository's skills/, as in .claude-plugin/marketplace.json
 PLUGIN_NAME = 'nar'
 NO_SKILL = 'none'
+# the suffix of a --skill value whose session may also run the skill's verify.py
+VERIFY_SUFFIX = '+verify'
+# the config of the skill's checks, beside verify.py in the skill directory
+PYPROJECT_SNIPPET = 'pyproject-snippet.toml'
+# the comment width of a unit file of the +verify arm
+UNIT_FILE_WIDTH = 100
+EDIT_MODE = 'edit'
+REVIEW_MODE = 'review'
+# the request of the edit mode, after the skill's command. No unit, label or hypothesis is in the request
+EDIT_REQUEST = (
+    'Review the comments and docstrings of the files in this directory, and fix them in place. The files '
+    'are excerpts of a larger project: code outside them is missing, so a file need not run, import or '
+    'type-check.'
+)
+# the confinement of the edit mode. The session has the whole shell, like a normal session, so the
+# session stays in the session directory by this instruction, not by a permission rule. {skill_dir}
+# and {lint_venv} are filled in per arm
+EDIT_CONFINEMENT = (
+    'Read and write files only inside this directory, and put any scratch file here. You may also read '
+    'and run the files of the skill in {skill_dir} and of the lint venv in {lint_venv}, and change nothing there.'
+)
+# the request of the grader, a separate session after each editing session. The grader reads the
+# editing session's diff and names the rule behind each change, so the editing session never names rules
+GRADER_REQUEST = (
+    'Below is the git diff of a review of the comments and docstrings of some Python files. List every '
+    'comment or docstring that the diff changes or deletes. For each one, name the rules of the skill that '
+    'the change applies: the NAR code where the rule has one, such as NAR017, and otherwise the id in '
+    'parentheses after the rule, such as R10-restatement-gate. Reply with a JSON array and nothing else, '
+    'one object per comment or docstring: {"file": "<path in the diff>", "old": "<the text before the '
+    'change>", "new": "<the text after the change, or null when deleted>", "rules": ["<rule>"]}.'
+)
+# the skill whose rules the grader names, the same for every arm, so the grader is one instrument
+GRADER_SKILL = f'{PLUGIN_NAME}:python'
+# the caches of the checkers, left out of the commit and of the diff
+SESSION_GITIGNORE = '.mypy_cache/\n.ruff_cache/\n.narrative_cache/\n__pycache__/\n'
+# the lint venv that the skill's verify.py runs, one per machine
+LINT_VENV = Path.home() / '.local' / 'share' / 'narrative' / 'lintenv'
+# the pyproject.toml of the edit mode's files, so that the skill's verify.py reads a Narrative config
+PROJECT_CONFIG = SKILLS_DIR / 'python' / PYPROJECT_SNIPPET
+# the tools of the edit mode: the default tools of `claude -p`, less the tools with effects outside
+# the session, such as cron jobs, remote triggers, push notifications, workflows and worktrees
+EDIT_TOOLS = (
+    'Task', 'TaskStop', 'SendMessage', 'ListAgents', 'Bash', 'Monitor', 'Read', 'Edit', 'Write',
+    'NotebookEdit', 'ToolSearch', 'WebFetch', 'WebSearch',
+)  # fmt: skip
+# the git identity of the commit of a session's files, a scratch repository under the cache
+EVAL_GIT_IDENTITY = ('-c', 'user.name=narrative-eval', '-c', 'user.email=narrative-eval@example.invalid')
 SAMPLE_SEED = 'narrative-eval'
 DEFAULT_RUNS = 3
 DEFAULT_BATCH = 20
@@ -105,6 +171,7 @@ def main() -> int:
     agent = predictors.add_parser('agent', help='a fresh claude -p session with the skill')
     agent.add_argument('--split', choices=('dev', 'test', 'all'), default='dev')
     agent.add_argument('--skill', action='append', help=f'a skill directory, or {NO_SKILL}. Twice to compare')
+    agent.add_argument('--mode', choices=(EDIT_MODE, REVIEW_MODE), default=EDIT_MODE, help='see the module docstring')
     agent.add_argument('--runs', type=int, default=DEFAULT_RUNS)
     agent.add_argument('--batch', type=int, default=DEFAULT_BATCH, help='units per claude session')
     agent.add_argument('--jobs', type=int, default=DEFAULT_JOBS, help='claude sessions at once')
@@ -113,6 +180,13 @@ def main() -> int:
     agent.add_argument('--config-dir', type=Path, help='default: the login of experiment/bugfind/run.py')
     agent.add_argument('--allow-confidential', action='store_true', help='send confidential units to the API')
     agent.add_argument('--dry-run', action='store_true', help='write the prompts and call no model')
+    union = predictors.add_parser(
+        'union',
+        help='an agent run, with each unit that has a finding of the deterministic checks turned to a rewrite',
+    )
+    union.add_argument('run', type=Path, help='a run file of the agent predictor')
+    # the units of the run file are the ones scored, whatever their split
+    union.set_defaults(split='all')
     arguments = parser.parse_args()
 
     try:
@@ -130,12 +204,20 @@ def main() -> int:
             try:
                 checks = DeterministicChecks.load()
             except ModuleNotFoundError as exc:
-                print(f'run.py: {exc}. Run with the lint venv, as in the module docstring', file=sys.stderr)
+                print(
+                    f'run.py: {exc}. Run with the lint venv. The Usage of the module docstring has the command',
+                    file=sys.stderr,
+                )
                 return EXIT_UNUSABLE
             runs = [predictDeterministic(checks, selected, split=arguments.split)]
             incomplete = False
         case 'agent':
             skipped = [unit for unit in selected if unit.confidential and not arguments.allow_confidential]
+            if arguments.mode == EDIT_MODE:
+                # a unit with no context has no file to edit. Such units are scored with --mode review
+                no_context = [unit for unit in selected if unit.context_level is ContextLevel.NONE]
+                selected = [unit for unit in selected if unit.context_level is not ContextLevel.NONE]
+                print(f'{len(no_context)} units with no context left out. Score them with --mode review')
             selected = sampleUnits([unit for unit in selected if unit not in skipped], arguments.sample, arguments.seed)
             print(f'{len(selected)} units, {len(skipped)} confidential units skipped')
             try:
@@ -154,6 +236,18 @@ def main() -> int:
             if arguments.dry_run:
                 print(f'prompts written to {settings.log_dir}')
                 return EXIT_SUCCESS
+        case 'union':
+            try:
+                agent_run = readRun(arguments.run)
+                checks = DeterministicChecks.load()
+            except (OSError, KeyError, TypeError, ValueError, ModuleNotFoundError) as exc:
+                print(
+                    f'run.py: {exc}. Run with the lint venv. The Usage of the module docstring has the command',
+                    file=sys.stderr,
+                )
+                return EXIT_UNUSABLE
+            runs = [agent_run, predictUnion(checks, units, agent_run)]
+            incomplete = False
 
     confidential = {unit.id for unit in units if unit.confidential}
     reports = []
@@ -168,7 +262,7 @@ def main() -> int:
         detail_path = arguments.private / 'reports' / f'{stamp}-{run.predictor}-{index}.jsonl'
         writeConfidentialDetail(units, run, detail_path=detail_path)
     if len(reports) == 2:
-        for path in writeReport(arguments.reports / f'{stamp}-compare-{arguments.split}', reports):
+        for path in writeReport(arguments.reports / f'{stamp}-compare-{runs[0].split}', reports):
             print(f'wrote {path}')
     printSummary(reports)
     return EXIT_INCOMPLETE if incomplete else EXIT_SUCCESS
@@ -204,6 +298,36 @@ def predictDeterministic(checks: DeterministicChecks, units: list[Unit], *, spli
     )
 
 
+def predictUnion(checks: DeterministicChecks, units: list[Unit], agent_run: RunRecord) -> RunRecord:
+    """Turn each keep of the agent run to a rewrite when the unit has a finding of the deterministic checks.
+
+    A cut or a rewrite of the agent is kept, with the codes of the checks added to the rules of the prediction.
+    """
+    by_id = {unit.id: unit for unit in units}
+    codes = {
+        unit_id: checks.findCodes(by_id[unit_id].text, page=by_id[unit_id].kind in PAGE_KINDS)
+        for unit_id in {prediction.unit for prediction in agent_run.predictions}
+    }
+    checks.save()
+    predictions = tuple(
+        replace(
+            prediction,
+            action=Verdict.REWRITE if prediction.action is Verdict.KEEP else prediction.action,
+            rules=tuple(sorted({*prediction.rules, *codes[prediction.unit]})),
+        )
+        if codes[prediction.unit]
+        else prediction
+        for prediction in agent_run.predictions
+    )
+    return replace(
+        agent_run,
+        predictor='union',
+        skill=f'{agent_run.skill} with the deterministic checks',
+        skill_commit=f'{agent_run.skill_commit}; checks {describeSkill(checks.tool_dir)}',
+        predictions=predictions,
+    )
+
+
 def prepareAgent(arguments: argparse.Namespace, stamp: str) -> AgentSettings:
     """Load the bugfind runner's settings, check the login, and build one plugin per skill directory.
 
@@ -219,8 +343,14 @@ def prepareAgent(arguments: argparse.Namespace, stamp: str) -> AgentSettings:
     if not arguments.dry_run and not bugfind.loggedIn(config_dir):
         raise AgentSetupError(f'no login in {config_dir}')
     arms = [skillArm(raw_skill) for raw_skill in raw_skills]
+    if arguments.mode == EDIT_MODE and any(arm.verify_path for arm in arms):
+        raise AgentSetupError(
+            f'{VERIFY_SUFFIX} is for --mode review. In --mode edit, the session may always run verify.py',
+        )
     claude_binary: Path = bugfind.findNewestClaude() if not arguments.dry_run else Path('claude')
     environment: dict[str, str] = bugfind.buildClaudeEnvironment(config_dir)
+    # uv, ruff and the other tools of the user in ~/.local/bin, on PATH for a normal session too
+    environment['PATH'] = f'{Path.home() / ".local" / "bin"}:{environment["PATH"]}'
     work_dir = CACHE_DIR / 'work'
     work_dir.mkdir(parents=True, exist_ok=True)
     return AgentSettings(
@@ -229,6 +359,7 @@ def prepareAgent(arguments: argparse.Namespace, stamp: str) -> AgentSettings:
         model=arguments.model or bugfind.MODEL,
         effort=arguments.effort or bugfind.EFFORT,
         arms=tuple(arms),
+        mode=arguments.mode,
         runs=arguments.runs,
         batch=arguments.batch,
         jobs=arguments.jobs,
@@ -246,18 +377,34 @@ def skillArm(raw_skill: str) -> SkillArm:
         AgentSetupError: A skill directory has no SKILL.md, or this repository's plugin has no such skill.
     """
     if raw_skill == NO_SKILL:
-        return SkillArm(label=NO_SKILL, display=NO_SKILL, version='none', plugin_dir=None, command=None)
+        return SkillArm(
+            label=NO_SKILL,
+            display=NO_SKILL,
+            version='none',
+            plugin_dir=None,
+            command=None,
+            skill_dir=None,
+            verify_path=None,
+        )
     if raw_skill.startswith(f'{PLUGIN_NAME}:'):
-        name = raw_skill.removeprefix(f'{PLUGIN_NAME}:')
+        name = raw_skill.removeprefix(f'{PLUGIN_NAME}:').removesuffix(VERIFY_SUFFIX)
         if not (SKILLS_DIR / name / 'SKILL.md').is_file():
             raise AgentSetupError(f'{SKILLS_DIR} has no skill {name}. Run python3 build_skills.py')
+        plugin_dir = buildRepoPlugin()
+        verify_path = plugin_dir / 'skills' / name / 'verify.py' if raw_skill.endswith(VERIFY_SUFFIX) else None
+        if verify_path and not (verify_path.parent / PYPROJECT_SNIPPET).is_file():
+            raise AgentSetupError(f'{raw_skill}: the skill {name} has no {PYPROJECT_SNIPPET} for verify.py')
         return SkillArm(
-            label=name,
+            label=name + (VERIFY_SUFFIX if verify_path else ''),
             display=raw_skill,
             version=describeSkill(SKILLS_DIR),
-            plugin_dir=buildRepoPlugin(),
-            command=f'/{raw_skill}',
+            plugin_dir=plugin_dir,
+            command=f'/{PLUGIN_NAME}:{name}',
+            skill_dir=plugin_dir / 'skills' / name,
+            verify_path=verify_path,
         )
+    if raw_skill.endswith(VERIFY_SUFFIX):
+        raise AgentSetupError(f'{VERIFY_SUFFIX} is for a skill of this repository, such as {PLUGIN_NAME}:python')
     skill_dir = Path(raw_skill).resolve()
     if not (skill_dir / 'SKILL.md').is_file():
         raise AgentSetupError(f'{skill_dir} has no SKILL.md')
@@ -265,8 +412,10 @@ def skillArm(raw_skill: str) -> SkillArm:
         label=skill_dir.name,
         display=displayPath(skill_dir),
         version=describeSkill(skill_dir),
-        plugin_dir=buildPlugin(skill_dir),
+        plugin_dir=(plugin_dir := buildPlugin(skill_dir)),
         command=f'/{SKILL_NAME}:{SKILL_NAME}',
+        skill_dir=plugin_dir / 'skills' / SKILL_NAME,
+        verify_path=None,
     )
 
 
@@ -326,13 +475,14 @@ async def predictWithAgent(
     """Ask a fresh session for a verdict on each unit, settings.runs times, and retry each batch's
     missing answers once.
 
-    Units are sorted by group, so a batch has neighbouring units of one file.
+    Units are sorted by group, so a batch has neighbouring units of one file. In the edit mode, a
+    batch has whole groups, so the units of one file are in one session.
 
     Returns:
         The run, with the count of unit and run pairs that got no valid answer after the retry.
     """
     ordered = sorted(units, key=lambda unit: (unit.group, unit.origin.line or 0, unit.id))
-    batches = [ordered[start : start + settings.batch] for start in range(0, len(ordered), settings.batch)]
+    batches = batchUnits(ordered, settings.batch, whole_groups=settings.mode == EDIT_MODE)
     limit = asyncio.Semaphore(settings.jobs)
     tasks = []
     async with asyncio.TaskGroup() as group:
@@ -344,8 +494,18 @@ async def predictWithAgent(
     predictions = tuple(prediction for outcome in outcomes for prediction in outcome.predictions)
     costs = [outcome.cost_usd for outcome in outcomes if outcome.cost_usd is not None]
     models = sorted({outcome.model for outcome in outcomes if outcome.model})
+    agreements = [outcome.agreement for outcome in outcomes if outcome.agreement is not None]
+    if agreements:
+        total = agreements[0]
+        for agreement in agreements[1:]:
+            total = total.plus(agreement)
+        print(
+            f'{arm.label}: changed units by the diff reader and by the grader: {total.both} in both, '
+            f'{total.diff_only} by the reader only, {total.list_only} by the grader only, '
+            f'{total.unmatched_entries} grader entries with no unit',
+        )
     return RunRecord(
-        predictor='agent' if arm.command else 'agent-no-skill',
+        predictor=('agent' if arm.command else 'agent-no-skill') + ('-edit' if settings.mode == EDIT_MODE else ''),
         skill=arm.display,
         skill_commit=arm.version,
         model=', '.join(models) or settings.model,
@@ -357,6 +517,19 @@ async def predictWithAgent(
         unanswered=len(units) * settings.runs - len(predictions),
         predictions=predictions,
     )
+
+
+def batchUnits(ordered: list[Unit], size: int, *, whole_groups: bool) -> list[list[Unit]]:
+    """Cut the sorted units into batches of `size`, or of whole groups of about `size` units."""
+    if not whole_groups:
+        return [ordered[start : start + size] for start in range(0, len(ordered), size)]
+    batches: list[list[Unit]] = [[]]
+    for _group, members in itertools.groupby(ordered, key=lambda unit: unit.group):
+        group_units = list(members)
+        if batches[-1] and len(batches[-1]) + len(group_units) > size:
+            batches.append([])
+        batches[-1].extend(group_units)
+    return [batch for batch in batches if batch]
 
 
 async def answerBatch(
@@ -375,6 +548,7 @@ async def answerBatch(
     answered: dict[UnitId, Prediction] = {}
     cost = 0.0
     model = None
+    agreement = None
     for attempt in range(2):
         pending = [unit for unit in batch if unit.id not in answered]
         if not pending or (attempt and settings.dry_run):
@@ -384,7 +558,9 @@ async def answerBatch(
         answered.update(outcome.answers)
         cost += outcome.cost_usd or 0.0
         model = outcome.model or model
-    return BatchOutcome(predictions=tuple(answered.values()), cost_usd=cost or None, model=model)
+        if outcome.agreement is not None:
+            agreement = outcome.agreement if agreement is None else agreement.plus(outcome.agreement)
+    return BatchOutcome(predictions=tuple(answered.values()), cost_usd=cost or None, model=model, agreement=agreement)
 
 
 async def callAgent(
@@ -403,29 +579,174 @@ async def callAgent(
     Returns:
         The valid answers by unit id, with the session's cost and model.
     """
-    local_ids = {f'u{index:02d}': unit for index, unit in enumerate(units, start=1)}
-    prompt = buildPrompt(local_ids, command=arm.command)
     log_dir = settings.private_log_dir if any(unit.confidential for unit in units) else settings.log_dir
     log_dir.mkdir(parents=True, exist_ok=True)
+    if settings.mode == EDIT_MODE:
+        return await callEditingAgent(settings, arm, units, run_index, name, log_dir)
+    local_ids = {f'u{index:02d}': unit for index, unit in enumerate(units, start=1)}
+    prompt = buildPrompt(local_ids, command=arm.command, verify=arm.verify_path is not None)
     (log_dir / f'{name}.prompt.txt').write_text(prompt, encoding='utf-8')
     if settings.dry_run:
         return CallOutcome(answers={}, cost_usd=None, model=None)
 
+    tools = 'Skill' if arm.command else ''
+    session_dir = settings.work_dir
+    allowed: list[str] = []
+    if arm.verify_path is not None:
+        tools = 'Skill,Bash'
+        # the log directory of a confidential batch is in the private store, so the unit files go under that
+        # directory
+        session_dir = writeUnitFiles(log_dir / 'work' / name, local_ids, arm.verify_path.parent / PYPROJECT_SNIPPET)
+        allowed = ['--allowedTools', f'Bash(python3 {arm.verify_path}:*)', f'Bash(python3 "{arm.verify_path}":*)']
     command = [
         str(settings.claude_binary), '-p', prompt,
         '--model', settings.model,
         '--effort', settings.effort,
         '--restricted',
-        '--tools', 'Skill' if arm.command else '',
+        '--tools', tools,
+        *allowed,
         '--strict-mcp-config',
         '--permission-prompts', 'none',
         '--output-format', 'json',
     ]  # fmt: skip
     if arm.plugin_dir is not None:
         command += ['--plugin-dir', str(arm.plugin_dir)]
+    result = await runSession(settings, command, session_dir, name, log_dir)
+    if result is None:
+        return CallOutcome(answers={}, cost_usd=None, model=None)
+    try:
+        answers = parseAnswers(str(result.get('result', '')), local_ids, run_index)
+    except json.JSONDecodeError as exc:
+        print(f'{name}: unparsable answer: {exc}', file=sys.stderr)
+        return CallOutcome(answers={}, cost_usd=None, model=None)
+    return CallOutcome(answers=answers, cost_usd=costOf(result), model=modelOf(result))
+
+
+async def callEditingAgent(
+    settings: AgentSettings,
+    arm: SkillArm,
+    units: list[Unit],
+    run_index: int,
+    name: str,
+    log_dir: Path,
+) -> CallOutcome:
+    """Run `claude -p` once on the files of a batch, and read each unit's verdict from the session's edits.
+
+    The files go in a git repository with one commit under the log directory, so the files of a
+    confidential batch stay in the private store. The session has the default tools and the whole shell,
+    like a normal session, and an instruction to stay inside the session directory. Afterwards a separate
+    grader session reads the diff and lists the changes with their rules. Each changed unit gets the
+    rules of its entry in that list.
+
+    Returns:
+        A verdict for each unit, with the session's cost and model. None after a failed session.
+    """
+    skill_dir = arm.skill_dir if arm.skill_dir is not None and arm.plugin_dir is not None else None
+    confinement = (
+        EDIT_CONFINEMENT.format(skill_dir=skill_dir, lint_venv=LINT_VENV)
+        if skill_dir
+        else ('Read and write files only inside this directory, and put any scratch file here.')
+    )
+    request = f'{EDIT_REQUEST} {confinement}'
+    prompt = f'{arm.command} {request}' if arm.command else request
+    (log_dir / f'{name}.prompt.txt').write_text(prompt, encoding='utf-8')
+    workspace = edits.buildWorkspace(log_dir / 'work' / name, units, PROJECT_CONFIG)
+    commitFiles(workspace.root)
+    if settings.dry_run:
+        return CallOutcome(answers={}, cost_usd=None, model=None)
+
+    tools = [*EDIT_TOOLS]
+    extra: list[str] = []
+    if skill_dir is not None and arm.plugin_dir is not None:
+        tools.append('Skill')
+        extra = ['--plugin-dir', str(arm.plugin_dir), '--add-dir', str(skill_dir)]
+    command = [
+        str(settings.claude_binary), '-p', prompt,
+        '--model', settings.model,
+        '--effort', settings.effort,
+        '--restricted',
+        '--tools', ','.join(tools),
+        '--allowedTools', *tools,
+        '--permission-mode', 'acceptEdits',
+        '--strict-mcp-config',
+        '--permission-prompts', 'none',
+        '--output-format', 'json',
+        *extra,
+    ]  # fmt: skip
+    result = await runSession(settings, command, workspace.root, name, log_dir)
+    if result is None:
+        return CallOutcome(answers={}, cost_usd=None, model=None)
+    listed, grader_cost = await gradeChanges(settings, workspace.root, f'{name}-grader', log_dir)
+    answers, agreement = edits.readEdits(workspace, units, run_index, listed)
+    (log_dir / f'{name}.reader.json').write_text(json.dumps(agreement.asRecord(), indent=1), encoding='utf-8')
+    cost = (costOf(result) or 0.0) + grader_cost
+    return CallOutcome(answers=answers, cost_usd=cost or None, model=modelOf(result), agreement=agreement)
+
+
+def commitFiles(session_dir: Path) -> None:
+    """Make a git repository of the session's directory, with the directory's files in one commit."""
+    (session_dir / '.gitignore').write_text(SESSION_GITIGNORE, encoding='utf-8')
+    for arguments in (['init', '-q'], ['add', '-A'], [*EVAL_GIT_IDENTITY, 'commit', '-q', '-m', 'excerpts']):
+        subprocess.run(['git', '-C', str(session_dir), *arguments], check=True, capture_output=True)
+
+
+async def gradeChanges(
+    settings: AgentSettings,
+    session_dir: Path,
+    name: str,
+    log_dir: Path,
+) -> tuple[list[edits.ListedChange], float]:
+    """Ask a fresh grader session to list the changes of the editing session's diff, with their rules.
+
+    The grader has the skill and the diff alone: no file, no tool but Skill, and nothing the editing
+    session said. A session that changed nothing gets no grader.
+
+    Returns:
+        The grader's list of changes, and the grader's cost. An empty list after a failed grader.
+    """
+    subprocess.run(['git', '-C', str(session_dir), 'add', '-A'], check=True, capture_output=True)
+    diff = subprocess.run(
+        ['git', '-C', str(session_dir), 'diff', '--cached', '--no-color', '-U5'],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    if not diff.strip():
+        return [], 0.0
+    prompt = f'/{GRADER_SKILL} {GRADER_REQUEST}\n\n<diff>\n{diff}</diff>'
+    (log_dir / f'{name}.prompt.txt').write_text(prompt, encoding='utf-8')
+    command = [
+        str(settings.claude_binary), '-p', prompt,
+        '--model', settings.model,
+        '--effort', settings.effort,
+        '--restricted',
+        '--tools', 'Skill',
+        '--strict-mcp-config',
+        '--permission-prompts', 'none',
+        '--output-format', 'json',
+        '--plugin-dir', str(buildRepoPlugin()),
+    ]  # fmt: skip
+    result = await runSession(settings, command, settings.work_dir, name, log_dir)
+    if result is None:
+        return [], 0.0
+    return edits.readChangeList(str(result.get('result', ''))), costOf(result) or 0.0
+
+
+async def runSession(
+    settings: AgentSettings,
+    command: list[str],
+    session_dir: Path,
+    name: str,
+    log_dir: Path,
+) -> dict[str, object] | None:
+    """Run one `claude -p` command and log its output.
+
+    Returns:
+        The session's JSON result, or None after a timeout, a nonzero exit or output that is not JSON.
+    """
     process = await asyncio.create_subprocess_exec(
         *command,
-        cwd=settings.work_dir,
+        cwd=session_dir,
         env=settings.environment,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -436,24 +757,30 @@ async def callAgent(
         process.kill()
         await process.wait()
         print(f'{name}: timed out after {AGENT_TIMEOUT_S} s', file=sys.stderr)
-        return CallOutcome(answers={}, cost_usd=None, model=None)
+        return None
     (log_dir / f'{name}.output.json').write_bytes(stdout)
     if process.returncode != 0:
         print(f'{name}: claude exited {process.returncode}: {stderr.decode(errors="replace")[-300:]}', file=sys.stderr)
-        return CallOutcome(answers={}, cost_usd=None, model=None)
+        return None
     try:
         result = json.loads(stdout)
-        answers = parseAnswers(str(result.get('result', '')), local_ids, run_index)
-    except (json.JSONDecodeError, AttributeError) as exc:
+    except json.JSONDecodeError as exc:
         print(f'{name}: unparsable output: {exc}', file=sys.stderr)
-        return CallOutcome(answers={}, cost_usd=None, model=None)
+        return None
+    return result if isinstance(result, dict) else None
+
+
+def costOf(result: dict[str, object]) -> float | None:
     cost = result.get('total_cost_usd')
+    return float(cost) if isinstance(cost, int | float) else None
+
+
+def modelOf(result: dict[str, object]) -> str | None:
     usage = result.get('modelUsage')
-    model = next(iter(usage), None) if isinstance(usage, dict) else None
-    return CallOutcome(answers=answers, cost_usd=float(cost) if isinstance(cost, int | float) else None, model=model)
+    return next(iter(usage), None) if isinstance(usage, dict) else None
 
 
-def buildPrompt(local_ids: dict[str, Unit], *, command: str | None) -> str:
+def buildPrompt(local_ids: dict[str, Unit], *, command: str | None, verify: bool) -> str:
     """Write the review request: the instructions, the answer format, then each unit in the unit's context.
 
     The prompt names no label, no expected answer and no hypothesis.
@@ -471,7 +798,14 @@ def buildPrompt(local_ids: dict[str, Unit], *, command: str | None) -> str:
         '- rewrite: the unit stays, reworded',
         'Reply with a JSON array and nothing else, one object per unit:\n'
         '[{"id": "u01", "action": "keep", "rules": [], "new_text": null}]\n'
-        f'{rules} `new_text` is the reworded unit for a rewrite, and null otherwise. Read and run no file.',
+        f'{rules} `new_text` is the reworded unit for a rewrite, and null otherwise.'
+        + (
+            ' Each unit is also alone in a file of the current directory, named by the id of the unit, such as '
+            "u01.py, so the skill's verify.py can check the unit. Run verify.py as the skill says, and run no "
+            'other command.'
+            if verify
+            else ' Read and run no file.'
+        ),
     ]
     for local_id, unit in local_ids.items():
         block = [f'<unit id="{local_id}" language="{unit.language.value}" kind="{unit.kind.value}">']
@@ -485,6 +819,30 @@ def buildPrompt(local_ids: dict[str, Unit], *, command: str | None) -> str:
         parts.append('\n'.join(block))
     prompt = '\n\n'.join(parts)
     return f'{command} {prompt}' if command else prompt
+
+
+def writeUnitFiles(session_dir: Path, local_ids: dict[str, Unit], pyproject_path: Path) -> Path:
+    """Write each unit alone to a file of a fresh directory, with the skill's config as pyproject.toml.
+
+    A comment becomes `#` lines, a docstring a module docstring, and a page unit a Markdown file. The
+    context of a unit is cut from a file at any line, so the context alone often fails to parse.
+
+    Returns:
+        The directory.
+    """
+    if session_dir.exists():
+        shutil.rmtree(session_dir)
+    session_dir.mkdir(parents=True)
+    shutil.copyfile(pyproject_path, session_dir / 'pyproject.toml')
+    for local_id, unit in local_ids.items():
+        if unit.kind in PAGE_KINDS:
+            (session_dir / f'{local_id}.md').write_text(unit.text + '\n', encoding='utf-8')
+        elif unit.kind is Kind.DOCSTRING:
+            (session_dir / f'{local_id}.py').write_text(f'"""{unit.text}"""\n', encoding='utf-8')
+        else:
+            lines = textwrap.wrap(unit.text, UNIT_FILE_WIDTH)
+            (session_dir / f'{local_id}.py').write_text(''.join(f'# {line}\n' for line in lines), encoding='utf-8')
+    return session_dir
 
 
 def parseAnswers(result_text: str, local_ids: dict[str, Unit], run_index: int) -> dict[UnitId, Prediction]:
@@ -643,6 +1001,10 @@ class SkillArm:
     # None, and no command, for the agent with no skill
     plugin_dir: Path | None
     command: str | None
+    # the skill's directory inside plugin_dir, the directory of verify.py
+    skill_dir: Path | None
+    # the verify.py that the session may run, for a --skill that ends in +verify
+    verify_path: Path | None
 
 
 @dataclass(frozen=True)
@@ -652,6 +1014,8 @@ class AgentSettings:
     model: str
     effort: str
     arms: tuple[SkillArm, ...]
+    # EDIT_MODE or REVIEW_MODE
+    mode: str
     runs: int
     batch: int
     jobs: int
@@ -666,6 +1030,8 @@ class CallOutcome:
     answers: dict[UnitId, Prediction]
     cost_usd: float | None
     model: str | None
+    # the edit mode's check of the diff reader against the grader's list of changes
+    agreement: edits.Agreement | None = None
 
 
 @dataclass(frozen=True)
@@ -673,6 +1039,7 @@ class BatchOutcome:
     predictions: tuple[Prediction, ...]
     cost_usd: float | None
     model: str | None
+    agreement: edits.Agreement | None = None
 
 
 class AgentSetupError(RuntimeError):

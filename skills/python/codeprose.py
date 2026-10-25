@@ -44,10 +44,15 @@ SECTION_HEADER = re.compile(r'(?:Args|Arguments|Returns|Yields|Raises|Attributes
 def passages(source: str) -> list[Passage]:
     """Read every comment passage and every docstring passage of one Python file.
 
-    Raises:
-        SyntaxError: the source does not parse.
+    For a file that does not parse, such as a file in the middle of an edit, the list has the comment
+    passages and no docstring passages.
     """
-    return [*commentPassages(source), *docstringPassages(ast.parse(source))]
+    comments = commentPassages(source)
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return comments
+    return [*comments, *docstringPassages(tree)]
 
 
 def commentPassages(source: str) -> list[Passage]:
@@ -58,9 +63,7 @@ def commentPassages(source: str) -> list[Passage]:
     """
     passages: list[Passage] = []
     run_column = -1
-    for token in tokenize.generate_tokens(io.StringIO(source).readline):
-        if token.type != tokenize.COMMENT:
-            continue
+    for token in commentTokens(source):
         text = token.string.lstrip('#').strip()
         whole_line = token.line[: token.start[1]].strip() == ''
         if not text or PRAGMA.match(text):
@@ -75,6 +78,33 @@ def commentPassages(source: str) -> list[Passage]:
             passages.append(Passage((token.start[0],), (text,)))
         run_column = token.start[1] if whole_line else -1
     return passages
+
+
+def commentTokens(source: str) -> list[tokenize.TokenInfo]:
+    """List the comment tokens of a Python file, in line order.
+
+    A file that does not tokenize, such as an excerpt cut inside a block, is read one line at a time.
+    A line inside a triple-quoted string can then be read as a comment.
+    """
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
+    except (tokenize.TokenError, SyntaxError):
+        lines = enumerate(source.splitlines(keepends=True), start=1)
+        return [token for number, line in lines for token in lineComments(number, line)]
+    return [token for token in tokens if token.type == tokenize.COMMENT]
+
+
+def lineComments(number: int, line: str) -> list[tokenize.TokenInfo]:
+    """Read the comment of one line alone, numbered as line `number` of the file."""
+    found: list[tokenize.TokenInfo] = []
+    try:
+        for token in tokenize.generate_tokens(io.StringIO(line).readline):
+            if token.type == tokenize.COMMENT:
+                found.append(token._replace(start=(number, token.start[1]), end=(number, token.end[1])))
+    except (tokenize.TokenError, SyntaxError):
+        # the tokens end early on a line that opens a bracket or a string. The comments found before that point are kept
+        pass
+    return found
 
 
 def docstringPassages(tree: ast.Module) -> list[Passage]:
