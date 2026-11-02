@@ -116,6 +116,35 @@ To roll the plugin out to a whole team, a Claude Code admin can add this to mana
 }
 ```
 
+### Hooks
+
+The plugin also has hooks, and `install.sh` installs no hooks. The hooks do nothing until a session loads one of the
+skills. After that, these are refused:
+
+- `verify.py` output piped into `grep`, `head`, `tail` or another filter, and `grep -v` over finding codes
+- a check run by hand that `verify.py` also runs, such as `ruff check`, `mypy` or `./gradlew spotlessApply`
+- the end of a turn with an edit of a `.py` or `.java` file in that turn and no `verify.py` run for that language
+  since the edit, or with the review lists of a run of that turn unread. For a `.py` file, only the `verify.py` of
+  `nar:python` counts. For a `.java` file, only the `verify.py` of `nar:gtnh` without `--prose-only` counts. The
+  second end of the same turn is allowed, so Claude can still stop to ask you a question
+
+Only the `verify.py`, `checks.py`, `javachecks.py` and `agentverbs.py` in the folder of a Narrative skill count, so a
+script of your project with one of those names is not affected. A `verify.py` run that writes no review lists, such as
+a run that ends with exit 2, needs no read. After a compaction, Claude gets the names of the Narrative skills to load
+again. In a checkout of this repository, the hooks do nothing.
+
+Without Python 3.11 or later as `python3`, `python` or `py -3`, and on Windows without Git Bash, the hooks do nothing,
+and no tool call is refused. To turn the hooks off, set the variable `NARRATIVE_HOOKS` to `off`, for example
+in `~/.claude/settings.json`:
+
+```json
+{
+  "env": { "NARRATIVE_HOOKS": "off" }
+}
+```
+
+The hooks are in `hooks/narrative_hooks.py`, and `python3 hooks/tests/run_hooks.py` tests them.
+
 ## Changing the skills
 
 `skills/` is generated. The rules shared by every language are in `core/`, the rules and tools of
