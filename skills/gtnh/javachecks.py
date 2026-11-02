@@ -1,10 +1,13 @@
 """Check Java sources for the rules of the Java skill, and merge the PMD, Checkstyle and javac reports.
 
-Comments and javadoc are read with a lexer, not a parser, so the comments of a file are read even
-when the file uses syntax newer than a Java grammar. The prose checks are the ones of every language:
-the wording checks of wording.py (NAR012 to NAR016, NAR018) and the agent-verb checks of agentverbs.py
-(NAR017, NAR020, NAR021, NAR022). The structural checks are PMD XPath rules in pmd-ruleset.xml. Every tool
-finding is mapped to a NAR code here.
+Comments and javadoc are read with a lexer, not a parser, so the comments of a file are read even when the file uses
+syntax newer than a Java grammar. The prose checks are the ones of every language: the wording checks of wording.py
+(NAR012 to NAR016, NAR018) and the agent-verb checks of agentverbs.py (NAR017, NAR020, NAR021, NAR022). The structural
+checks are PMD XPath rules in pmd-ruleset.xml. Every tool finding is mapped to a NAR code here.
+
+With --rewrap, javachecks.py checks nothing. Each paragraph of the javadoc and the whole-line // comments is filled
+again up to column 120 in place, by rewrap.py, and under --since only a paragraph with a changed line. Without --rewrap,
+NAR125 flags each paragraph that the re-wrap would change.
 
 Usage:
     $ python3 javachecks.py src/main/java/com/example/PlanReader.java
@@ -16,28 +19,27 @@ Usage:
     $ python3 javachecks.py src/main/java README.md docs/page.html
     $ python3 javachecks.py src/main/java README.md docs/page.html --prose
     $ python3 javachecks.py src/main/java --cache build/narrative/prose-cache.json
+    $ python3 javachecks.py src/main/java --rewrap --since origin/dev
 
 One line per finding, and a warning has the word `warning` before the warning's code:
 
     src/main/java/com/example/PlanReader.java:42: NAR017 'report names'
     src/main/java/com/example/PlanReader.java:57: warning NAR119 FIXME in a comment
 
-With --since REF, a finding is reported only when its lines overlap the lines that the diff against
-merge-base(HEAD, REF) adds or changes. The lines of a prose finding are the lines of the finding's
-passage. For a finding on a method, they are the lines of the method, and for a finding on a type,
-the line of the type's declaration.
+With --since REF, a finding is reported only when its lines overlap the lines that the diff against merge-base(HEAD,
+REF) adds or changes. The lines of a prose finding are the lines of the finding's passage. For a finding on a method,
+they are the lines of the method, and for a finding on a type, the line of the type's declaration.
 
-With --cache PATH, the spaCy results of each passage are kept in PATH between runs, keyed by the
-text of the passage. The cache is discarded when agentverbs.py, words.json, spaCy or the spaCy
-model changes, and spaCy is loaded only when a passage is not in the cache.
+With --cache PATH, the spaCy results of each passage are kept in PATH between runs, keyed by the text of the passage.
+The cache is discarded when agentverbs.py, words.json, spaCy or the spaCy model changes, and spaCy is loaded only when a
+passage is not in the cache.
 
-A Markdown, HTML or plain text page named on the command line gets the prose checks, and with
---prose, the lists cover the page too. The diff of --since has .java files only, so a page is
-checked and listed whole.
+A Markdown, HTML or plain text page named on the command line gets the prose checks, and with --prose, the lists cover
+the page too. Under --since, a page passage is checked and listed when a line of the passage changed.
 
-With --prose and without --since, each of the three lists stops after 1000 entries, with the
-command for the next 1000 entries of that list. --from-sentence, --from-pair and --from-pronoun
-print only the list they name, from the given entry. With --all-sentences, every entry is listed.
+With --prose and without --since, each of the three lists stops after 1000 entries, with the command for the next 1000
+entries of that list. --from-sentence, --from-pair and --from-pronoun print only the list they name, from the given
+entry. With --all-sentences, every entry is listed.
 
 Exit codes:
     0  no finding. Warnings may be printed
@@ -59,21 +61,13 @@ from enum import Enum
 from pathlib import Path
 
 import agentverbs
+import rewrap
 import wording
-from codeprose import JAVA_TOKEN, Comment, CommentKind, blockPassages, cleanBlockLine, groupBlocks, lexComments
+from codeprose import JAVA_TOKEN, Comment, CommentKind, blockPassages, commentBlocks, groupBlocks, lexComments
 from prose import PROSE_SUFFIXES, Passage, readPassages
 
 
 SKIPPED_DIRS = frozenset({'.git', '.gradle', 'build', 'run', 'out', 'bin'})
-# the comment line length of the GTNH Eclipse formatter, counted from the column where the comment starts
-JAVADOC_WIDTH = 120
-# an inline tag such as `{@link Plan#read}` cannot be split, so a word is the whole tag
-# matches:
-# `{@link Plan#read(Path, int)}`
-# `float,`
-JAVADOC_WORD = re.compile(r'\{@[^}]*\}\S*|\S+')
-# after a javadoc line that ends with one of these, the line break stays
-SENTENCE_ENDS = ('.', '!', '?', ':', '>')
 # matches:
 # `NAR017`
 # `NAR113-gtnh`
@@ -121,7 +115,7 @@ def main() -> int:
     paging.add_argument('--from-pronoun', type=int, help='with --prose, list only the pronoun sentences, from this one')
     parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every entry of every list')
     parser.add_argument('--cache', type=Path, help='a file that keeps the spaCy results between runs')
-    parser.add_argument('--rewrap', action='store_true', help='re-wrap ragged javadoc and long // comments in place')
+    parser.add_argument('--rewrap', action='store_true', help='fill the javadoc and // comments again, in place')
     args = parser.parse_args()
 
     java_paths = discoverJava(args.paths)
@@ -149,7 +143,8 @@ def main() -> int:
     if args.rewrap:
         for java_path in java_paths:
             source = java_path.read_text(encoding='utf-8')
-            rewrapped = rewrapSource(source, changed[java_path.resolve()] if changed is not None else None)
+            changed_lines = changed[java_path.resolve()] if changed is not None else None
+            rewrapped = rewrap.rewrapSource(source, commentBlocks(source), changed_lines)
             if rewrapped != source:
                 java_path.write_text(rewrapped, encoding='utf-8')
                 print(f'{java_path}: re-wrapped')
@@ -178,7 +173,7 @@ def main() -> int:
     for java_path in java_paths:
         findings.extend(checkFile(reader, java_path, tool_findings.get(java_path.resolve(), []), changed))
     for page_path in page_paths:
-        findings.extend(checkPage(reader, page_path))
+        findings.extend(checkPage(reader, page_path, changed))
     reader.save()
     for finding in findings:
         print(finding)
@@ -307,8 +302,8 @@ def proseInventory(
 ) -> list[str]:
     """List every sentence of every comment and page, every review pair that is not a NAR017 finding, and every pronoun.
 
-    With a ListPage, each list printed stops after wording.LIST_PAGE entries, with the command for the next entries
-    of that list. Every sentence of a named page is listed, also under --since.
+    With a ListPage, each list printed stops after wording.LIST_PAGE entries, with the command for the next entries of
+    that list. Under --since, a passage of a source file or a page is listed when a line of the passage changed.
     """
     sentences: list[str] = []
     pairs: list[str] = []
@@ -319,7 +314,7 @@ def proseInventory(
     readings.extend((path, readPassages(path)) for path in page_paths)
     for file_path, passages in readings:
         for passage in passages:
-            if file_path.suffix.lower() in PROSE_SUFFIXES or inChange(changed, file_path, set(passage.lines)):
+            if inChange(changed, file_path, set(passage.lines)):
                 sentences.extend(f'{file_path}:{line}: {sentence}' for line, sentence in passage.sentences())
                 pairs.extend(
                     f'{file_path}:{passage.lineOf(pair)}: {pair!r}' for pair in reader.reviewPairs(passage.text)
@@ -369,8 +364,10 @@ def sentenceLine(passage: Passage, sentence: str) -> int:
     return passage.lines[min(bisect.bisect_right(ends, offset), len(passage.lines) - 1)]
 
 
-def checkPage(reader: agentverbs.CachedReader, page_path: Path) -> list[JavaFinding]:
+def checkPage(reader: agentverbs.CachedReader, page_path: Path, changed: ChangedLines | None) -> list[JavaFinding]:
     """Run the wording checks of wording.py and the agent-verb checks of agentverbs.py on one page.
+
+    Under --since, a finding is kept when a line of the finding's passage changed.
 
     Returns:
         The findings, sorted by line, or only the NAR000 finding of wording.py for a page that cannot be read.
@@ -379,9 +376,13 @@ def checkPage(reader: agentverbs.CachedReader, page_path: Path) -> list[JavaFind
     if any(finding.code == 'NAR000' for finding in worded):
         return worded
 
+    changed_lines = wording.changedLinesOf(changed, page_path)
+    if changed_lines is not None:
+        spans = wording.pageSpans(page_path)
+        worded = [finding for finding in worded if wording.inChange(changed_lines, spans, finding.line)]
     verbs = [
         JavaFinding(page_path, found.line, found.code, repr(found.hit))
-        for found in agentverbs.checkFile(reader, page_path)
+        for found in agentverbs.checkFile(reader, page_path, changed_lines)
     ]
     return sorted([*worded, *verbs], key=lambda finding: (finding.line, finding.code))
 
@@ -496,9 +497,8 @@ def readComments(source: str) -> CommentReading:
 def noqaScopes(blocks: list[list[Comment]]) -> dict[int, frozenset[str]]:
     """Map each line to the codes that a noqa silences there.
 
-    The scope of a noqa in a comment block is every line of the block, plus the code line after a
-    whole-line block. A // comment over 120 columns is wrapped by spotless, so a trailing noqa can end
-    up on the next line of the block.
+    The scope of a noqa in a comment block is every line of the block, plus the code line after a whole-line block. A //
+    comment over 120 columns is wrapped by spotless, so a trailing noqa can end up on the next line of the block.
     """
     # matches:
     # `noqa: NAR017`
@@ -522,7 +522,7 @@ def noqaScopes(blocks: list[list[Comment]]) -> dict[int, frozenset[str]]:
 
 
 def commentFindings(java_path: Path, lines: list[str], reading: CommentReading) -> list[JavaFinding]:
-    """Run the checks on comments and source lines: type javadoc, FIXME, return contracts and ragged javadoc."""
+    """Run the checks on comments and source lines: type javadoc, FIXME, return contracts and unfilled paragraphs."""
     # matches:
     # `public final class PlanReader {`
     # `sealed interface Settlement permits Solved, Stalled {`
@@ -572,205 +572,58 @@ def commentFindings(java_path: Path, lines: list[str], reading: CommentReading) 
             detail = 'return contract in a comment at the top of a method. Put it in the javadoc, or cut it'
             findings.append(JavaFinding(java_path, first.first_line, 'NAR120', detail))
 
-    for comment in reading.comments:
-        if comment.kind is CommentKind.JAVADOC and not comment.trailing:
-            findings.extend(raggedLines(java_path, lines, comment))
+    source = '\n'.join(lines)
+    for number in rewrap.unfilledLines(source, commentBlocks(source), None):
+        findings.append(JavaFinding(java_path, number, rewrap.RULE, rewrap.DETAIL))
     return findings
-
-
-def raggedLines(java_path: Path, lines: list[str], comment: Comment) -> list[JavaFinding]:
-    """Flag each javadoc line that has room for the first word of the next line in the same paragraph.
-
-    Spotless splits a comment line over 120 columns but never joins short lines. So after an edit, the
-    line breaks of the first draft remain: `The product is` / `a` / `float, ...`. The room is measured
-    against the widest line of the paragraph, at most 120 columns from the column of `/**`, so a
-    paragraph wrapped by hand at 100 columns passes. Two kinds of line are not flagged: a line that ends
-    a sentence, and a line followed by a line that opens with the same word (`page 2: …` / `page 8: …`).
-    """
-    findings: list[JavaFinding] = []
-    for paragraph in javadocParagraphs(lines, comment):
-        widths = {number: len(lines[number - 1].rstrip()) - comment.column for number, _text in paragraph}
-        limit = min(max(widths.values()), JAVADOC_WIDTH)
-        for (number, text), (_next_number, next_text) in itertools.pairwise(paragraph):
-            if keepsBreak(text, next_text):
-                continue
-            word = JAVADOC_WORD.match(next_text)
-            if word is not None and widths[number] + 1 + len(word[0]) <= limit:
-                detail = (
-                    f'javadoc line ends at column {widths[number]}, and {word[0]!r} from the next line fits in the'
-                    f' paragraph width of {limit}. Re-wrap the paragraph'
-                )
-                findings.append(JavaFinding(java_path, number, 'NAR125', detail))
-    return findings
-
-
-def javadocParagraphs(lines: list[str], comment: Comment) -> list[list[tuple[int, str]]]:
-    """Split the lines of a javadoc into paragraphs, and strip the `*` margin from each line.
-
-    A blank line ends a paragraph, and a `<pre>` sample is left out. A line that opens with a block
-    tag, an HTML tag or a list marker starts a paragraph.
-    """
-    # matches:
-    # `@param planPath where the plan file is`
-    # `<li>the first machine`
-    # `- one item`
-    # `2. the second step`
-    # rejects:
-    # `the plan file`
-    OPENS_PARAGRAPH = re.compile(r'^(?:@\w|<|[-*]\s|\d+[.:)]\s)')
-    paragraphs: list[list[tuple[int, str]]] = []
-    current: list[tuple[int, str]] = []
-    in_sample = False
-    for number, _raw in comment.texts:
-        text = cleanBlockLine(lines[number - 1].strip().removeprefix('/**').removesuffix('*/'))
-        in_sample = in_sample or '<pre>' in text
-        if in_sample or not text or OPENS_PARAGRAPH.match(text):
-            paragraphs.append(current)
-            current = [] if in_sample or not text else [(number, text)]
-            in_sample = in_sample and '</pre>' not in text
-            continue
-        current.append((number, text))
-    paragraphs.append(current)
-    return [paragraph for paragraph in paragraphs if len(paragraph) > 1]
-
-
-def keepsBreak(text: str, next_text: str) -> bool:
-    """Tell whether a javadoc line break stays: the line ends a sentence, or both lines open with the same word."""
-    return text.endswith(SENTENCE_ENDS) or text.split()[0] == next_text.split()[0]
-
-
-def rewrapSource(source: str, changed_lines: set[int] | None) -> str:
-    """Re-wrap the comments of one Java source. No word of a comment changes, only its line breaks.
-
-    A javadoc paragraph with a NAR125 finding is filled again, to the width of the paragraph's widest
-    line, at most 120 columns from the column of `/**`. A line break with no `NAR125` finding stays. A
-    whole-line `//` comment over 120 columns is split onto more `//` lines, each at most 120 columns.
-    Under --since, only a paragraph or a `//` line with a changed line is re-wrapped. A javadoc
-    paragraph on a line with `/**` or `*/` is left unchanged.
-
-    Returns:
-        The source, with only the line breaks of the re-wrapped comments changed.
-    """
-    lines = source.split('\n')
-    replacements: list[Replacement] = []
-    for comment in lexComments(source):
-        if comment.trailing:
-            continue
-        if comment.kind is CommentKind.JAVADOC:
-            replacements.extend(refillJavadoc(lines, comment, changed_lines))
-        elif comment.kind is CommentKind.LINE:
-            replacements.extend(splitLongLine(lines, comment, changed_lines))
-    # replace from the bottom up, because a replacement can change the number of every later line
-    for replacement in sorted(replacements, key=lambda replacement: replacement.first_line, reverse=True):
-        lines[replacement.first_line - 1 : replacement.last_line] = replacement.new_lines
-    return '\n'.join(lines)
-
-
-def refillJavadoc(
-    lines: list[str],
-    comment: Comment,
-    changed_lines: set[int] | None,
-) -> list[Replacement]:
-    """Fill each ragged paragraph of one javadoc again, one run of lines between kept breaks at a time.
-
-    Returns:
-        A replacement for each run that changes.
-    """
-    # matches:
-    # `     * the plan file`
-    # rejects:
-    # `    /** the plan file`
-    MARGIN = re.compile(r'^\s*\*(?!/)\s*')
-    ragged = {finding.line for finding in raggedLines(Path(), lines, comment)}
-    replacements: list[Replacement] = []
-    for paragraph in javadocParagraphs(lines, comment):
-        numbers = [number for number, _text in paragraph]
-        margins = [found[0] for number in numbers if (found := MARGIN.match(lines[number - 1]))]
-        plain = len(margins) == len(numbers) and not any('/**' in lines[n - 1] or '*/' in lines[n - 1] for n in numbers)
-        touched = changed_lines is None or bool(changed_lines & set(numbers))
-        if not (touched and plain and ragged & set(numbers)):
-            continue
-        limit = min(max(len(lines[number - 1].rstrip()) - comment.column for number in numbers), JAVADOC_WIDTH)
-        margin_of = dict(zip(numbers, margins, strict=True))
-        # a continuation line of a block tag gets the indent of the paragraph's second line
-        continuation = margins[1] if len(margins) > 1 else margins[0]
-        run: list[tuple[int, str]] = []
-        for index, (number, text) in enumerate(paragraph):
-            run.append((number, text))
-            if index < len(paragraph) - 1 and not keepsBreak(text, paragraph[index + 1][1]):
-                continue
-            words = JAVADOC_WORD.findall(' '.join(run_text for _number, run_text in run))
-            filled = fillWords(
-                words,
-                first_margin=margin_of[run[0][0]],
-                margin=continuation,
-                column=comment.column,
-                limit=limit,
-            )
-            if filled != [lines[run_number - 1] for run_number, _text in run]:
-                replacements.append(Replacement(run[0][0], run[-1][0], filled))
-            run = []
-    return replacements
-
-
-def splitLongLine(
-    lines: list[str],
-    comment: Comment,
-    changed_lines: set[int] | None,
-) -> list[Replacement]:
-    """Split a whole-line `//` comment over 120 columns onto more `//` lines, each at most 120 columns.
-
-    Returns:
-        A replacement for the line, or none when the line fits or did not change.
-    """
-    number = comment.first_line
-    raw_line = lines[number - 1]
-    if len(raw_line.rstrip()) - comment.column <= JAVADOC_WIDTH:
-        return []
-    if changed_lines is not None and number not in changed_lines:
-        return []
-    margin = raw_line[: comment.column] + '// '
-    words = raw_line[comment.column + 2 :].split()
-    filled = fillWords(words, first_margin=margin, margin=margin, column=comment.column, limit=JAVADOC_WIDTH)
-    return [Replacement(number, number, filled)] if len(filled) > 1 else []
-
-
-def fillWords(words: list[str], *, first_margin: str, margin: str, column: int, limit: int) -> list[str]:
-    """Fill lines greedily, with no line wider than limit from column. A longer word gets a separate line.
-
-    Returns:
-        The lines, each with its margin.
-    """
-    filled: list[str] = []
-    current = ''
-    for word in words:
-        candidate = f'{current} {word}' if current else f'{first_margin if not filled else margin}{word}'
-        if current and len(candidate) - column > limit:
-            filled.append(current)
-            current = f'{margin}{word}'
-        else:
-            current = candidate
-    if current:
-        filled.append(current)
-    return filled
 
 
 def lineAboveAnnotations(lines: list[str], declaration_line: int) -> int:
-    """Return the number of the line above a declaration and above the declaration's annotation lines."""
+    """Return the number of the line above a declaration and above the declaration's annotation lines.
+
+    An annotation can span lines, such as `@Mod(` and then one line per element up to the closing `)`. The lines of such
+    an annotation count as annotation lines when the annotation's first line starts with `@`.
+    """
     number = declaration_line - 1
-    while number > 0 and lines[number - 1].lstrip().startswith('@'):
-        number -= 1
+    while number > 0:
+        if lines[number - 1].lstrip().startswith('@'):
+            number -= 1
+            continue
+        start = annotationStart(lines, number)
+        if start is None:
+            return number
+        number = start - 1
     return number
+
+
+def annotationStart(lines: list[str], last_line: int) -> int | None:
+    """Find the first line of a multi-line annotation that ends on `last_line`, by the balance of the parentheses.
+
+    Returns:
+        The number of the line that starts with `@` and opens the parentheses that close on `last_line`. None when
+        `last_line` closes no parenthesis, or when the line with the matching `(` does not start with `@`.
+    """
+    # matches a literal, whose parentheses are not code:
+    # `"(beta)"`
+    # `')'`
+    LITERAL = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
+    depth = 0
+    for number in range(last_line, 0, -1):
+        code = LITERAL.sub('', lines[number - 1])
+        depth += code.count(')') - code.count('(')
+        if depth <= 0:
+            return number if number < last_line and code.lstrip().startswith('@') else None
+    return None
 
 
 def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: CommentReading) -> list[JavaFinding]:
     """Turn a tool finding into JavaFindings, with a look at the comments of the file for two codes.
 
-    - NAR110: a mutable static field. With a comment for the reason, above the field or after the field
-      on the same line, there is no finding
-    - NAR116: a method over the javadoc threshold. With no javadoc above the method, the finding is
-      reported. With one, NAR117 is reported for each `throw new X` in the method where X is absent
-      from the throws clause and from the `@throws` lines of the javadoc
+    - NAR110: a mutable static field. With a comment for the reason, above the field or after the field on the same
+      line, there is no finding
+    - NAR116: a method over the javadoc threshold. With no javadoc above the method, the finding is reported. With one,
+      NAR117 is reported for each `throw new X` in the method where X is absent from the throws clause and from the
+      `@throws` lines of the javadoc
 
     Returns:
         No finding for NAR110 with a reason comment, else one finding or more.
@@ -862,8 +715,8 @@ PMD_CODES = {
     'AvoidCatchingGenericException': ('NAR142', Scope.SPAN),
     'PreserveStackTrace': ('NAR144', Scope.SPAN),
 }
-# the bare code of each code of the GTNH environment, from before the -gtnh suffix. A noqa with the bare
-# code still silences the finding, so the noqa comments of merged PRs keep working
+# the bare code of each code of the GTNH environment, from before the -gtnh suffix. A noqa with the bare code still
+# silences the finding, so the noqa comments of merged PRs keep working
 BARE_CODES = {
     'NAR112-gtnh': 'NAR112',
     'NAR113-gtnh': 'NAR113',
@@ -913,20 +766,11 @@ class JavaFinding:
 
 
 @dataclass(frozen=True)
-class Replacement:
-    """The new lines of a re-wrapped comment, in place of the lines from first_line to last_line."""
-
-    first_line: int
-    last_line: int
-    new_lines: list[str]
-
-
-@dataclass(frozen=True)
 class ListPage:
     """The part of the three lists that --prose prints.
 
-    `flag` is the option of the one list to print, from entry `first`, or None for every list from entry 1.
-    The arguments are the paths and the cache, for the command of the next entries.
+    `flag` is the option of the one list to print, from entry `first`, or None for every list from entry 1. The
+    arguments are the paths and the cache, for the command of the next entries.
     """
 
     flag: str | None

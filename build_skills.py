@@ -1,16 +1,15 @@
 """Write each entry skill of skills.toml to skills/<name>/: a SKILL.md that loads the rules, and the tools.
 
-An install copies one skill directory and nothing else, so every tool of a skill is in the skill's
-directory. The rules and the tools are written once in core/ and lang/, and each entry skill gets a
-copy of the tools of the skill.
+An install copies one skill directory and nothing else, so every tool of a skill is in the skill's directory. The rules
+and the tools are written once in core/ and lang/, and each entry skill gets a copy of the tools of the skill.
 
-The SKILL.md of a skill with modules is the output of assemble.py: the frontmatter, then the rules.
-The SKILL.md of a skill with `combines`, such as `code`, has the frontmatter and one line. When the
-skill loads, Claude Code runs assemble.py and puts the output, the skills to load, in place of that
-line. With `allowed-tools` in the frontmatter, the line runs with no permission prompt.
+The SKILL.md of a skill with modules is the output of assemble.py: the frontmatter, then the rules. The SKILL.md of a
+skill with `combines`, such as `code`, has the frontmatter and one line. When the skill loads, Claude Code runs
+assemble.py and puts the output, the skills to load, in place of that line. With `allowed-tools` in the frontmatter, the
+line runs with no permission prompt.
 
-With --check, nothing is written, and a file of skills/ that differs from the build, is missing, or
-is not part of the build is an error. verify_docs.py runs the check.
+With --check, nothing is written, and a file of skills/ that differs from the build, is missing, or is not part of the
+build is an error. verify_docs.py runs the check.
 
 Usage:
     $ python3 build_skills.py
@@ -33,8 +32,8 @@ from assemble import MANIFEST_PATH, ManifestError, readManifest, staticSkill
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / 'skills'
-# the command in SKILL.md that runs assemble.py. allowed-tools names the same command, so the command
-# runs with no permission prompt
+# the command in SKILL.md that runs assemble.py. allowed-tools names the same command, so the command runs with no
+# permission prompt
 LOAD_COMMAND = 'python3 ${CLAUDE_PLUGIN_ROOT}/assemble.py'
 EXIT_SUCCESS = 0
 EXIT_DIFFERS = 1
@@ -45,8 +44,7 @@ def main() -> int:
     """Build every entry skill, or compare skills/ with the build.
 
     Returns:
-        0 when skills/ matches the build after the run, 1 for a difference under --check, 2 when
-        skills.toml is wrong.
+        0 when skills/ matches the build after the run, 1 for a difference under --check, 2 when skills.toml is wrong.
     """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--check', action='store_true', help='compare skills/ with the build and write nothing')
@@ -148,8 +146,8 @@ def strayFiles(built: dict[Path, bytes]) -> list[Path]:
 def writeAll(built: dict[Path, bytes]) -> None:
     """Write every built file, and delete each file of skills/ that is not part of the build.
 
-    A stray file is deleted, because a file from an earlier build can be the text of a withdrawn rule.
-    Each delete is of one named file, and directories are left in place.
+    A stray file is deleted, because a file from an earlier build can be the text of a withdrawn rule. Each delete is of
+    one named file, and directories are left in place.
     """
     for path in strayFiles(built):
         path.unlink()

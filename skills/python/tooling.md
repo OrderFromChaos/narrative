@@ -24,10 +24,11 @@ requires, and spaCy with spaCy's `en_core_web_md` model for `agentverbs.py`.
 | `checks.py` | the residual rules no tool implements. It uses only the standard library, so it runs alone with any `python3` at 3.11 or later: `python3 checks.py src/ --select NAR001` |
 | `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, `NAR020`, a clause with no subject before `, so`, `NAR021`, a clause joined by `as` or `, where`, and `NAR022`, `it` or `its` after two or more singular nouns in one sentence, from a spaCy parse. `agentverbs.py --review` and `--pronouns` print a review list instead |
 | `prose.py` | the passages of a Markdown, HTML or plain text file, for `checks.py` and `agentverbs.py` |
+| `rewrap.py` | the re-wrap of every language: the paragraphs of a comment or docstring, filled up to column 120. `checks.py --rewrap` runs it, and `NAR125` flags a paragraph that the re-wrap would change |
 | `verify.py` | running all of the above correctly, with the toolchain and config guards |
 
-Run order matters: `ruff check --fix`, then `ruff format`, then `pylint`, `mypy`, `checks.py`,
-`vermin`, `agentverbs.py`.
+Run order matters: `checks.py --rewrap`, `ruff check --fix`, then `ruff format`, then `pylint`,
+`mypy`, `checks.py`, `vermin`, `agentverbs.py`.
 `verify.py` runs them in that order, so use `verify.py` rather than reproducing the sequence.
 
 A Markdown, HTML or plain text file named to `verify.py` gets the wording checks of `checks.py` and

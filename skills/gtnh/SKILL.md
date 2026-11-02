@@ -87,12 +87,12 @@ public final class PlanFiles {
 - Layout is a spotless setting. Lines are broken at 120 columns by the GTNH Eclipse formatter, with
   each call of a chain after the first on a separate line. Do not fight it. (J1-D01)
 
-- **Re-wrapping is a tool's job.** Spotless splits a comment line over 120 columns but never joins
+- **Re-wrap with `verify.py`, not by hand.** Spotless splits a comment line over 120 columns but never joins
   short lines, so after an edit the line breaks of the first draft remain: `The product is` / `a` /
-  `float, …`. `NAR125` flags a javadoc line with room for the first word of the next line. Before the
-  checks, `verify.py` re-wraps each flagged javadoc paragraph and splits each whole-line `//` comment
-  over 120 columns. With `--no-fix`, run `javachecks.py --rewrap` on the file. The re-wrap moves line
-  breaks only, never words. (J1-F02, J1-F08)
+  `float, …`. Before Gradle runs, `verify.py` fills each paragraph of the javadoc and the whole-line
+  `//` comments up to column 120 of the line, so spotless splits no line. With `--no-fix`, `NAR125`
+  flags each paragraph that the re-wrap would change, and `javachecks.py --rewrap` on the file
+  re-wraps each such paragraph. (R11-rewrap-fill)
 
 - Separate logically self-contained blocks inside a method with **one blank line**. That is its only
   meaning here. Short guards written as a group stay grouped. (R3a-01)
@@ -747,7 +747,12 @@ Name each page to `verify.py`, which then runs the prose checks only, with no Gr
 python3 "${CLAUDE_SKILL_DIR}/verify.py" README.md docs/report.html
 ```
 
-A page named beside Java sources gets the same checks, in the same list of findings.
+A page named beside Java sources gets the same checks, in the same list of findings. A run with
+pages only checks no Java source, so for a change to code and a page, name both:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/verify.py" src/main/java README.md
+```
 (R10-published-prose, J1-F15)
 
 ## Procedures
@@ -802,22 +807,31 @@ example, GT5's `MultiblockTooltipBuilder` has about 40 `TT_*` fields, such as `T
 (or `spotlessCheck` with `--no-fix`), `compileJava` with the raw-type and unchecked warnings of
 javac, then Checkstyle and PMD with the configs beside `verify.py`. `javachecks.py` then reads the
 comments, runs the prose checks, and merges the three reports into one list with NAR codes. A run
-with exit 0 or 1 ends with three lists, the input to **Prose review**: every sentence of every
-comment, javadoc and named page, every verb whose subject cannot act, and every sentence with a
-pronoun. On a run with exit 1, `verify.py` prints the lists after the findings, and the count of
-findings last. When Gradle fails, such as on code that does not compile, `verify.py` prints no
-lists, because `javachecks.py` has not read the comments yet. With `--since`, the lists cover only
-the changed lines. Without `--since`, each list stops after 1000 entries, with the command for the
-next 1000. (J1-F01, J1-F09, J1-F14, J1-F15, J1-F16, R11-same-workflow)
+with exit 0 or 1 writes three lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+review**: every sentence of every comment, javadoc and named page, every verb whose subject cannot
+act, and every sentence with a pronoun. The file and the number of entries in each list are
+on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` writes
+no lists, because `javachecks.py` has not read the comments yet. With `--since`, the lists cover only
+the changed lines of the code and the pages. Without `--since`, each list stops after 1000
+entries, with the command for the next 1000. (J1-F01, J1-F09, J1-F14, J1-F15, J1-F16, R11-same-workflow)
 
 | exit | meaning |
 |---|---|
 | 0 | every check passed. Warnings may be printed |
 | 1 | at least one finding, or the code does not compile or is not formatted |
-| 2 | the toolchain, `gradle.properties`, `gradlew` or a report is missing, the project is not Java 25, `--since` names no commit, or the diff changes no line |
+| 2 | the toolchain, `gradle.properties`, `gradlew` or a report is missing, the project is not Java 25, `--since` names no commit, the diff changes no line, or the review lists could not be written |
 
 Pass `--max-workers 1` on a busy machine. The job of each tool, the code table and the tool defaults
 that break rules of this skill are in `tooling.md`. Read it before you change a config.
+
+**After an edit of comments or pages only, pass `--prose-only`.** Gradle does not run, so the run
+takes seconds: the re-wrap, the prose checks and the review lists. Spotless, javac, Checkstyle and
+PMD run only without `--prose-only`, so the last run before the report is a run without
+`--prose-only`.
+
+With `--project DIR`, `verify.py` checks the mod in DIR. With `--cache-dir DIR`, `.narrative_cache`
+is in DIR, such as a directory outside a checkout that the agent may not write. A path of `-` is a
+page read from stdin, such as a draft that is not in a file yet.
 
 Before the report, for each test that you wrote or changed, name the rule under test and the source
 of the test's cases: a generator, the boundary values or both. Where the answer is not both, fix the

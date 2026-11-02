@@ -244,6 +244,11 @@ R10-depth-example, R10-period-join)
   b->c, a and c compare unequal` when a and b also compare unequal (R10-worked-example)
 - no semicolon and no dash. Write two sentences (R10-no-semicolon, `NAR013`)
 - a comment line over the line limit is wrapped onto the next line. Never change the wording to fit (R11-wrap-not-reword)
+- **re-wrap with `verify.py`, not by hand.** Before the checks, `verify.py` fills each paragraph of a
+  comment or doc comment up to column 120, in every language, and under `--since` only a paragraph
+  with a changed line. The line breaks of a blank comment line, a list item, a block tag, a sample
+  and the strings under `matches:` stay as written. With `--no-fix`, `NAR125` flags each paragraph
+  that the re-wrap would change. The re-wrap moves line breaks only, never words (R11-rewrap-fill)
 - a Fence is the fact the code depends on, then the step the code takes because of that fact:
   `the vendor rounds tax per line, not per invoice. Round each line before the sum`. Write `X would`
   only when X is an alternative the code does not use, such as a read of the whole file into
@@ -324,9 +329,9 @@ Take these steps in order before writing or rewording a comment. The kinds, the 
 
 ### Prose review
 
-**Fix every finding of `verify.py` first. Then read the three lists at the end of the output, plus
-every error message and `--help` string.** You rewrite sentences when you fix findings, so read the
-lists from the run after the fixes. The first list has every sentence of every comment and
+**Fix every finding of `verify.py` first. Then read the three lists in the file named on the last
+line of the output, plus every error message and `--help` string.** You rewrite sentences when you
+fix findings, so read the lists from the run after the fixes. The first list has every sentence of every comment and
 docstring in the code, and every sentence of each named page. The second has each subject that
 cannot act, paired with the subject's verb, for every verb that is neither a `NAR017` finding nor
 an operation of code. A verb such as `reads` or `runs` is an operation of code only with a direct
@@ -366,7 +371,8 @@ rest unasked. A page that a person wrote and you did not change is left as it is
 asks for it to be checked. Name each page to the `verify.py` of the language skill. The command is
 under **Pages** in **Comments in <language>**, in the skill `nar:<language>`.
 
-Only the wording checks and `agentverbs.py` run on a page. `verify.py` prints the three lists of
-**Prose review** for each named page too. Take the steps of **Prose review** for each sentence you
-wrote, and handle each finding by the rule **A finding is information**. (R10-published-prose,
+Only the wording checks and `agentverbs.py` run on a page. `verify.py` writes the three lists of
+**Prose review** for each named page too. With `--since`, only the passages of a page with a changed
+line are checked and listed. Take the steps of **Prose review** for each sentence you wrote, and
+handle each finding by the rule **A finding is information**. (R10-published-prose,
 R11-page-inventory)

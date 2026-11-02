@@ -1,6 +1,6 @@
 package fixtures.nar125;
 
-/** Fixture for NAR125: a ragged javadoc line. */
+/** Fixture for NAR125: a comment paragraph not filled up to column 120. */
 public final class Flagged {
 
     /**

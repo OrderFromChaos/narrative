@@ -7,7 +7,8 @@ rest unasked. A page that a person wrote and you did not change is left as it is
 asks for it to be checked. Name each page to the `verify.py` of the language skill. The command is
 under **Pages** in **Comments in <language>**, in the skill `nar:<language>`.
 
-Only the wording checks and `agentverbs.py` run on a page. `verify.py` prints the three lists of
-**Prose review** for each named page too. Take the steps of **Prose review** for each sentence you
-wrote, and handle each finding by the rule **A finding is information**. (R10-published-prose,
+Only the wording checks and `agentverbs.py` run on a page. `verify.py` writes the three lists of
+**Prose review** for each named page too. With `--since`, only the passages of a page with a changed
+line are checked and listed. Take the steps of **Prose review** for each sentence you wrote, and
+handle each finding by the rule **A finding is information**. (R10-published-prose,
 R11-page-inventory)

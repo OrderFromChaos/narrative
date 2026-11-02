@@ -97,6 +97,11 @@ Name each page to `verify.py`, which then runs the prose checks only, with no Gr
 python3 "${CLAUDE_SKILL_DIR}/verify.py" README.md docs/report.html
 ```
 
-A page named beside Java sources gets the same checks, in the same list of findings.
+A page named beside Java sources gets the same checks, in the same list of findings. A run with
+pages only checks no Java source, so for a change to code and a page, name both:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/verify.py" src/main/java README.md
+```
 (R10-published-prose, J1-F15)
 

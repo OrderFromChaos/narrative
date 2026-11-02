@@ -1,25 +1,35 @@
 """Run the narrative-gtnh toolchain over a GTNH mod, or the prose checks over pages.
 
-Use this instead of calling the tools by hand. A missing tool, report or JDK is exit 2, so a pass
-means every check ran.
+Use this instead of calling the tools by hand. A missing tool, report or JDK is exit 2, so a pass means every check ran.
 
-The project is the current directory, a Gradle build with GTNHGradle. First, javachecks.py --rewrap
-re-wraps ragged javadoc and whole-line // comments over 120 columns, unless --no-fix is given. Under
---since, only changed lines are re-wrapped. Then, in one Gradle run, the code
-is formatted (spotlessApply, or spotlessCheck with --no-fix), compiled with the raw-type and
-unchecked warnings of javac, and checked with Checkstyle and PMD and the configs beside this script.
-Those tasks come from the init script narrative.init.gradle, so no project file changes. javachecks.py then reads the
-comments, runs the prose checks, and merges the three reports into one list of findings.
+The project is the current directory, a Gradle build with GTNHGradle. First, javachecks.py --rewrap fills each paragraph
+of the javadoc and the whole-line // comments again up to column 120, unless --no-fix is given. Under --since, only a
+paragraph with a changed line is re-wrapped. Then, in one Gradle run, the code is formatted (spotlessApply, or
+spotlessCheck with --no-fix), compiled with the raw-type and unchecked warnings of javac, and checked with Checkstyle
+and PMD and the configs beside this script. Those tasks come from the init script narrative.init.gradle, so no project
+file changes. javachecks.py then reads the comments, runs the prose checks, and merges the three reports into one list
+of findings.
 
-A Markdown, HTML or plain text file named on the command line gets the prose checks of
-javachecks.py, in the same list of findings as the Java sources. A Gradle project is required only
-when Java sources are checked.
+A Markdown, HTML or plain text file named on the command line gets the prose checks of javachecks.py, in the same list
+of findings as the Java sources. A Gradle project is required only when Java sources are checked. When only pages are
+named, no Java source is checked. In a Gradle project, verify.py then prints a warning. A path of `-` is a page read
+from stdin, Markdown, or the suffix given with --stdin-suffix. The page is saved in the cache directory as `stdin` with
+that suffix, and each finding is reported at the path of the saved page.
 
-After the checks, the output ends with three review lists over the Java sources and the pages: every
-sentence, every subject that cannot act paired with the subject's verb, and every sentence with a
-pronoun. On a run with findings, the lists come after the findings, and the count of findings is the
-last line. verify.py prints no lists on exit 2, or after a Gradle failure. Without --since, each
-list stops after 1000 entries, with the command for the next 1000.
+With --prose-only, Gradle does not run: no spotless, javac, Checkstyle or PMD. After a re-wrap, javachecks.py checks the
+comments and the pages, and verify.py writes the review lists. A run after an edit of comments only takes seconds
+instead of a Gradle run. The checks of Gradle still have to pass in a run without --prose-only before the change is
+done.
+
+With --project DIR, DIR is the project in place of the current directory. Each named path is read from the current
+directory.
+
+After the checks, verify.py writes three review lists over the Java sources and the pages to review-lists.txt in the
+cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every subject that cannot act
+paired with the subject's verb, and every sentence with a pronoun. The path of the file and the number of entries in
+each list are on the last line of the output, so `tail -1` shows them. verify.py writes no lists on exit 2, or after a
+Gradle failure. Without --since, each list stops after 1000 entries, with the command for the next 1000. Under --since,
+a passage of a source file or a page is checked and listed when a line of the passage changed.
 
 Usage:
     $ python3 verify.py                          # every src/*/java of the mod in the current directory
@@ -27,12 +37,15 @@ Usage:
     $ python3 verify.py --no-fix                 # no re-wrap, and spotlessCheck in place of spotlessApply
     $ python3 verify.py src/main/java/com/example/gui
     $ python3 verify.py README.md docs/page.html
+    $ python3 verify.py --prose-only --since origin/dev     # comments and pages only, with no Gradle run
+    $ python3 verify.py --project ../MyMod --cache-dir /tmp/narrative     # a mod in another directory
+    $ printf '%s\n' "$DRAFT" | python3 verify.py - --cache-dir /tmp/narrative      # a page from stdin
 
 Exit codes:
     0  every check passed. Warnings may be printed
     1  at least one finding, or the code does not compile or is not formatted
     2  the toolchain, gradle.properties, gradlew or a report is missing, the project is not Java 25,
-       or nothing was checked
+       nothing was checked, or javachecks.py --prose failed and wrote no review list
 """
 
 from __future__ import annotations
@@ -44,6 +57,8 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+from wording import countEntries
 
 
 SKILL_DIR = Path(__file__).resolve().parent
@@ -60,10 +75,15 @@ GRADLEW = 'gradlew.bat' if sys.platform == 'win32' else 'gradlew'
 JAVA_25_SYNTAX = frozenset({'jvmDowngrader', 'modern'})
 REPORT_DIR = Path('build/narrative')
 CHECK_TASKS = ('narrativeCheckstyle', 'narrativePmd')
-PASS_NOTE = 'A pass is no evidence about the rules that no check implements. Read the lists below.'
-FAILING_RUN_HEADING = (
-    '\n=== review lists from a failing run. Fix the findings above, then read the lists of the next run ==='
-)
+PASS_NOTE = 'A pass is no evidence about the rules that no check implements.'
+# the default cache directory: the spaCy results of a run without Gradle, a page read from stdin, and the three review
+# lists of the last run, for Prose review
+CACHE_DIR = Path('.narrative_cache')
+LISTS_NAME = 'review-lists.txt'
+# the command-line path of a page read from stdin
+STDIN_PATH = Path('-')
+# the units of the three lists of javachecks.py --prose, in the order javachecks.py prints them
+LIST_UNITS = ('sentences', 'pairs', 'pronoun sentences')
 EXIT_SUCCESS = 0
 EXIT_FINDINGS = 1
 EXIT_NO_TOOLCHAIN = 2
@@ -88,6 +108,10 @@ def main() -> int:
         action='store_true',
         help='list every entry of the review lists, not the first 1000 of each',
     )
+    parser.add_argument('--prose-only', action='store_true', help='check comments and pages only, with no Gradle run')
+    parser.add_argument('--project', type=Path, help='the mod directory (default: the current directory)')
+    parser.add_argument('--cache-dir', type=Path, default=CACHE_DIR, help=f'the cache directory (default: {CACHE_DIR})')
+    parser.add_argument('--stdin-suffix', default='.md', help='the suffix of a page read from stdin (default: .md)')
     args = parser.parse_args()
     print(f'narrative-gtnh skill: {readInstalledVersion()}', flush=True)
 
@@ -97,13 +121,36 @@ def main() -> int:
         print(setupCommands(args.venv), file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
-    pages = [path for path in args.paths if path.suffix.lower() in PROSE_SUFFIXES]
-    java_sources = [path for path in args.paths if path.suffix.lower() not in PROSE_SUFFIXES]
+    cache_dir = prepareCache(args.cache_dir.absolute())
+    paths = [readStdinPage(cache_dir, args.stdin_suffix) if path == STDIN_PATH else path for path in args.paths]
+    if args.project is not None:
+        # the named paths are relative to the directory of the command, and the project is the directory of the run
+        paths = [path.absolute() for path in paths]
+        os.chdir(args.project)
+    pages = [path for path in paths if path.suffix.lower() in PROSE_SUFFIXES]
+    java_sources = [path for path in paths if path.suffix.lower() not in PROSE_SUFFIXES]
+    since = ['--since', args.since] if args.since else []
     if pages and not java_sources:
-        page_targets = [str(page) for page in pages]
-        return reportFindings(venv_python, page_targets, page_targets, all_sentences=args.all_sentences)
+        if Path('gradle.properties').is_file():
+            print('verify.py: only pages are named, so no Java source is checked. Name src/main/java too', flush=True)
+        page_arguments = [*map(str, pages), *since, '--cache', str(cache_dir / 'prose-cache.json')]
+        return reportFindings(venv_python, page_arguments, page_arguments, cache_dir, all_sentences=args.all_sentences)
 
     project_dir = Path.cwd()
+    sources = java_sources or sorted((project_dir / 'src').glob('*/java')) or [project_dir / 'src' / 'main' / 'java']
+    if args.prose_only:
+        if not args.no_fix:
+            print(f'rewrap         {rewrapComments(venv_python, sources, args.since)}', flush=True)
+        print('gradle         not run: --prose-only. Run verify.py without --prose-only before the change is done')
+        prose_arguments = [*map(str, [*sources, *pages]), *since, '--cache', str(cache_dir / 'prose-cache.json')]
+        return reportFindings(
+            venv_python,
+            prose_arguments,
+            prose_arguments,
+            cache_dir,
+            all_sentences=args.all_sentences,
+        )
+
     try:
         settings = readGradleProperties(project_dir / 'gradle.properties')
         gradle_command = args.gradle.split() if args.gradle else [str(findGradlew(project_dir))]
@@ -112,7 +159,6 @@ def main() -> int:
         return EXIT_NO_TOOLCHAIN
 
     report_dir = project_dir / REPORT_DIR
-    sources = java_sources or sorted((project_dir / 'src').glob('*/java')) or [project_dir / 'src' / 'main' / 'java']
     try:
         changed_files = readChangedFiles(args.since, project_dir) if args.since else None
     except PrerequisiteError as exc:
@@ -123,8 +169,8 @@ def main() -> int:
         print(f'verify.py: no line changed since {args.since}', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
-    # before Gradle, because splitting a // comment moves every later line of the file, and Gradle must see
-    # the final lines
+    # before Gradle, because splitting a // comment moves every later line of the file, and Gradle must see the final
+    # lines
     if not args.no_fix:
         print(f'rewrap         {rewrapComments(venv_python, sources, args.since)}', flush=True)
 
@@ -143,8 +189,8 @@ def main() -> int:
         print(f'verify.py: Gradle found no JDK for the build: {gradle_run.missing_jdk}', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
-    # verify.py prints no review lists here. javachecks.py has not read the comments yet, so the comments can
-    # still have prose findings, and the sentences of the lists change with each fix of a prose finding
+    # verify.py prints no review lists here. javachecks.py has not read the comments yet, so the comments can still have
+    # prose findings, and the sentences of the lists change with each fix of a prose finding
     if gradle_run.failed_tasks:
         print(gradle_run.output_tail)
         return EXIT_FINDINGS
@@ -160,28 +206,40 @@ def main() -> int:
         return EXIT_NO_TOOLCHAIN
 
     targets = [str(path) for path in [*sources, *pages]]
-    since = ['--since', args.since] if args.since else []
     since.extend(['--cache', str(report_dir / 'prose-cache.json')])
     report_arguments = ['--pmd', str(reports[0]), '--checkstyle', str(reports[1]), '--javac', str(reports[2])]
     return reportFindings(
         venv_python,
         [*targets, *report_arguments, *since],
         [*targets, *since],
+        cache_dir,
         all_sentences=args.all_sentences,
     )
+
+
+def readStdinPage(cache_dir: Path, suffix: str) -> Path:
+    """Save the page on stdin in the cache directory, so the checks can read the page as a file.
+
+    Returns:
+        The path of the saved page.
+    """
+    page_path = cache_dir / f'stdin{suffix}'
+    page_path.write_text(sys.stdin.read(), encoding='utf-8')
+    return page_path
 
 
 def reportFindings(
     venv_python: Path,
     check_arguments: list[str],
     list_arguments: list[str],
+    cache_dir: Path,
     *,
     all_sentences: bool,
 ) -> int:
-    """Print the findings of javachecks.py, then the three review lists.
+    """Print the findings of javachecks.py, then write the three review lists to LISTS_NAME in the cache directory.
 
-    On a run with findings, the lists come under FAILING_RUN_HEADING, and the count line of javachecks.py
-    comes last.
+    The path of the lists and the number of entries in each list are on the last line. On a run with findings, the count
+    line of javachecks.py comes before the last line.
 
     Returns:
         The exit code of javachecks.py.
@@ -192,39 +250,76 @@ def reportFindings(
         text=True,
         check=False,
     )
-    if checked.returncode == EXIT_SUCCESS:
-        print(checked.stdout, end='')
-        print(PASS_NOTE, flush=True)
-        printReviewLists(venv_python, list_arguments, all_sentences=all_sentences)
-        return EXIT_SUCCESS
-
-    if checked.returncode != EXIT_FINDINGS:
-        print(checked.stdout, end='')
+    print(checked.stdout, end='')
+    if checked.returncode not in {EXIT_SUCCESS, EXIT_FINDINGS}:
         return checked.returncode
 
-    # the last line of javachecks.py has the count of findings. verify.py prints that line last, after the lists
-    *finding_lines, count_line = checked.stdout.splitlines() or ['']
-    print('\n'.join(finding_lines))
-    print(FAILING_RUN_HEADING, flush=True)
-    printReviewLists(venv_python, list_arguments, all_sentences=all_sentences)
-    print(f'\n{count_line}')
+    if checked.returncode == EXIT_SUCCESS:
+        print(PASS_NOTE, flush=True)
+    lists_path = cache_dir / LISTS_NAME
+    counts = writeReviewLists(venv_python, list_arguments, lists_path, all_sentences=all_sentences)
+    if counts is None:
+        print('verify.py: javachecks.py --prose failed, so no review list was written', file=sys.stderr)
+        return EXIT_NO_TOOLCHAIN
+    if checked.returncode == EXIT_SUCCESS:
+        print(f'Prose review: read the {counts} in {lists_path}')
+        return EXIT_SUCCESS
+
+    # the lists are the same with or without findings. After the fix of a finding, the sentences and the lists differ
+    print(f'Review lists of this failing run: {counts} in {lists_path}. Take Prose review from the next run.')
     return EXIT_FINDINGS
 
 
-def printReviewLists(venv_python: Path, arguments: list[str], *, all_sentences: bool) -> None:
-    """Print the three lists for Prose review in SKILL.md, with javachecks.py --prose.
+def writeReviewLists(venv_python: Path, arguments: list[str], lists_path: Path, *, all_sentences: bool) -> str | None:
+    """Write the three lists for Prose review in SKILL.md to `lists_path`, with javachecks.py --prose.
 
     Args:
         venv_python: The interpreter of the lint venv, with spaCy.
         arguments: The Java sources and pages, then the --since and --cache arguments of this run.
+        lists_path: The file for the lists, in the cache directory.
         all_sentences: List every entry, not only the first 1000 of each list.
+
+    Returns:
+        The number of entries in each list, such as `12 sentences, 3 pairs and 1 pronoun sentences`. None when
+        javachecks.py --prose fails or prints fewer lists than LIST_UNITS.
     """
     every = ['--all-sentences'] if all_sentences else []
-    subprocess.run([str(venv_python), str(SKILL_DIR / 'javachecks.py'), *arguments, '--prose', *every], check=False)
+    listed = subprocess.run(
+        [str(venv_python), str(SKILL_DIR / 'javachecks.py'), *arguments, '--prose', *every],
+        stdout=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    # each list starts at a heading line such as `--- every sentence of every comment ... ---`
+    sections: list[list[str]] = []
+    for line in listed.stdout.splitlines():
+        if line.startswith('--- ') and line.endswith(' ---'):
+            sections.append([])
+        elif sections:
+            sections[-1].append(line)
+    if listed.returncode != EXIT_SUCCESS or len(sections) != len(LIST_UNITS):
+        return None
+
+    lists_path.write_text(listed.stdout, encoding='utf-8')
+    counts = [f'{countEntries(entries)} {unit}' for entries, unit in zip(sections, LIST_UNITS, strict=True)]
+    return f'{counts[0]}, {counts[1]} and {counts[2]}'
+
+
+def prepareCache(cache_dir: Path) -> Path:
+    """Create the cache directory with a .gitignore of `*`, so git leaves the cache out.
+
+    Returns:
+        The cache directory.
+    """
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    ignore_path = cache_dir / '.gitignore'
+    if not ignore_path.exists():
+        ignore_path.write_text('*\n', encoding='utf-8')
+    return cache_dir
 
 
 def rewrapComments(venv_python: Path, sources: list[Path], since: str | None) -> str:
-    """Re-wrap ragged javadoc and long // comments in place, with javachecks.py --rewrap.
+    """Fill the javadoc and // comments again up to column 120 in place, with javachecks.py --rewrap.
 
     Returns:
         A summary: the number of files re-wrapped, or the error of javachecks.py.
@@ -238,9 +333,9 @@ def rewrapComments(venv_python: Path, sources: list[Path], since: str | None) ->
 
 
 def readInstalledVersion() -> str:
-    """Name the installed version: the plugin and its commit, the stamp of install.sh, or the directory.
+    """Name the installed version: the plugin and the plugin commit, the stamp of install.sh, or the directory.
 
-    The plugin cache keeps each version at `<cache>/<marketplace>/<plugin>/<commit>/skills/<skill>/`.
+    Each version in the plugin cache is at `<cache>/<marketplace>/<plugin>/<commit>/skills/<skill>/`.
     """
     in_cache = len(SKILL_DIR.parents) > 4 and SKILL_DIR.parents[4].name == 'cache' and SKILL_DIR.parent.name == 'skills'
     if in_cache:
@@ -311,8 +406,8 @@ def findGradlew(project_dir: Path) -> Path:
 def writeRuleset(source_paths: list[Path], report_dir: Path) -> Path:
     """Write the PMD ruleset with one typeIs test per sealed type of the project for NAR107.
 
-    A typeIs() test is by qualified name. The name of a nested sealed type is taken as the name of
-    the file, a dot and the simple name of the type, so a sealed type nested two levels deep is not tested.
+    A typeIs() test is by qualified name. The name of a nested sealed type is taken as the name of the file, a dot and
+    the simple name of the type, so a sealed type nested two levels deep is not tested.
     """
     # matches:
     # `public sealed interface Settlement permits Solved, Stalled {`
@@ -383,10 +478,10 @@ def runGradle(
 ) -> GradleRun:
     """Run spotless, compileJava and narrativeCheck in one Gradle invocation, and keep the invocation's output.
 
-    The reports and caches of earlier runs stay, so a task whose inputs did not change is up to date.
-    Incremental compilation is off in the init script, so compileJava compiles every file or none. Its
-    output is written to javac.log only in a run where compileJava compiled. Under --since, Checkstyle
-    and PMD read only the files of changed-files.txt.
+    The reports and caches of earlier runs stay, so a task whose inputs did not change is up to date. Incremental
+    compilation is off in the init script, so compileJava compiles every file or none. Its output is written to
+    javac.log only in a run where compileJava compiled. Under --since, Checkstyle and PMD read only the files of
+    changed-files.txt.
     """
     report_dir.mkdir(parents=True, exist_ok=True)
     files_property: list[str] = []

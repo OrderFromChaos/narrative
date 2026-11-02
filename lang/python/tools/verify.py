@@ -1,29 +1,34 @@
 """Run the whole Narrative toolchain over a path and report one line per tool.
 
-Use this instead of calling the tools by hand. A hand-rolled loop counts findings by grepping tool
-output, so a missing or misresolved binary produces empty output and reads as a pass. This script
-resolves every tool to an absolute path and exits 2 if any one of them is absent, so a green result
-means the tools ran.
+Use this instead of calling the tools by hand. A hand-rolled loop counts findings by grepping tool output, so a missing
+or misresolved binary produces empty output and reads as a pass. This script resolves every tool to an absolute path and
+exits 2 if any one of them is absent, so a green result means the tools ran.
 
-This is the whole pipeline. Give it any path, and every Python file below the path is checked, so
-no workflow is chosen at run time. A Markdown, HTML or plain text file named on the command line,
-such as a README or a published page, gets the two prose checks only: the wording checks of checks.py
-and agentverbs.py. pyproject.toml is required only when Python files are checked.
+This is the whole pipeline. Give it any path, and every Python file below the path is checked, so no workflow is chosen
+at run time. A Markdown, HTML or plain text file named on the command line, such as a README or a published page, gets
+the two prose checks only: the wording checks of checks.py and agentverbs.py. pyproject.toml is required only when
+Python files are checked. A path of `-` is a page read from stdin, Markdown, or the suffix given with --stdin-suffix.
+The page is saved in the cache directory as `stdin` with that suffix, and each finding is reported at the path of the
+saved page.
 
-Unless nothing was checked, the output ends with three review lists, over the Python files and the
-pages: every sentence, every subject that cannot act paired with the subject's verb, and every
-sentence with a pronoun. On a failing run the lists are printed after the findings. Without --since,
-each list stops after 1000 entries, with the command for the next 1000.
+Unless nothing was checked, verify.py writes three review lists, over the Python files and the pages, to
+review-lists.txt in the cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every
+subject that cannot act paired with the subject's verb, and every sentence with a pronoun. The path of the file and the
+number of entries in each list are on the last line of the output, so `tail -1` shows them. Without --since, each list
+stops after 1000 entries, with the command for the next 1000.
 
-With --since REF, only the Python files that the diff against merge-base(HEAD, REF) adds or changes
-are checked, and only the findings and list entries on changed lines are reported. A finding on a
-`def` or `class` line counts for every line of the definition, and a finding in a comment or
-docstring counts for every line of the passage. Under --since, a fix of `ruff check` is applied
-only when the fix edits a changed line, and `ruff format` formats only the changed lines. A page is
-checked whole.
+With --since REF, only the Python files and pages that the diff against merge-base(HEAD, REF) adds or changes are
+checked, and only the findings and list entries on changed lines are reported. A finding on a `def` or `class` line
+counts for every line of the definition, and a finding in a comment, docstring or page counts for every line of the
+passage. Under --since, a fix of `ruff check` is applied only when the fix edits a changed line, and `ruff format`
+formats only the changed lines.
 
-The spaCy results of each passage are kept in .narrative_cache/ in the current directory, so a run
-after a small change parses only the changed passages.
+The spaCy results of each passage are kept in the cache directory, so a run after a small change parses only the changed
+passages.
+
+Unless --no-fix is given, checks.py --rewrap first fills each paragraph of the comments and docstrings again up to
+column 120, and under --since only a paragraph with a changed line. With --no-fix, each such paragraph is a NAR125
+finding of checks.py.
 
 Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other.
 
@@ -34,11 +39,12 @@ Usage:
     $ python3 verify.py . --venv .lintenv    # a venv other than the shared one (SHARED_VENV)
     $ python3 verify.py README.md docs/report.html
     $ python3 verify.py . --since origin/main     # only lines changed since merge-base(HEAD, origin/main)
+    $ printf '%s\n' "$DRAFT" | python3 verify.py - --cache-dir /tmp/narrative     # a page from stdin
 
 Exit codes:
     0  every tool passed
     1  at least one tool had a finding
-    2  the toolchain or the config is missing, so nothing was checked
+    2  the toolchain or the config is missing, so nothing was checked, or a review list could not be written
 """
 
 from __future__ import annotations
@@ -59,7 +65,7 @@ from typing import Any
 
 from codeprose import changeSpans
 from prose import PROSE_SUFFIXES
-from wording import ChangedLines, GitError, Spans, findFiles, inChange, readChangedLines
+from wording import ChangedLines, GitError, Spans, countEntries, findFiles, inChange, readChangedLines
 
 
 TOOLS = ('ruff', 'pylint', 'mypy', 'vermin')
@@ -74,8 +80,12 @@ SHARED_VENV = DATA_HOME / 'narrative' / 'lintenv'
 VENV_BIN = 'Scripts' if sys.platform == 'win32' else 'bin'
 VENV_PYTHON = 'python.exe' if sys.platform == 'win32' else 'python'
 SKIPPED = frozenset({'.venv', 'venv', '.lintenv', '.git', 'build', 'dist', '__pycache__'})
-# the spaCy results of agentverbs.py, in the directory of the run. .ruff_cache and .mypy_cache are there too
+# the default cache directory: the spaCy results of agentverbs.py, a page read from stdin, and the three review lists of
+# the last run, for Prose review. .ruff_cache and .mypy_cache are in the directory of the run
 CACHE_DIR = Path('.narrative_cache')
+LISTS_NAME = 'review-lists.txt'
+# the command-line path of a page read from stdin
+STDIN_PATH = Path('-')
 # under --since, the most times that fixes are applied to one file. A fix that overlaps another is applied the next time
 FIX_ROUNDS = 10
 EXIT_SUCCESS = 0
@@ -100,6 +110,8 @@ def main() -> int:
         help='list every entry of the review lists, not the first 1000 of each',
     )
     parser.add_argument('--since', help='report only lines changed since merge-base(HEAD, SINCE)')
+    parser.add_argument('--cache-dir', type=Path, default=CACHE_DIR, help=f'the cache directory (default: {CACHE_DIR})')
+    parser.add_argument('--stdin-suffix', default='.md', help='the suffix of a page read from stdin (default: .md)')
     args = parser.parse_args()
     print(f'narrative skill: {readInstalledVersion()}')
 
@@ -112,8 +124,10 @@ def main() -> int:
         print(f'  fix: uv venv --python {PYTHON_FLOOR} {args.venv} && {install}', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
-    code = discoverPython(args.paths)
-    pages = [target for target in args.paths if target.is_file() and target.suffix.lower() in PROSE_SUFFIXES]
+    cache_dir = prepareCache(args.cache_dir)
+    paths = [readStdinPage(cache_dir, args.stdin_suffix) if path == STDIN_PATH else path for path in args.paths]
+    code = discoverPython(paths)
+    pages = [target for target in paths if target.is_file() and target.suffix.lower() in PROSE_SUFFIXES]
     try:
         changed = readChangedLines(args.since, Path.cwd(), '*.py') if args.since else None
     except GitError as exc:
@@ -131,26 +145,28 @@ def main() -> int:
             )
         return EXIT_NO_TOOLCHAIN
 
+    checker = Path(__file__).resolve().parent / 'checks.py'
+    since = ['--since', args.since] if args.since else []
     results: list[Result] = []
     if code:
         if (config_problem := checkConfig(args.config)) is not None:
             return config_problem
         code_targets = [str(p) for p in code]
+        if not args.no_fix:
+            results.append(gradeRewrap(run([sys.executable, str(checker), '--rewrap', *code_targets, *since])))
         try:
             results.extend(runCodeTools(toolchain, args.config, code_targets, fix=not args.no_fix, since=args.since))
         except GitError as exc:
             print(f'verify.py: {exc}', file=sys.stderr)
             return EXIT_NO_TOOLCHAIN
 
-    checker = Path(__file__).resolve().parent / 'checks.py'
     prose_targets = [str(p) for p in [*code, *pages]]
-    since = ['--since', args.since] if args.since else []
     results.append(gradeChecks(run([sys.executable, str(checker), *prose_targets, *since])))
     if code:
         vermin_cmd = [toolchain.paths['vermin'], '--no-tips', f'-t={PYTHON_FLOOR}-', '--violations']
         results.append(gradeVermin(run([*vermin_cmd, *[str(p) for p in code]])))
     agent_verbs = Path(__file__).resolve().parent / 'agentverbs.py'
-    cache = ['--cache', str(prepareCache())]
+    cache = ['--cache', str(cache_dir / 'prose-cache.json')]
     results.append(gradeAgentVerbs(run([toolchain.python, str(agent_verbs), *prose_targets, *since, *cache])))
 
     width = max(len(r.tool) for r in results)
@@ -164,47 +180,85 @@ def main() -> int:
             print(f'\n--- {result.tool} ---')
             print(result.detail.rstrip() or '(no output)')
 
-        # the lists are the same with or without findings. Fixing a finding rewrites sentences and changes the lists
-        print('\n=== review lists from a failing run. Fix the findings above, then read the lists of the next run ===')
-        printReviewLists(toolchain.python, [*prose_targets, *since], cache, all_sentences=args.all_sentences)
         print(f'\n{len(failed)} of {len(results)} checks failed')
+    else:
+        print(f'\nall {len(results)} checks passed')
+        print('A pass is no evidence about the rules that no check implements.')
+
+    lists_path = cache_dir / LISTS_NAME
+    review_arguments = [*prose_targets, *since]
+    counts = writeReviewLists(toolchain.python, review_arguments, cache, lists_path, all_sentences=args.all_sentences)
+    if counts is None:
+        print('verify.py: a review list command failed, so no review list was written', file=sys.stderr)
+        return EXIT_NO_TOOLCHAIN
+    if failed:
+        # the lists are the same with or without findings. After the fix of a finding, the sentences and the lists
+        # differ
+        print(f'Review lists of this failing run: {counts} in {lists_path}. Take Prose review from the next run.')
         return EXIT_FINDINGS
 
-    print(f'\nall {len(results)} checks passed')
-    print('A pass is no evidence about the rules that no check implements. Read the lists below.')
-    printReviewLists(toolchain.python, [*prose_targets, *since], cache, all_sentences=args.all_sentences)
+    print(f'Prose review: read the {counts} in {lists_path}')
     return EXIT_SUCCESS
 
 
-def printReviewLists(python: str, arguments: list[str], cache: list[str], *, all_sentences: bool) -> None:
-    """Print the three lists for Prose review in SKILL.md: sentences, agent verbs and pronouns.
+def writeReviewLists(
+    python: str,
+    arguments: list[str],
+    cache: list[str],
+    lists_path: Path,
+    *,
+    all_sentences: bool,
+) -> str | None:
+    """Write the three lists for Prose review in SKILL.md to `lists_path`: sentences, agent verbs and pronouns.
 
     Args:
         python: The interpreter with the parser modules installed, for agentverbs.py.
         arguments: Every Python file and every page checked in this run, then the --since option.
         cache: The --cache option of agentverbs.py.
+        lists_path: The file for the lists, in the cache directory.
         all_sentences: List every entry, not only the first 1000 of each list.
+
+    Returns:
+        The number of entries in each list, such as `12 sentences, 3 pairs and 1 pronoun sentences`. None when the
+        command of a list exits nonzero.
     """
     checker = Path(__file__).resolve().parent / 'checks.py'
     agent_verbs = Path(__file__).resolve().parent / 'agentverbs.py'
     every = ['--all-sentences'] if all_sentences else []
-    inventory = run([sys.executable, str(checker), '--prose', *every, *arguments])
-    print('\n--- every sentence of every comment, docstring and page: read each against SKILL.md, Comments ---')
-    print(inventory.text.rstrip() or '(none)')
-    review = run([python, str(agent_verbs), '--review', *every, *arguments, *cache])
-    print('\n--- every subject that cannot act, with its verb: can that subject perform that verb? ---')
-    print(review.text.rstrip() or '(none)')
-    pronouns = run([python, str(agent_verbs), '--pronouns', *every, *arguments, *cache])
-    print('\n--- every sentence with a pronoun, after the one before it: which noun does each pronoun stand for? ---')
-    print(pronouns.text.rstrip() or '(none)')
+    review_lists = (
+        (
+            'sentences',
+            '--- every sentence of every comment, docstring and page: read each against SKILL.md, Comments ---',
+            run([sys.executable, str(checker), '--prose', *every, *arguments]),
+        ),
+        (
+            'pairs',
+            '--- every subject that cannot act, with its verb: can that subject perform that verb? ---',
+            run([python, str(agent_verbs), '--review', *every, *arguments, *cache]),
+        ),
+        (
+            'pronoun sentences',
+            '--- every sentence with a pronoun, after the one before it: which noun does each pronoun stand for? ---',
+            run([python, str(agent_verbs), '--pronouns', *every, *arguments, *cache]),
+        ),
+    )
+    if any(listed.code != 0 for _unit, _heading, listed in review_lists):
+        return None
+
+    written: list[str] = []
+    counts: list[str] = []
+    for unit, heading, listed in review_lists:
+        written.extend([heading, listed.text.rstrip() or '(none)', ''])
+        counts.append(f'{countEntries(listed.text.splitlines())} {unit}')
+    lists_path.write_text('\n'.join(written), encoding='utf-8')
+    return f'{counts[0]}, {counts[1]} and {counts[2]}'
 
 
 def checkConfig(config: Path) -> int | None:
     """Check that the config is a pyproject.toml with every Narrative section, and print the fix if not.
 
-    Presence is not enough. Every real project already has a pyproject.toml, so present-but-wrong is
-    the usual state. A tool with no Narrative section runs with the tool's defaults, and then double
-    quotes and snake_case functions pass.
+    Presence is not enough. Every real project already has a pyproject.toml, so present-but-wrong is the usual state. A
+    tool with no Narrative section runs with the tool's defaults, and then double quotes and snake_case functions pass.
 
     Returns:
         None when the config is usable, otherwise the exit code for a missing toolchain.
@@ -236,10 +290,9 @@ def runCodeTools(
 ) -> list[Result]:
     """Fix and format the Python files unless told not to, then run ruff, pylint and mypy.
 
-    Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other.
-    Under --since, a fix is applied only when the fix edits a changed line, only the changed lines are
-    formatted and checked for format, and the findings of ruff check, pylint and mypy are cut to the
-    changed lines.
+    Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other. Under --since, a fix
+    is applied only when the fix edits a changed line, only the changed lines are formatted and checked for format, and
+    the findings of ruff check, pylint and mypy are cut to the changed lines.
 
     Returns:
         One result per tool, in the order they ran.
@@ -279,9 +332,9 @@ def runCodeTools(
 def fixChangedLines(ruff: str, ruff_config: list[str], targets: list[str], *, changed: ChangedLines) -> None:
     """Apply each safe fix of `ruff check` that edits a changed line, and no other fix.
 
-    `ruff check --fix` has no line range. So each file is checked through stdin, and each fix of the
-    JSON output is applied whole or not at all, the same as with `ruff check --fix`. A fix can leave a
-    new finding with a fix, so the check runs again, up to FIX_ROUNDS times.
+    `ruff check --fix` has no line range. So each file is checked through stdin, and each fix of the JSON output is
+    applied whole or not at all, the same as with `ruff check --fix`. A fix can leave a new finding with a fix, so the
+    check runs again, up to FIX_ROUNDS times.
     """
     for target in targets:
         path = Path(target)
@@ -376,8 +429,8 @@ def formatRanges(
 def keepChangedLines(result: Result, changed: ChangedLines) -> Result:
     """Keep each line of a tool's output with a finding on a changed line.
 
-    The lines of a finding come from codeprose.changeSpans(). An output with no line of the form
-    `path.py:line:`, such as the error of a tool that did not start, is kept whole.
+    The lines of a finding come from codeprose.changeSpans(). An output with no line of the form `path.py:line:`, such
+    as the error of a tool that did not start, is kept whole.
 
     Returns:
         The result with the kept lines, failed when a line is kept.
@@ -401,24 +454,35 @@ def keepChangedLines(result: Result, changed: ChangedLines) -> Result:
     return Result(result.tool, not kept, summary, '\n'.join(kept))
 
 
-def prepareCache() -> Path:
-    """Create CACHE_DIR with a .gitignore of `*`, so git leaves the cache out. ruff and mypy do the same.
+def prepareCache(cache_dir: Path) -> Path:
+    """Create the cache directory with a .gitignore of `*`, so git leaves the cache out. ruff and mypy do the same.
 
     Returns:
-        The path of the cache file of agentverbs.py.
+        The cache directory.
     """
-    CACHE_DIR.mkdir(exist_ok=True)
-    ignore_path = CACHE_DIR / '.gitignore'
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    ignore_path = cache_dir / '.gitignore'
     if not ignore_path.exists():
         ignore_path.write_text('*\n', encoding='utf-8')
-    return CACHE_DIR / 'prose-cache.json'
+    return cache_dir
+
+
+def readStdinPage(cache_dir: Path, suffix: str) -> Path:
+    """Save the page on stdin in the cache directory, so the checks can read the page as a file.
+
+    Returns:
+        The path of the saved page.
+    """
+    page_path = cache_dir / f'stdin{suffix}'
+    page_path.write_text(sys.stdin.read(), encoding='utf-8')
+    return page_path
 
 
 def discoverPython(paths: list[Path]) -> list[Path]:
     """Find every Python file at or below the given paths.
 
-    A directory expands to everything below the directory, so one command covers a whole project. The
-    worktrees of other branches below the directory are left out.
+    A directory expands to everything below the directory, so one command covers a whole project. The worktrees of other
+    branches below the directory are left out.
     """
     code: list[Path] = []
     for target in paths:
@@ -454,9 +518,9 @@ def missingConfigSections(pyproject_path: Path) -> list[str]:
 
 
 def readInstalledVersion() -> str:
-    """Name the installed version: the plugin and its commit, the stamp of install.sh, or the directory.
+    """Name the installed version: the plugin and the plugin commit, the stamp of install.sh, or the directory.
 
-    The plugin cache keeps each version at `<cache>/<marketplace>/<plugin>/<commit>/skills/<skill>/`.
+    Each version in the plugin cache is at `<cache>/<marketplace>/<plugin>/<commit>/skills/<skill>/`.
     """
     skill_dir = Path(__file__).resolve().parent
     in_cache = len(skill_dir.parents) > 4 and skill_dir.parents[4].name == 'cache' and skill_dir.parent.name == 'skills'
@@ -472,15 +536,15 @@ def readInstalledVersion() -> str:
 def resolveToolchain(venv: Path) -> Toolchain:
     """Find every tool as an absolute path.
 
-    A relative path breaks the moment anything changes directory, and then a missing binary looks
-    like a clean run. The venv comes first, then PATH, and anything absent is reported.
+    A relative path breaks the moment anything changes directory, and then a missing binary looks like a clean run. The
+    venv comes first, then PATH, and anything absent is reported.
 
     Args:
         venv: Directory of a virtual environment, searched before PATH.
 
     Returns:
-        The resolved absolute paths, the interpreter that runs agentverbs.py, and the names of any
-        tool or module that could not be found.
+        The resolved absolute paths, the interpreter that runs agentverbs.py, and the names of any tool or module that
+        could not be found.
     """
     resolved: dict[str, str] = {}
     missing: list[str] = []
@@ -519,6 +583,12 @@ def countFindingLines(output: Output) -> int:
     return sum(1 for line in output.text.splitlines() if any(f'{suffix}:' in line for suffix in suffixes))
 
 
+def gradeRewrap(output: Output) -> Result:
+    if output.code != 0:
+        return Result('rewrap', False, 'not run', output.text)
+    return Result('rewrap', True, f'{len(output.text.splitlines())} files re-wrapped', output.text)
+
+
 def gradeRuffCheck(output: Output) -> Result:
     found = countFindingLines(output)
     return Result('ruff check', output.code == 0, 'clean' if output.code == 0 else f'{found} findings', output.text)
@@ -549,8 +619,8 @@ def gradeAgentVerbs(output: Output) -> Result:
 
 
 def gradeVermin(output: Output) -> Result:
-    # Vermin fails a file with no minimum version unless given `--violations`. A file with no version-specific
-    # syntax shows as `~2, ~3` and counts as target-not-met.
+    # Vermin fails a file with no minimum version unless given `--violations`. A file with no version-specific syntax
+    # shows as `~2, ~3` and counts as target-not-met.
     if output.code == 0:
         return Result('vermin', True, f'{PYTHON_FLOOR} or lower', output.text)
 

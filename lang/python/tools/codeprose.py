@@ -1,16 +1,18 @@
 """Read the comments and docstrings of a Python file as passages, for the prose checks of every language.
 
-Each language of Narrative has a module named codeprose.py, and the language's skill directory has
-that module beside agentverbs.py and wording.py. The prose checks read source files only through
-the names below, so the checks run on any language with a codeprose.py.
+Each language of Narrative has a module named codeprose.py, and the language's skill directory has that module beside
+agentverbs.py and wording.py. The prose checks read source files only through the names below, so the checks run on any
+language with a codeprose.py.
 
 - `GIT_PATTERN`: the git pathspec of a source file of the language
 - `passages()`: the comments and doc comments of one source file, as passages
 - `NOQA`: the comment that silences a finding on one line
 - `changeSpans()`: the lines that count for --since, by line
+- `commentBlocks()`: the comments and doc comments of one source file, as blocks of lines for the re-wrap of rewrap.py
 
-In a Python file, a passage is a run of whole-line comments at one column, one trailing comment, or a
-run of docstring lines.
+In a Python file, a passage is a run of whole-line comments at one column, one trailing comment, or a run of docstring
+lines. A block for the re-wrap is a run of whole-line comments at one column, or one docstring. A trailing comment is
+never re-wrapped.
 
 Usage, from a script in this directory:
     import codeprose
@@ -26,6 +28,7 @@ import tokenize
 from pathlib import Path
 
 from prose import Passage
+from rewrap import Line
 from wording import Spans
 
 
@@ -39,13 +42,16 @@ NOQA = re.compile(r'#\s*noqa(?::\s*(?P<codes>(?:[A-Z0-9]+(?:-[a-z]+)?[, ]*)+))?'
 PRAGMA = re.compile(r'(?:noqa|type:|pragma|fmt:|ruff:|pylint:|mypy:)')
 # Google-style docstring sections, whose indented entries are prose
 SECTION_HEADER = re.compile(r'(?:Args|Arguments|Returns|Yields|Raises|Attributes|Notes?):$')
+# the sections whose entries open with a name, such as `plan_path: where the plan file is`. Each entry is a paragraph,
+# and the next lines of an entry hang by 4 columns
+NAMED_SECTION = re.compile(r'(?:Args|Arguments|Raises|Attributes):$')
 
 
 def passages(source: str) -> list[Passage]:
     """Read every comment passage and every docstring passage of one Python file.
 
-    For a file that does not parse, such as a file in the middle of an edit, the list has the comment
-    passages and no docstring passages.
+    For a file that does not parse, such as a file in the middle of an edit, the list has the comment passages and no
+    docstring passages.
     """
     comments = commentPassages(source)
     try:
@@ -83,8 +89,8 @@ def commentPassages(source: str) -> list[Passage]:
 def commentTokens(source: str) -> list[tokenize.TokenInfo]:
     """List the comment tokens of a Python file, in line order.
 
-    A file that does not tokenize, such as an excerpt cut inside a block, is read one line at a time.
-    A line inside a triple-quoted string can then be read as a comment.
+    A file that does not tokenize, such as an excerpt cut inside a block, is read one line at a time. A line inside a
+    triple-quoted string can then be read as a comment.
     """
     try:
         tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
@@ -109,16 +115,9 @@ def lineComments(number: int, line: str) -> list[tokenize.TokenInfo]:
 
 def docstringPassages(tree: ast.Module) -> list[Passage]:
     passages: list[Passage] = []
-    for node in ast.walk(tree):
-        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            continue
-        if ast.get_docstring(node) is None or not isinstance(node.body[0], ast.Expr):
-            continue
-        literal = node.body[0].value
-        if not isinstance(literal, ast.Constant) or not isinstance(literal.value, str):
-            continue
+    for literal in docstringLiterals(tree):
         previous_offset = -2
-        for offset, text in proseLines(literal.value):
+        for offset, text in proseLines(str(literal.value)):
             number = literal.lineno + offset
             if offset == previous_offset + 1:
                 passages[-1] = passages[-1].extendedBy(number, text)
@@ -128,11 +127,25 @@ def docstringPassages(tree: ast.Module) -> list[Passage]:
     return passages
 
 
+def docstringLiterals(tree: ast.Module) -> list[ast.Constant]:
+    """Find the string literal of the docstring of each module, class and function."""
+    literals: list[ast.Constant] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        if ast.get_docstring(node) is None or not isinstance(node.body[0], ast.Expr):
+            continue
+        literal = node.body[0].value
+        if isinstance(literal, ast.Constant) and isinstance(literal.value, str):
+            literals.append(literal)
+    return literals
+
+
 def proseLines(docstring: str) -> list[tuple[int, str]]:
     """Pick the sentences out of a docstring, leaving out pasted samples.
 
-    A line indented past the body is a sample, such as a table or program output, unless the line is
-    an entry under a section header such as `Returns:`.
+    A line indented past the body is a sample, such as a table or program output, unless the line is an entry under a
+    section header such as `Returns:`.
 
     Returns:
         Line offset within the docstring, and the stripped line.
@@ -158,9 +171,9 @@ def proseLines(docstring: str) -> list[tuple[int, str]]:
 def changeSpans(checked_file: Path) -> Spans:
     """Map a line of a Python file to the lines that count for --since when a finding is on that line.
 
-    A finding on the line of a `def` or `class` counts for every line of the definition. A finding on a
-    line of a comment or docstring passage counts for every line of the passage. Any other line counts
-    for itself, and is not in the map.
+    A finding on the line of a `def` or `class` counts for every line of the definition. A finding on a line of a
+    comment or docstring passage counts for every line of the passage. Any other line counts for itself, and is not in
+    the map.
 
     Returns:
         The lines of the definition or the passage, by line. Empty for a file that cannot be read or parsed.
@@ -178,3 +191,88 @@ def changeSpans(checked_file: Path) -> Spans:
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) and node.end_lineno is not None:
             spans[node.lineno] = frozenset(range(node.lineno, node.end_lineno + 1))
     return spans
+
+
+def commentBlocks(source: str) -> list[list[Line]]:
+    """Read the comments and docstrings of one Python file as blocks of lines, for the re-wrap.
+
+    For a file that does not parse, the list has the comment blocks and no docstring blocks.
+    """
+    lines = source.split('\n')
+    blocks = hashBlocks(lines, commentTokens(source))
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return blocks
+    return [*blocks, *(docstringBlock(lines, literal) for literal in docstringLiterals(tree))]
+
+
+def hashBlocks(lines: list[str], tokens: list[tokenize.TokenInfo]) -> list[list[Line]]:
+    """Group the whole-line `#` comments on consecutive lines at one column into blocks.
+
+    A divider such as `### vocabulary ###`, a shebang, a pragma and a line with `# noqa` are fixed.
+    """
+    # matches:
+    # `### vocabulary ####`
+    # `#!/usr/bin/env python3`
+    # rejects:
+    # `# the plan file`
+    FIXED_START = re.compile(r'^#[#!]')
+    blocks: list[list[Line]] = []
+    columns: list[int] = []
+    for token in tokens:
+        row, column = token.start
+        if lines[row - 1][:column].strip():
+            continue
+        body = token.string[1:]
+        text = body.strip()
+        margin = lines[row - 1][:column] + '#' + body[: len(body) - len(body.lstrip())]
+        fixed = bool(FIXED_START.match(token.string) or PRAGMA.match(text) or NOQA.search(token.string))
+        line = Line(row, margin, text, fixed)
+        if blocks and columns[-1] == column and blocks[-1][-1].number == row - 1:
+            blocks[-1].append(line)
+        else:
+            blocks.append([line])
+            columns.append(column)
+    return blocks
+
+
+def docstringBlock(lines: list[str], literal: ast.Constant) -> list[Line]:
+    """Read the lines of one docstring as a block, from the line of the opening quotes.
+
+    The opening quotes stay on the first word, and closing quotes after text stay on the last word. The quotes alone on
+    a line, a one-line docstring, a section header such as `Returns:`, and a line of a doctest or a shell command are
+    fixed. An entry of a section opens a paragraph: in `Args:` each entry, and in `Returns:` the first line after the
+    header or after a blank line.
+    """
+    QUOTES = ('"""', "'''")
+    first_row, column = literal.lineno, literal.col_offset
+    last_row = literal.end_lineno if literal.end_lineno is not None else first_row
+    body = [line for line in lines[first_row:last_row] if line.strip()]
+    margin_width = min((len(line) - len(line.lstrip()) for line in body), default=column)
+    opening = lines[first_row - 1][column:].rstrip()
+    one_line = first_row == last_row or opening.endswith(QUOTES)
+    block = [Line(first_row, lines[first_row - 1][:column], opening, fixed=one_line)]
+    entry_indent: int | None = None
+    named = False
+    opens_entry = False
+    for row in range(first_row + 1, last_row + 1):
+        raw = lines[row - 1]
+        text = raw.strip()
+        margin = raw[: len(raw) - len(raw.lstrip())]
+        fixed = text in QUOTES or text.startswith(('$', '>>>', '...')) or NOQA.search(raw) is not None
+        hang: int | None = None
+        if not text:
+            opens_entry = True
+        elif len(margin) <= margin_width:
+            entry_indent = None
+            if SECTION_HEADER.match(text):
+                fixed, entry_indent, opens_entry = True, -1, True
+                named = NAMED_SECTION.match(text) is not None
+        elif entry_indent is not None:
+            entry_indent = len(margin) if entry_indent == -1 else entry_indent
+            if len(margin) == entry_indent and (named or opens_entry):
+                hang = 4 if named else 0
+            opens_entry = False
+        block.append(Line(row, margin, text, fixed, hang))
+    return block

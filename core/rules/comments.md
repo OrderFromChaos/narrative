@@ -229,6 +229,11 @@ R10-depth-example, R10-period-join)
   b->c, a and c compare unequal` when a and b also compare unequal (R10-worked-example)
 - no semicolon and no dash. Write two sentences (R10-no-semicolon, `NAR013`)
 - a comment line over the line limit is wrapped onto the next line. Never change the wording to fit (R11-wrap-not-reword)
+- **re-wrap with `verify.py`, not by hand.** Before the checks, `verify.py` fills each paragraph of a
+  comment or doc comment up to column 120, in every language, and under `--since` only a paragraph
+  with a changed line. The line breaks of a blank comment line, a list item, a block tag, a sample
+  and the strings under `matches:` stay as written. With `--no-fix`, `NAR125` flags each paragraph
+  that the re-wrap would change. The re-wrap moves line breaks only, never words (R11-rewrap-fill)
 - a Fence is the fact the code depends on, then the step the code takes because of that fact:
   `the vendor rounds tax per line, not per invoice. Round each line before the sum`. Write `X would`
   only when X is an alternative the code does not use, such as a read of the whole file into

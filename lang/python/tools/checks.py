@@ -1,21 +1,24 @@
 """Report Narrative style violations that ruff, pylint and mypy do not implement.
 
-Each rule is one check. NAR001 and NAR006 cover module state. NAR002 covers class attributes.
-NAR003 covers layout. NAR004, NAR009 and NAR011 cover documentation. NAR005 covers annotation
-complexity. NAR007 covers boolean grouping. NAR010 covers FIXME reachability. NAR012 to NAR016
-and NAR018 cover the wording of comments and docstrings. NAR019 covers a return contract written
-as a comment.
+Each rule is one check. NAR001 and NAR006 cover module state. NAR002 covers class attributes. NAR003 covers layout.
+NAR004, NAR009 and NAR011 cover documentation. NAR005 covers annotation complexity. NAR007 covers boolean grouping.
+NAR010 covers FIXME reachability. NAR012 to NAR016 and NAR018 cover the wording of comments and docstrings. NAR019
+covers a return contract written as a comment. NAR125 covers a paragraph of a comment or docstring that is not filled up
+to column 120.
 
-A Markdown, HTML or plain text file named on the command line gets the wording checks only, on the
-passages that prose.py reads from the file. A directory expands to its Python files.
+With --rewrap, checks.py checks nothing. Each paragraph of the comments and docstrings is filled again up to column 120
+in place, by rewrap.py, and under --since only a paragraph with a changed line.
 
-With --since REF, only the Python files that the diff against merge-base(HEAD, REF) adds or changes
-are checked, and a finding is reported only when the finding's lines overlap the changed lines. The
-lines of a finding in a comment or docstring are the lines of the passage, and the lines of a
-finding on a `def` or `class` line are the lines of the definition. A page is checked whole.
+A Markdown, HTML or plain text file named on the command line gets the wording checks only, on the passages that
+prose.py reads from the file. A directory expands to its Python files.
 
---prose lists every sentence of every comment, docstring and page. Without --since, the list stops
-after 1000 sentences, with the command for the next 1000.
+With --since REF, only the Python files that the diff against merge-base(HEAD, REF) adds or changes are checked, and a
+finding is reported only when the finding's lines overlap the changed lines. The lines of a finding in a comment,
+docstring or page are the lines of the passage, and the lines of a finding on a `def` or `class` line are the lines of
+the definition. A named page with no changed line has no finding and no sentence in the list.
+
+--prose lists every sentence of every comment, docstring and page. Without --since, the list stops after 1000 sentences,
+with the command for the next 1000.
 
 See tooling.md for what the other tools own.
 
@@ -26,6 +29,7 @@ Usage:
     $ python3 checks.py src/ --select NAR001 --select NAR006
     $ python3 checks.py src/ --since origin/main
     $ python3 checks.py src/ README.md --prose --from-sentence 1001
+    $ python3 checks.py src/ --rewrap --since origin/main
 
 Exit codes:
     0  nothing found
@@ -43,6 +47,7 @@ from pathlib import Path
 
 import codeprose
 import prose
+import rewrap
 from wording import RULES as WORDING_RULES
 from wording import (
     Finding,
@@ -53,6 +58,7 @@ from wording import (
     inChange,
     isPage,
     listPage,
+    pageSpans,
     readChangedLines,
     wordingFindings,
 )
@@ -76,6 +82,7 @@ RULES = {
     'NAR010': 'FIXME in reachable code. A merge blocker, not a danger sign',
     'NAR011': 'docstring body is entirely indented. `ruff format` will flatten the sample',
     'NAR019': 'return contract as a comment at the top of a function body. Move it to the docstring, or cut it',
+    'NAR125': rewrap.DETAIL,
     **WORDING_RULES,
 }
 
@@ -105,6 +112,7 @@ def main() -> int:
     parser.add_argument('--from-sentence', type=int, default=1, help='with --prose, start at this sentence')
     parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every sentence')
     parser.add_argument('--since', help='report only lines changed since merge-base(HEAD, SINCE)')
+    parser.add_argument('--rewrap', action='store_true', help='fill the comments and docstrings again, in place')
     args = parser.parse_args()
 
     targets: list[Path] = []
@@ -118,6 +126,18 @@ def main() -> int:
 
     if changed is not None:
         targets = [target for target in targets if isPage(target) or target.resolve() in changed]
+
+    if args.rewrap:
+        for checked_file in targets:
+            if isPage(checked_file):
+                continue
+            source = checked_file.read_text(encoding='utf-8')
+            blocks = codeprose.commentBlocks(source)
+            rewrapped = rewrap.rewrapSource(source, blocks, changedLinesOf(changed, checked_file))
+            if rewrapped != source:
+                checked_file.write_text(rewrapped, encoding='utf-8')
+                print(f'{checked_file}: re-wrapped')
+        return 0
 
     if args.prose:
         listed: list[str] = []
@@ -136,7 +156,7 @@ def main() -> int:
     for checked_file in targets:
         found = checkFile(checked_file)
         if (changed_lines := changedLinesOf(changed, checked_file)) is not None:
-            spans = codeprose.changeSpans(checked_file)
+            spans = pageSpans(checked_file) if isPage(checked_file) else codeprose.changeSpans(checked_file)
             found = [f for f in found if f.code == 'NAR000' or inChange(changed_lines, spans, f.line)]
         findings.extend(found)
     if args.select:
@@ -186,8 +206,8 @@ MUTATING_METHODS = frozenset({
     'update', 'setdefault', 'popitem', 'add', 'discard',
     '__setitem__', '__delitem__', '__iadd__',
 })
-# Configuration calls mutate module state too, e.g. `LOG.addHandler(...)`. 'write' and 'load' are not
-# listed. `LOG_PATH.write_text(...)` writes a file and mutates no module state.
+# Configuration calls mutate module state too, e.g. `LOG.addHandler(...)`. 'write' and 'load' are not listed.
+# `LOG_PATH.write_text(...)` writes a file and mutates no module state.
 MUTATING_PREFIXES = (
     'set', 'add', 'remove', 'register', 'unregister', 'reset', 'delete', 'insert',
     'enable', 'disable', 'configure', 'install', 'attach', 'detach',
@@ -199,9 +219,8 @@ MUTATING_PREFIXES = (
 def mutatesByName(method: str) -> bool:
     """Decide whether a method name reads as a mutation.
 
-    Exact names first, then a prefix sweep for the configuration verbs. This can only be a
-    heuristic. An arbitrary domain method may mutate without saying so in its name, so a
-    mutation hidden behind another name is not flagged.
+    Exact names first, then a prefix sweep for the configuration verbs. This can only be a heuristic. An arbitrary
+    domain method may mutate without saying so in its name, so a mutation hidden behind another name is not flagged.
     """
     if method in MUTATING_METHODS:
         return True
@@ -214,9 +233,8 @@ def mutatesByName(method: str) -> bool:
 def mutatedModuleNames(func: ast.FunctionDef | ast.AsyncFunctionDef, module_vars: set[str]) -> set[str]:
     """Find module-level names this function changes in place.
 
-    Detects mutating method calls, augmented assignment, `del`, and assignment through a subscript
-    or attribute. A plain `NAME = x` rebind is not counted. Without `global`, it binds a local, and
-    NAR006 reports that case.
+    Detects mutating method calls, augmented assignment, `del`, and assignment through a subscript or attribute. A plain
+    `NAME = x` rebind is not counted. Without `global`, it binds a local, and NAR006 reports that case.
 
     Args:
         module_vars: Names bound by a plain assignment at module level.
@@ -287,8 +305,8 @@ def locallyBoundNames(func: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
             bound.add(node.id)
         elif isinstance(node, (ast.Import, ast.ImportFrom)):
             bound.update(a.asname or a.name.split('.')[0] for a in node.names)
-        # Keep two branches. Merging them, even with explicit parentheses, widens `node` back to a union,
-        # and mypy then types `node.name` as `str | None`.
+        # Keep two branches. Merging them, even with explicit parentheses, widens `node` back to a union, and mypy then
+        # types `node.name` as `str | None`.
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node is not func:
             bound.add(node.name)
         elif isinstance(node, ast.ExceptHandler) and node.name:
@@ -300,9 +318,8 @@ def locallyBoundNames(func: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
 def checkGlobalDeclarations(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Flag undeclared writes to module state.
 
-    NAR001 is in-place mutation with no `global`, which neither ruff nor pylint reports at any
-    setting. NAR006 is a bare assignment that shadows a module-level name, so the module value
-    silently never changes.
+    NAR001 is in-place mutation with no `global`, which neither ruff nor pylint reports at any setting. NAR006 is a bare
+    assignment that shadows a module-level name, so the module value silently never changes.
 
     Reads aren't flagged: `global` marks a side effect, not a dependency.
     """
@@ -353,12 +370,11 @@ def checkArgsPerLine(tree: ast.Module, checked_file: Path) -> list[Finding]:
 
     Signatures only. Calls are exempt.
 
-    The formatter cannot do this. `ruff format` leaves a four-argument signature alone while the
-    signature fits in 120 columns, and COM812 only fires once a construct has already been split.
+    The formatter cannot do this. `ruff format` leaves a four-argument signature alone while the signature fits in 120
+    columns, and COM812 only fires once a construct has already been split.
 
-    Only positional parameters count. Keyword-only parameters, after `*`, don't, so a function may
-    have any number of those. Marking the optional parameters keyword-only documents them
-    and stops them counting.
+    Only positional parameters count. Keyword-only parameters, after `*`, don't, so a function may have any number of
+    those. Marking the optional parameters keyword-only documents them and stops them counting.
     """
     findings: list[Finding] = []
 
@@ -381,8 +397,8 @@ def checkArgsPerLine(tree: ast.Module, checked_file: Path) -> list[Finding]:
 def missingSections(node: ast.FunctionDef | ast.AsyncFunctionDef, docstring: str, checked_file: Path) -> list[Finding]:
     """Report a function that the docstring trigger caught and whose docstring has no `Raises:`.
 
-    A docstring can exist without stating the contract, so the trigger and the section check are
-    two separate tests over the same function.
+    A docstring can exist without stating the contract, so the trigger and the section check are two separate tests over
+    the same function.
     """
     args = node.args
     every_arg = args.posonlyargs + args.args + args.kwonlyargs
@@ -402,15 +418,15 @@ def missingSections(node: ast.FunctionDef | ast.AsyncFunctionDef, docstring: str
 def checkDocstringThreshold(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Require a docstring wherever the contract is complex, not merely where the body is long.
 
-    Two triggers: the function takes more than three parameters, or its body exceeds the line
-    threshold. A `raise` is not a trigger, because the style routes raise sites through a reject*()
-    helper and every two-line guard that calls one contains a `raise`.
+    Two triggers: the function takes more than three parameters, or its body exceeds the line threshold. A `raise` is
+    not a trigger, because the style routes raise sites through a reject*() helper and every two-line guard that calls
+    one contains a `raise`.
 
-    Keyword-only parameters count here, unlike NAR003, because every parameter is part of the
-    contract even when the caller may omit the parameter.
+    Keyword-only parameters count here, unlike NAR003, because every parameter is part of the contract even when the
+    caller may omit the parameter.
 
-    A pure line threshold would be gameable in the wrong direction: splitting a 21-line function
-    into two 12-line ones deletes the obligation without simplifying either contract.
+    A pure line threshold would be gameable in the wrong direction: splitting a 21-line function into two 12-line ones
+    deletes the obligation without simplifying either contract.
     """
     findings: list[Finding] = []
 
@@ -445,10 +461,9 @@ def checkDocstringThreshold(tree: ast.Module, checked_file: Path) -> list[Findin
 def annotationThings(node: ast.expr) -> int:
     """Count every name in an annotation, except the outermost one.
 
-    An annotation is impossible to say out loud when it has too many names in it, at any nesting.
-    Counting names rather than depth or width catches both
-    `Callable[[Callable[[Job], Result]], Callable[[Job], Result]]`, which is deep and narrow, and
-    `tuple[dict[str, str], list[str]]`, which is wide and shallow.
+    An annotation is impossible to say out loud when it has too many names in it, at any nesting. Counting names rather
+    than depth or width catches both `Callable[[Callable[[Job], Result]], Callable[[Job], Result]]`, which is deep and
+    narrow, and `tuple[dict[str, str], list[str]]`, which is wide and shallow.
 
     The outermost name is free because it is the thing being described. `Car` costs 0, and
     `dict[str, list[tuple[float, float]]]` costs 5.
@@ -460,12 +475,11 @@ def annotationThings(node: ast.expr) -> int:
 def checkAnnotationComplexity(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Flag an annotation too complex to say out loud.
 
-    The measure is the number of names in the annotation below the outermost name, at any nesting.
-    The count is high for `dict[str, list[tuple[float, float]]]`, which is deep and narrow, and
-    `tuple[a, b, c, d, e, f, g, h, i, j]`, which is one level deep and still unnameable.
+    The measure is the number of names in the annotation below the outermost name, at any nesting. The count is high for
+    `dict[str, list[tuple[float, float]]]`, which is deep and narrow, and `tuple[a, b, c, d, e, f, g, h, i, j]`, which
+    is one level deep and still unnameable.
 
-    The remedy depends on the type. A callable becomes a Protocol, and anything else becomes a
-    dataclass.
+    The remedy depends on the type. A callable becomes a Protocol, and anything else becomes a dataclass.
 
     Returns:
         One finding per annotation over the threshold, with the remedy for that annotation.
@@ -496,12 +510,12 @@ def checkAnnotationComplexity(tree: ast.Module, checked_file: Path) -> list[Find
 def checkBoolOpParens(tree: ast.Module, source: str, checked_file: Path) -> list[Finding]:
     """Flag an `and` group inside an `or` that is not parenthesised.
 
-    `and` binds tighter, so `A and B or C and D` is correct. A reader still has to look up the
-    precedence. Merging branches that share a body is fine. Merging them by precedence isn't.
+    `and` binds tighter, so `A and B or C and D` is correct. A reader still has to look up the precedence. Merging
+    branches that share a body is fine. Merging them by precedence isn't.
 
-    Parentheses are not in the AST, so this check reads the source. Both sides must be checked: a
-    trailing `)` alone is ambiguous, because the last operand of a parenthesised multi-line
-    expression is also followed by `)` without being grouped itself.
+    Parentheses are not in the AST, so this check reads the source. Both sides must be checked: a trailing `)` alone is
+    ambiguous, because the last operand of a parenthesised multi-line expression is also followed by `)` without being
+    grouped itself.
     """
     lines = source.splitlines()
     findings: list[Finding] = []
@@ -554,13 +568,13 @@ def calleeName(node: ast.stmt) -> str | None:
 def checkModuleDocstring(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Require a module docstring, and a usage example on anything runnable.
 
-    The docstring is the first thing a reader meets, before `main()`. A runnable module's docstring
-    has an example invocation: invocation varies per program, and a reader shouldn't reconstruct the
-    invocation from `argparse` calls further down.
+    The docstring is the first thing a reader meets, before `main()`. A runnable module's docstring has an example
+    invocation: invocation varies per program, and a reader shouldn't reconstruct the invocation from `argparse` calls
+    further down.
 
     Returns:
-        One finding for a missing docstring, or one for a runnable module with no example invocation
-        in the module docstring.
+        One finding for a missing docstring, or one for a runnable module with no example invocation in the module
+        docstring.
     """
     runnable = any(isinstance(node, ast.If) and '__main__' in ast.unparse(node.test) for node in tree.body)
 
@@ -594,9 +608,8 @@ SKIPPED_DIRECTORIES = frozenset({
 def discoverPython(root: Path) -> list[Path]:
     """Find every Python file under a directory, skipping the trees no linter should read.
 
-    Ruff already excludes a virtual environment. This function skips the same trees, so
-    `checks.py .` reports nothing from installed third-party code. findFiles() skips the worktrees
-    of other branches.
+    Ruff already excludes a virtual environment. This function skips the same trees, so `checks.py .` reports nothing
+    from installed third-party code. findFiles() skips the worktrees of other branches.
 
     Returns:
         Every `.py` file outside a skipped directory.
@@ -622,17 +635,16 @@ def calledNames(node: ast.AST) -> set[str]:
 def reachableFunctions(tree: ast.Module) -> set[str]:
     """Find every function reachable from module level or from `main`.
 
-    Names are matched without scope analysis, so a method and a function that share a name are one
-    node. That over-approximates reachability. A false NAR010 finding on an orphan is safer than a
-    missed live FIXME.
+    Names are matched without scope analysis, so a method and a function that share a name are one node. That
+    over-approximates reachability. A false NAR010 finding on an orphan is safer than a missed live FIXME.
 
-    A module with no `main` and no `__main__` block is a library module. Its callers are in files
-    outside this check, so every function in the module counts as reachable.
+    A module with no `main` and no `__main__` block is a library module. Its callers are in files outside this check, so
+    every function in the module counts as reachable.
     """
     defined = {node.name: node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
 
-    # The callers of a library module (no main, no __main__ block) are in other files. This check
-    # doesn't read them, so every function counts as reachable.
+    # The callers of a library module (no main, no __main__ block) are in other files. This check doesn't read them, so
+    # every function counts as reachable.
     entry = {name for name in defined if name == 'main'}
     runnable = any(isinstance(node, ast.If) and '__main__' in ast.unparse(node.test) for node in tree.body)
     if not entry and not runnable:
@@ -668,9 +680,8 @@ def enclosingFunction(tree: ast.Module, line: int) -> str | None:
 def checkDocstringSample(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Flag a docstring whose body is entirely indented.
 
-    `ruff format` strips the common leading indent from a docstring body, so a body that is all
-    sample loses the alignment and the pasted table, log line or conversion becomes prose. One line
-    at column 0 anchors the block.
+    `ruff format` strips the common leading indent from a docstring body, so a body that is all sample loses the
+    alignment and the pasted table, log line or conversion becomes prose. One line at column 0 anchors the block.
     """
     findings: list[Finding] = []
     for node in ast.walk(tree):
@@ -696,9 +707,9 @@ def checkDocstringSample(tree: ast.Module, checked_file: Path) -> list[Finding]:
 def checkFixmeReachability(tree: ast.Module, source: str, checked_file: Path) -> list[Finding]:
     """Flag a FIXME sitting in code that runs.
 
-    The two markers mean different things. A TODO is deferred work and never blocks. A FIXME is
-    either a merge blocker, or a known correctness problem parked in code nothing calls, left as a
-    danger sign for whoever next considers wiring that code into the hot loop.
+    The two markers mean different things. A TODO is deferred work and never blocks. A FIXME is either a merge blocker,
+    or a known correctness problem parked in code nothing calls, left as a danger sign for whoever next considers wiring
+    that code into the hot loop.
 
     Only the first kind is a defect. Reachability separates the two.
 
@@ -737,9 +748,9 @@ def proseWording(prose_lines: list[tuple[int, str]], checked_file: Path) -> list
 def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> list[Finding]:
     """Flag a function whose body opens with a comment about what the function returns.
 
-    The contract belongs in the docstring, and only when the return type leaves the contract unclear.
-    The comment is the block of full-line comments directly above the first statement after the
-    docstring. The comment counts when it opens with `returns`, `None when`, `None unless` or `the result`.
+    The contract belongs in the docstring, and only when the return type leaves the contract unclear. The comment is the
+    block of full-line comments directly above the first statement after the docstring. The comment counts when it opens
+    with `returns`, `None when`, `None unless` or `the result`.
 
     Returns:
         One finding per function, at the first line of the comment.
@@ -768,10 +779,9 @@ def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> li
 def proseInventory(checked_file: Path, changed_lines: set[int] | None = None) -> list[tuple[int, str]]:
     """List every sentence of every comment and docstring in one file, or of one page, in line order.
 
-    A Markdown, HTML or plain text page is prose throughout, so every sentence of the page is listed.
-    The lines of a comment, a docstring or a paragraph are joined first, so a sentence wrapped over
-    several lines is listed whole, on the line where the sentence starts. With `changed_lines`, only
-    the passages with a changed line are listed.
+    A Markdown, HTML or plain text page is prose throughout, so every sentence of the page is listed. The lines of a
+    comment, a docstring or a paragraph are joined first, so a sentence wrapped over several lines is listed whole, on
+    the line where the sentence starts. With `changed_lines`, only the passages with a changed line are listed.
 
     Returns:
         Line number and sentence, or nothing for a file that cannot be read or parsed.
@@ -826,8 +836,8 @@ def docstringLines(tree: ast.Module) -> list[tuple[int, str]]:
 def suppressedLines(source: str) -> dict[int, set[str]]:
     """Map each line with a `# noqa: NARxxx` comment to the codes that the comment silences.
 
-    Every check here is a heuristic over syntax, so each one can be wrong. A suppression clears a
-    false positive with no change to correct code.
+    Every check here is a heuristic over syntax, so each one can be wrong. A suppression clears a false positive with no
+    change to correct code.
 
     Returns:
         Line number to the set of codes suppressed on that line, or `{'ALL'}` for a bare `# noqa`.
@@ -847,12 +857,11 @@ def suppressedLines(source: str) -> dict[int, set[str]]:
 def checkFile(checked_file: Path) -> list[Finding]:
     """Run every check against one file.
 
-    An unreadable file is reported like any other finding, so a run over a directory doesn't stop at
-    the first bad path.
+    An unreadable file is reported like any other finding, so a run over a directory doesn't stop at the first bad path.
 
     Returns:
-        Every finding for this file. For a file that cannot be read, a single NAR000. For a file that does
-        not parse, a NAR000 and the wording findings of the comments.
+        Every finding for this file. For a file that cannot be read, a single NAR000. For a file that does not parse, a
+        NAR000 and the wording findings of the comments.
     """
     if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
         return checkPage(checked_file)
@@ -867,8 +876,8 @@ def checkFile(checked_file: Path) -> list[Finding]:
     try:
         tree = ast.parse(source, filename=str(checked_file))
     except SyntaxError as exc:
-        # the comments of a file that does not parse, such as a file in the middle of an edit, still get
-        # the wording checks
+        # the comments of a file that does not parse, such as a file in the middle of an edit, still get the wording
+        # checks
         syntax = Finding(checked_file, exc.lineno or 0, 'NAR000', f'syntax error: {exc.msg}')
         worded = proseWording(commentLines(source), checked_file)
         return [syntax, *(f for f in worded if not (suppressed.get(f.line, set()) & {f.code, 'ALL'}))]
@@ -886,6 +895,9 @@ def checkFile(checked_file: Path) -> list[Finding]:
         *checkProseWording(tree, source, checked_file),
         *checkReturnContract(tree, source, checked_file),
     ]
+    blocks = codeprose.commentBlocks(source)
+    unfilled = rewrap.unfilledLines(source, blocks, None)
+    findings.extend(Finding(checked_file, number, 'NAR125', 'comment') for number in unfilled)
 
     return [f for f in findings if not (suppressed.get(f.line, set()) & {f.code, 'ALL'})]
 

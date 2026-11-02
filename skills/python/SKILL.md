@@ -846,8 +846,10 @@ python3 "${CLAUDE_SKILL_DIR}/verify.py" . --since origin/main
 
 Pass `verify.py` any path. Every Python file below that path is checked. Run `verify.py` from the
 project root, because the default `--config` is `./pyproject.toml`. `verify.py` rewrites files with
-`ruff check --fix` and `ruff format`, unless you pass `--no-fix`. For each tool that fails,
-`verify.py` prints that tool's output.
+`checks.py --rewrap`, `ruff check --fix` and `ruff format`, unless you pass `--no-fix`. For each
+tool that fails, `verify.py` prints that tool's output. With `--cache-dir DIR`,
+`.narrative_cache` is in DIR, such as a directory outside a checkout that the agent may not write. A path of `-` is a
+page read from stdin, such as a draft that is not in a file yet.
 
 **In a PR to another project, pass `--since` with the base branch.** Upstream code already breaks
 some of these rules, and a finding on a line the diff does not touch is not the PR's to fix. Only
@@ -863,13 +865,14 @@ project. (R11-since, R11-same-workflow)
 `pyproject.toml` is absent. **Do not replace it with a loop that greps tool output for findings.**
 With such a loop, a missing binary or config produces empty output, and empty output reads as a pass.
 
-`verify.py` runs these tools, in the order that converges: `ruff check --fix`, `ruff format`,
-`pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`. A run with exit 0 or 1 ends
-with three lists, the input to **Prose review**: every sentence of every comment, docstring and
-named page, every verb whose subject cannot act, and every sentence with a pronoun. On a run with
-exit 1, `verify.py` prints the lists after the findings. With `--since`, the lists cover only the
-changed lines. Without `--since`, each list stops after 1000 entries, with the command for the next
-1000. `verify.py` keeps the spaCy results of each comment in `.narrative_cache/` in the current
+`verify.py` runs these tools, in the order that converges: `checks.py --rewrap`,
+`ruff check --fix`, `ruff format`, `pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`.
+A run with exit 0 or 1 writes three lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+review**: every sentence of every comment, docstring and named page, every verb whose subject cannot
+act, and every sentence with a pronoun. The file and the number of entries in each list are
+on the last line of the output. With `--since`, the lists cover only the changed lines of the code and the
+pages. Without `--since`, each list stops after 1000 entries, with the command for the next 1000.
+`verify.py` keeps the spaCy results of each comment in `.narrative_cache/` in the current
 directory, so a run after a small change parses only the changed comments. (R11-lists-on-failure,
 R11-page-inventory, R11-list-pages, R11-prose-cache)
 
@@ -877,7 +880,7 @@ R11-page-inventory, R11-list-pages, R11-prose-cache)
 |---|---|
 | 0 | every tool passed |
 | 1 | at least one tool had a finding |
-| 2 | the toolchain or the config is missing, so nothing was checked |
+| 2 | the toolchain or the config is missing, so nothing was checked, or the review lists could not be written |
 
 The job of each layer, and the tool defaults that break rules of this skill, are in `tooling.md`. For
 example, `ruff check --fix` collapses blank lines after imports, and the `SIM114` fix merges branches

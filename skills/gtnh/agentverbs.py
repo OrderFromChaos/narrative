@@ -1,51 +1,48 @@
 r"""Flag comments and docstrings whose subject cannot act, cut or joined clauses, and unclear pronouns.
 
-NAR017 is an agent verb on a subject that cannot act. NAR020 is a clause with no subject before
-`, so`: `Named, so a recreated container gets it back`. The rewrite has a subject: `Named volumes
-persist when a container is recreated`. A subordinate clause before `, so` is flagged too:
-`Whether some terms differ by mode, so the mode is an input`. That sentence has no main clause before
-`, so`.
+NAR017 is an agent verb on a subject that cannot act. NAR020 is a clause with no subject before `, so`:
+`Named, so a recreated container gets it back`. The rewrite has a subject:
+`Named volumes persist when a container is recreated`. A subordinate clause before `, so` is flagged too:
+`Whether some terms differ by mode, so the mode is an input`. That sentence has no main clause before `, so`.
 
-NAR021 is a clause that `as` or `, where` joins to a sentence: `a float, as in the machines' code`,
-`As the EBF.`, `as the recipe works it out`, and in a comment `the values it takes, where the spec
-has no range`. To fix a NAR021 finding, cut the clause, or make the clause's fact a new sentence.
+NAR021 is a clause that `as` or `, where` joins to a sentence: `a float, as in the machines' code`, `As the EBF.`,
+`as the recipe works it out`, and in a comment `the values it takes, where the spec has no range`. To fix a NAR021
+finding, cut the clause, or make the clause's fact a new sentence.
 
-NAR022 is `it` or `its` after two or more singular nouns in one sentence: `PumpController extends
-MachineBase, and it ticks every second`. A reader can take the pronoun for either noun, even when only
-one of the nouns makes sense. A noun for a person, such as `reader`, is not counted, because `it`
-never stands for a person. A span in backticks counts as a noun. To fix a NAR022 finding, repeat the
-noun that the pronoun stands for, or split the sentence.
+NAR022 is `it` or `its` after two or more singular nouns in one sentence:
+`PumpController extends MachineBase, and it ticks every second`. A reader can take the pronoun for either noun, even
+when only one of the nouns makes sense. A noun for a person, such as `reader`, is not counted, because `it` never stands
+for a person. A span in backticks counts as a noun. To fix a NAR022 finding, repeat the noun that the pronoun stands
+for, or split the sentence.
 
-`a period ranks by its newest snapshot` makes a period rank, and `the report names it` makes a
-report speak. A subject acts when it is a person, an animal, a role such as `caller`, or a pronoun
-for one. A noun made from a verb with no person sense in common use, such as `solver`, is the name
-of a program and cannot act. A verb counts as mental when its most frequent WordNet sense is
-cognition, communication or perception, or when the verb is on MIND_EXTRA. A verb counts as an agent
-verb when VerbNet puts the verb's most frequent sense in a class in which each frame has an animate
-subject: `the default config sends the job`, `the fallback places the file`. Verbs on LITERAL never count,
-and `show` is fine after a noun on PAGE_PARTS: `the table below shows the totals`. A British
-spelling is read as the American one that the word lists use: `honour` as `honor`.
+`a period ranks by its newest snapshot` makes a period rank, and `the report names it` makes a report speak. A subject
+acts when it is a person, an animal, a role such as `caller`, or a pronoun for one. A noun made from a verb with no
+person sense in common use, such as `solver`, is the name of a program and cannot act. A verb counts as mental when its
+most frequent WordNet sense is cognition, communication or perception, or when the verb is on MIND_EXTRA. A verb counts
+as an agent verb when VerbNet puts the verb's most frequent sense in a class in which each frame has an animate subject:
+`the default config sends the job`, `the fallback places the file`. Verbs on LITERAL never count, and `show` is fine
+after a noun on PAGE_PARTS: `the table below shows the totals`. A British spelling is read as the American one that the
+word lists use: `honour` as `honor`.
 
-There are six ways to read a subject and its verb, because the parse of a terse comment is often
-wrong on words that are both noun and verb (`a plan marks`):
-- the dependency parse: a nominal subject of a verb, with `that` and `which` read as the noun
-  their clause attaches to
+There are six ways to read a subject and its verb, because the parse of a terse comment is often wrong on words that are
+both noun and verb (`a plan marks`):
+- the dependency parse: a nominal subject of a verb, with `that` and `which` read as the noun their clause attaches to
 - a coordinated verb takes the subject of the verb's clause: `the file is malformed, or names a zone`
-- a verb joined by `and` or `or` to a verb of the same form takes the subject of the other verb: `the
-  scan can stop early and list no files`
+- a verb joined by `and` or `or` to a verb of the same form takes the subject of the other verb:
+  `the scan can stop early and list no files`
 - an `-ing` modifier with an object takes the noun before the modifier as subject: `a policy deciding it`
 - agreement: after a singular determiner, a noun followed by an `-s` word makes that word a verb
 - a modal: `a policy can judge`
-The coordination and agreement readings take mental verbs only. They read an `-s` word as a verb
-without the parse, and agent verbs such as `bill` and `rule` are also nouns. A passive verb with
-`by` and a verb such as `pick` in `tries to pick` are not read: on the test corpus, most such pairs
-are verbs that code performs, such as `keyed by resource id`.
+The coordination and agreement readings take mental verbs only. They read an `-s` word as a verb without the parse, and
+agent verbs such as `bill` and `rule` are also nouns. A passive verb with `by` and a verb such as `pick` in
+`tries to pick` are not read: on the test corpus, most such pairs are verbs that code performs, such as
+`keyed by resource id`.
 
-It imports spaCy and loads its `en_core_web_md` model, both pinned in requirements-lock.txt.
-verify.py runs it with the interpreter of the lint venv.
+It imports spaCy and loads its `en_core_web_md` model, both pinned in requirements-lock.txt. verify.py runs it with the
+interpreter of the lint venv.
 
-A directory expands to the source files of the language that codeprose.py reads. A Markdown, HTML
-or plain text file is checked when the file is named, through prose.py.
+A directory expands to the source files of the language that codeprose.py reads. A Markdown, HTML or plain text file is
+checked when the file is named, through prose.py.
 
 Usage, with the shared lint venv of SKILL.md (Scripts\python.exe in place of bin/python on Windows):
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py src/ README.md docs/report.html
@@ -63,31 +60,27 @@ Usage, with the shared lint venv of SKILL.md (Scripts\python.exe in place of bin
     precision 1.00, recall 0.91 (29 of 32 found, 0 false)
 
 A line with `# noqa: NAR017`, `# noqa: NAR020`, `# noqa: NAR021`, `# noqa: NAR022` or a bare `# noqa` is
-skipped for that code. In a page,
-the comment is `<!-- noqa: NAR017 -->`.
+skipped for that code. In a page, the comment is `<!-- noqa: NAR017 -->`.
 
-`--review` lists every other subject that cannot act, with its verb, for the manual prose review:
-a verb that is not stative, such as `breaks` or `stays`, and a verb on LITERAL unless the verb has a
-direct object and code as the subject: `the spec runs it` is listed, `PlanLoader reads the plan file` is
-not. A verb whose subject receives, such as `gets`, is never listed. An `-s` word after another
-noun is on the list too when only a verb fits there and spaCy tags a noun: `the path breaks`.
-A reader decides whether the subject can perform the verb. The list is no finding, and the exit code
+`--review` lists every other subject that cannot act, with its verb, for the manual prose review: a verb that is not
+stative, such as `breaks` or `stays`, and a verb on LITERAL unless the verb has a direct object and code as the subject:
+`the spec runs it` is listed, `PlanLoader reads the plan file` is not. A verb whose subject receives, such as `gets`, is
+never listed. An `-s` word after another noun is on the list too when only a verb fits there and spaCy tags a noun:
+`the path breaks`. A reader decides whether the subject can perform the verb. The list is no finding, and the exit code
 is 0.
 
-`--pronouns` lists every sentence with `it`, `its` or a standalone `that`, each after the sentence
-before. spaCy has no coreference resolution, so a reader names the noun for each pronoun. The list is no
-finding, and the exit code is 0.
+`--pronouns` lists every sentence with `it`, `its` or a standalone `that`, each after the sentence before. spaCy has no
+coreference resolution, so a reader names the noun for each pronoun. The list is no finding, and the exit code is 0.
 
-Without --since, each of the two lists stops after 1000 entries, with the command for the next 1000:
---from-pair N with --review, and --from-pronoun N with --pronouns. With --all-sentences, every entry
-is listed.
+Without --since, each of the two lists stops after 1000 entries, with the command for the next 1000: --from-pair N with
+--review, and --from-pronoun N with --pronouns. With --all-sentences, every entry is listed.
 
-With --since REF, only the comment and docstring passages with a line that the diff against
-merge-base(HEAD, REF) adds or changes are checked and listed. A page is checked whole.
+With --since REF, only the comment, docstring and page passages with a line that the diff against merge-base(HEAD, REF)
+adds or changes are checked and listed.
 
-With --cache PATH, the spaCy results of each passage are kept in PATH between runs, keyed by the
-text of the passage. The cache is discarded when agentverbs.py, words.json, spaCy or the spaCy
-model changes, and spaCy is loaded only when a passage is not in the cache.
+With --cache PATH, the spaCy results of each passage are kept in PATH between runs, keyed by the text of the passage.
+The cache is discarded when agentverbs.py, words.json, spaCy or the spaCy model changes, and spaCy is loaded only when a
+passage is not in the cache.
 
 Exit codes:
     0  nothing flagged, or a review or pronoun list printed
@@ -144,8 +137,8 @@ LITERAL = frozenset({
 })  # fmt: skip
 # verbs of a relation, never an act. reviewPairs() skips them for every subject
 RELATION_VERBS = frozenset({'be', 'have', 'will'})
-# verbs whose subject receives, and does nothing: `every block of the column gets the sky light`.
-# reviewPairs() skips them for every subject
+# verbs whose subject receives, and does nothing: `every block of the column gets the sky light`. reviewPairs() skips
+# them for every subject
 RECEIVING_VERBS = frozenset({'get', 'receive', 'gain'})
 # nouns for a piece of code. A LITERAL verb with a direct object and a subject on this list is an operation of code
 CODE_NOUNS = frozenset({
@@ -336,8 +329,8 @@ def scoreLabels(reader: CachedReader, labels_path: Path) -> int:
 def discoverFiles(paths: list[Path]) -> list[Path]:
     """Expand each directory to the source files below it, and keep each file named.
 
-    A page below a directory is left out, so a run over `src/` does not check every README and
-    vendored HTML file in the directory.
+    A page below a directory is left out, so a run over `src/` does not check every README and vendored HTML file in the
+    directory.
 
     Returns:
         The files to check, in the order given.
@@ -351,10 +344,10 @@ def discoverFiles(paths: list[Path]) -> list[Path]:
 def checkFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] | None = None) -> list[Finding]:
     """Flag every comment and docstring passage of a source file, or every passage of a page.
 
-    A passage is checked as one text, so a sentence wrapped over several lines is parsed whole. In a
-    source file, a noqa on any line of a passage silences that code for the whole passage. A paragraph
-    of a page can run to many sentences, so in a page a noqa silences only the findings on the line of the noqa.
-    With `changed_lines`, only the passages with a changed line are checked.
+    A passage is checked as one text, so a sentence wrapped over several lines is parsed whole. In a source file, a noqa
+    on any line of a passage silences that code for the whole passage. A paragraph of a page can run to many sentences,
+    so in a page a noqa silences only the findings on the line of the noqa. With `changed_lines`, only the passages with
+    a changed line are checked.
 
     Returns:
         One finding per agent verb and per clause with no subject, on the line of the finding's last word.
@@ -362,7 +355,8 @@ def checkFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] 
     source = checked_file.read_text(encoding='utf-8')
     if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
         suppressed = prose.suppressedCodes(source)
-        findings = passageFindings(reader, checked_file, prose.readPassages(checked_file), {}, page=True)
+        passages = changedPassages(prose.readPassages(checked_file), changed_lines)
+        findings = passageFindings(reader, checked_file, passages, {}, page=True)
         return [f for f in findings if not (suppressed.get(f.line, set()) & {f.code, 'ALL'})]
     passages = changedPassages(
         codeprose.passages(source),
@@ -416,7 +410,7 @@ def reviewFile(
     source = checked_file.read_text(encoding='utf-8')
     page = checked_file.suffix.lower() in prose.PROSE_SUFFIXES
     if page:
-        passages = prose.readPassages(checked_file)
+        passages = changedPassages(prose.readPassages(checked_file), changed_lines)
         silenced = {number for number, codes in prose.suppressedCodes(source).items() if codes & {CODE, 'ALL'}}
     else:
         passages = changedPassages(
@@ -445,7 +439,7 @@ def pronounFile(reader: CachedReader, checked_file: Path, changed_lines: set[int
     """
     source = checked_file.read_text(encoding='utf-8')
     if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
-        passages = prose.readPassages(checked_file)
+        passages = changedPassages(prose.readPassages(checked_file), changed_lines)
     else:
         passages = changedPassages(
             codeprose.passages(source),
@@ -591,9 +585,8 @@ class SentenceReader:
         """Find each subject that cannot act with a verb that is not stative and not an operation of code.
 
         A verb on LITERAL is an operation of code only with a direct object and code as the subject:
-        `PlanLoader reads the plan file`. `A saved index reads as the first mode` and `the mode that
-        runs recipeMap` are listed. A pair that agentVerbs() flags is left out, because it is already
-        a finding.
+        `PlanLoader reads the plan file`. `A saved index reads as the first mode` and `the mode that runs recipeMap` are
+        listed. A pair that agentVerbs() flags is left out, because it is already a finding.
 
         Returns:
             One `subject verb` string per pair, in sentence order.
@@ -603,8 +596,8 @@ class SentenceReader:
         pairs: list[str] = []
         for token in doc:
             verb = token.head
-            # `A saved index reads as the first mode` is tagged as a noun phrase with the root noun
-            # `reads`. A root noun with a subject is a verb
+            # `A saved index reads as the first mode` is tagged as a noun phrase with the root noun `reads`. A root noun
+            # with a subject is a verb
             misread_noun = verb.dep_ == 'ROOT' and verb.tag_ == 'NNS' and self._stem(verb) in self.verbs
             if token.dep_ != 'nsubj' or (verb.pos_ != 'VERB' and not misread_noun):
                 continue
@@ -627,9 +620,9 @@ class SentenceReader:
     def _compoundMisreadings(self, doc: Doc) -> list[tuple[Token, Token]]:
         """Find a noun and an `-s` word that the parse reads as one compound noun: `the path breaks`.
 
-        In `a config value steers, but nothing else does`, the parse makes `steers` a noun with the
-        modifier `value`. After a determiner, the `-s` word is a verb when nothing after the `-s` word
-        could take the `-s` word as modifier.
+        In `a config value steers, but nothing else does`, the parse makes `steers` a noun with the modifier `value`.
+        After a determiner, the `-s` word is a verb when nothing after the `-s` word could take the `-s` word as
+        modifier.
 
         Returns:
             Each subject and verb, for a verb that is neither literal nor stative.
@@ -654,10 +647,9 @@ class SentenceReader:
     def fragments(self, text: str) -> list[str]:
         """Find each clause before `, so` that has no subject and is not a noun phrase or a command.
 
-        `Named, so…` and `In float, so…` count. `constant-time comparison, so…` is a label, and
-        `Sort by key, so…` is an imperative, so neither counts. A subordinate clause is flagged even
-        with a subject, because the sentence then has no main clause before `, so`: `Whether some terms
-        differ, so…`.
+        `Named, so…` and `In float, so…` count. `constant-time comparison, so…` is a label, and `Sort by key, so…` is an
+        imperative, so neither counts. A subordinate clause is flagged even with a subject, because the sentence then
+        has no main clause before `, so`: `Whether some terms differ, so…`.
 
         Returns:
             The words before `, so` of each such clause, in sentence order.
@@ -683,11 +675,11 @@ class SentenceReader:
     def connectives(self, text: str, *, page: bool) -> list[str]:
         """Find each clause that `as` or `, where` joins to a sentence.
 
-        Three forms of `as` are flagged: `as in` (`a float, as in the machines' code`), a sentence that
-        opens with `As` and has no verb (`As the EBF.`), and `as` before a verb whose object is `it`
-        or `them` (`as the recipe works it out`). `the same as` and `such as` compare, and in `as you
-        write it` a person acts, so neither is flagged. In a page, `, where` often opens a definition and
-        `As` opens a heading such as `As a plugin`, so only a comment is checked for those two.
+        Three forms of `as` are flagged: `as in` (`a float, as in the machines' code`), a sentence that opens with `As`
+        and has no verb (`As the EBF.`), and `as` before a verb whose object is `it` or `them`
+        (`as the recipe works it out`). `the same as` and `such as` compare, and in `as you write it` a person acts, so
+        neither is flagged. In a page, `, where` often opens a definition and `As` opens a heading such as
+        `As a plugin`, so only a comment is checked for those two.
 
         Returns:
             One hit per connective, in sentence order.
@@ -715,16 +707,15 @@ class SentenceReader:
     def _verbWithPronounObject(self, word: Token, sentence_end: int) -> Token | None:
         """Find the finite verb after `as` whose object is `it` or `them`, with no punctuation between.
 
-        spaCy can attach `as` to the noun before `as` (`the tier as the terms count it`), so the verb
-        is searched for by position, not through the parse. A verb whose subject can act is
-        left out: `as you write it`.
+        spaCy can attach `as` to the noun before `as` (`the tier as the terms count it`), so the verb is searched for by
+        position, not through the parse. A verb whose subject can act is left out: `as you write it`.
 
         Returns:
             The verb, or None.
         """
         for token in word.doc[word.i + 1 : sentence_end]:
-            # a hyphen joins a compound such as `per-tier`, and ends no clause. An `and` between two verbs
-            # ends the `as` phrase: `keeps the output as javac.log and reads it`
+            # a hyphen joins a compound such as `per-tier`, and ends no clause. An `and` between two verbs ends the `as`
+            # phrase: `keeps the output as javac.log and reads it`
             if (token.is_punct and token.tag_ != 'HYPH') or (token.dep_ == 'cc' and token.head.pos_ in ('VERB', 'AUX')):
                 return None
             if token.pos_ != 'VERB' or token.tag_ not in FINITE_TAGS:
@@ -738,10 +729,9 @@ class SentenceReader:
     def ambiguousPronouns(self, text: str) -> list[str]:
         """Find each `it` or `its` after two or more singular nouns in the same sentence.
 
-        spaCy has no coreference resolution, so the noun that the pronoun stands for is unknown here.
-        Two candidates are enough for a reader to mix them up. A noun that modifies the next noun,
-        such as `push` in `push flag`, is no candidate. An empty subject, such as `It` in `It is raining`,
-        is left out when spaCy tags the word so.
+        spaCy has no coreference resolution, so the noun that the pronoun stands for is unknown here. Two candidates are
+        enough for a reader to mix them up. A noun that modifies the next noun, such as `push` in `push flag`, is no
+        candidate. An empty subject, such as `It` in `It is raining`, is left out when spaCy tags the word so.
 
         Returns:
             The pronoun with the next word, or with the word before when the next word is code, per hit.
@@ -766,8 +756,8 @@ class SentenceReader:
     def pronounSentences(self, text: str) -> list[tuple[str, str, str]]:
         """List each sentence with `it`, `its`, or `that` as a pronoun, each with the sentence before.
 
-        spaCy has no coreference resolution, so the list is for the review, not a check. `that` is
-        listed only as a standalone pronoun: `return that`, not `that file` or `the file that`.
+        spaCy has no coreference resolution, so the list is for the review, not a check. `that` is listed only as a
+        standalone pronoun: `return that`, not `that file` or `the file that`.
 
         Returns:
             The pronouns, the sentence and the previous sentence (empty for the first), in order.
@@ -797,8 +787,8 @@ class SentenceReader:
     def _sharedSubjects(self, doc: Doc) -> dict[int, str]:
         """Read a verb that has no subject and is joined to another verb as taking the subject of the other verb.
 
-        In `the scan can stop early and list no files`, `list` has the subject `scan`. When the
-        subject is a clause such as `parsing the file`, the subject is an event, which cannot act.
+        In `the scan can stop early and list no files`, `list` has the subject `scan`. When the subject is a clause such
+        as `parsing the file`, the subject is an event, which cannot act.
 
         Returns:
             Verb index to `subject verb`.
@@ -811,8 +801,8 @@ class SentenceReader:
             if any(c.dep_ in ('nsubj', 'nsubjpass', 'csubj', 'expl') for c in verb.children):
                 continue
             head = verb.head
-            # `and` or `or` joins two verbs of the same form: `can stop and list`, `kept and showed`.
-            # A parse that joins `scanned` to `report`, or clauses with no conjunction, is a misreading
+            # `and` or `or` joins two verbs of the same form: `can stop and list`, `kept and showed`. A parse that joins
+            # `scanned` to `report`, or clauses with no conjunction, is a misreading
             joined = verb.tag_ == head.tag_ and any(
                 t.dep_ == 'cc' and t.head in (head, verb) for t in doc[head.i + 1 : verb.i]
             )
@@ -833,8 +823,8 @@ class SentenceReader:
     def _participleSubjects(self, doc: Doc) -> dict[int, str]:
         """Read the noun before an `-ing` modifier as the modifier's subject: `a policy deciding which files stay`.
 
-        A modifier with no object, such as `missing` in `the sections missing from this file`, is an
-        adjective and is left out.
+        A modifier with no object, such as `missing` in `the sections missing from this file`, is an adjective and is
+        left out.
 
         Returns:
             Verb index to `subject verb`.
@@ -870,8 +860,8 @@ class SentenceReader:
     def _misreadSubject(self, subject: Token, verb: Token) -> bool:
         """Recognise a parse whose subject and verb are not a subject and a verb.
 
-        Terse comments yield imperatives read as subjects, noun compounds read as clauses, and
-        list items read as subjects of the verb after the list.
+        Terse comments yield imperatives read as subjects, noun compounds read as clauses, and list items read as
+        subjects of the verb after the list.
 
         Returns:
             True when the pair is a misreading and must not be flagged.
@@ -941,9 +931,8 @@ class SentenceReader:
     def _agreeingSubjects(self, doc: Doc) -> dict[int, str]:
         """Read a noun and a following `-s` word as subject and verb where grammar allows only that.
 
-        After a singular determiner, `a plan marks` cannot be a plural noun phrase. After an
-        identifier or `the` that opens a relative clause, `the month raw_month names` and `every
-        file the audit needs` cannot either.
+        After a singular determiner, `a plan marks` cannot be a plural noun phrase. After an identifier or `the` that
+        opens a relative clause, `the month raw_month names` and `every file the audit needs` cannot either.
 
         Returns:
             Verb index to `subject verb`.

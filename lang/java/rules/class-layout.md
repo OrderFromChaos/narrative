@@ -39,12 +39,12 @@ public final class PlanFiles {
 - Layout is a spotless setting. Lines are broken at 120 columns by the GTNH Eclipse formatter, with
   each call of a chain after the first on a separate line. Do not fight it. (J1-D01)
 
-- **Re-wrapping is a tool's job.** Spotless splits a comment line over 120 columns but never joins
+- **Re-wrap with `verify.py`, not by hand.** Spotless splits a comment line over 120 columns but never joins
   short lines, so after an edit the line breaks of the first draft remain: `The product is` / `a` /
-  `float, …`. `NAR125` flags a javadoc line with room for the first word of the next line. Before the
-  checks, `verify.py` re-wraps each flagged javadoc paragraph and splits each whole-line `//` comment
-  over 120 columns. With `--no-fix`, run `javachecks.py --rewrap` on the file. The re-wrap moves line
-  breaks only, never words. (J1-F02, J1-F08)
+  `float, …`. Before Gradle runs, `verify.py` fills each paragraph of the javadoc and the whole-line
+  `//` comments up to column 120 of the line, so spotless splits no line. With `--no-fix`, `NAR125`
+  flags each paragraph that the re-wrap would change, and `javachecks.py --rewrap` on the file
+  re-wraps each such paragraph. (R11-rewrap-fill)
 
 - Separate logically self-contained blocks inside a method with **one blank line**. That is its only
   meaning here. Short guards written as a group stay grouped. (R3a-01)

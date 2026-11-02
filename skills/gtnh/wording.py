@@ -1,11 +1,13 @@
 """The wording checks and the --since helpers, shared by the checkers of every language of Narrative.
 
-NAR012 to NAR016 and NAR018 flag wording that no comment, docstring or published page needs. The
-checks read lines of prose. A language's checker passes in the lines of the language's comments and
-doc comments, and checkPage() reads a Markdown, HTML or plain text page through prose.py.
+NAR012 to NAR016 and NAR018 flag wording that no comment, docstring or published page needs. The checks read lines of
+prose. A language's checker passes in the lines of the language's comments and doc comments, and checkPage() reads a
+Markdown, HTML or plain text page through prose.py.
 
-readChangedLines() lists the lines that the diff against a base branch adds or changes, for --since.
-findFiles() lists the files of a directory, and does not enter another checkout below the directory.
+readChangedLines() lists the lines that the diff against a base branch adds or changes, for --since. pageSpans() maps
+each line of a page to the lines of the line's passage, for --since. countEntries() counts the entries of a review list,
+for the last line of verify.py. findFiles() lists the files of a directory, and does not enter another checkout below
+the directory.
 
 Usage, from a script in this directory:
     import wording
@@ -38,17 +40,21 @@ RULES = {
     'NAR000': 'file could not be read or parsed',
 }
 
-# the number of entries of each review list without --since and --all-sentences: the sentences of --prose,
-# and the pairs and the pronoun sentences of agentverbs.py
+# the number of entries of each review list without --since and --all-sentences: the sentences of --prose, and the pairs
+# and the pronoun sentences of agentverbs.py
 LIST_PAGE = 1000
+# matches the last line of a list cut by listPage():
+# `... 412 left out of 1412 sentences. For the next 1000: checks.py --prose --from-sentence 1001 src/`
+LEFT_OUT = re.compile(r'^\.\.\. \d+ left out of (?P<total>\d+) ')
+# the git pathspecs of a page
+PAGE_PATTERNS = tuple(sorted(f'*{suffix}' for suffix in prose.PROSE_SUFFIXES))
 
 
 def checkPage(checked_file: Path) -> list[Finding]:
     """Run the wording checks over the passages of a Markdown, HTML or plain text file.
 
     Returns:
-        Every finding not silenced by a `<!-- noqa -->` comment, or a single NAR000 if the file
-        could not be read.
+        Every finding not silenced by a `<!-- noqa -->` comment, or a single NAR000 if the file could not be read.
     """
     try:
         source = checked_file.read_text(encoding='utf-8')
@@ -75,10 +81,9 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
     - NAR016: a container verb on a subject that is not a container, listed in WORDING
     - NAR018: a possessive followed by `own`, listed in WORDING
 
-    `used to` counts as changelog only after a pronoun subject. In `the key used to sort`, it means
-    employed for. A bare `now` is not flagged. `now that X` and `until now` are common in correct
-    prose. A dash after a list-item term is a separator, not a clause join. Pragmas, section dividers
-    and pasted usage lines (`$`, `>>>`) are skipped.
+    `used to` counts as changelog only after a pronoun subject. In `the key used to sort`, it means employed for. A bare
+    `now` is not flagged. `now that X` and `until now` are common in correct prose. A dash after a list-item term is a
+    separator, not a clause join. Pragmas, section dividers and pasted usage lines (`$`, `>>>`) are skipped.
 
     Args:
         prose_lines: line number and text of each line of prose
@@ -162,10 +167,10 @@ def listPage(
 
 
 def readChangedLines(since: str, any_repo_path: Path, pattern: str) -> ChangedLines:
-    """List the lines that the diff against merge-base(HEAD, since) adds or changes, per file that matches `pattern`.
+    """List the lines that the diff against merge-base(HEAD, since) adds or changes, per page and per `pattern` file.
 
-    For a hunk that only deletes lines, the line below the deleted lines is listed, so a finding on that
-    line is reported under --since. Every line of an untracked file is listed.
+    For a hunk that only deletes lines, the line below the deleted lines is listed, so a finding on that line is
+    reported under --since. Every line of an untracked file is listed.
 
     Raises:
         GitError: git fails, or `since` names no commit.
@@ -176,9 +181,10 @@ def readChangedLines(since: str, any_repo_path: Path, pattern: str) -> ChangedLi
     HUNK = re.compile(r'^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@')
     repo_root = Path(runGit(['rev-parse', '--show-toplevel'], any_repo_path).strip())
     base = runGit(['merge-base', 'HEAD', since], repo_root).strip()
+    patterns = [pattern, *PAGE_PATTERNS]
     changed: ChangedLines = {}
     current: Path | None = None
-    for diff_line in runGit(['diff', '-M', '--unified=0', base, '--', pattern], repo_root).splitlines():
+    for diff_line in runGit(['diff', '-M', '--unified=0', base, '--', *patterns], repo_root).splitlines():
         if diff_line.startswith('+++ '):
             new_name = diff_line.removeprefix('+++ ')
             current = None if new_name == '/dev/null' else (repo_root / new_name.removeprefix('b/')).resolve()
@@ -186,19 +192,43 @@ def readChangedLines(since: str, any_repo_path: Path, pattern: str) -> ChangedLi
             start, count = int(hunk['start']), int(hunk['count'] or '1')
             changed.setdefault(current, set()).update(range(start, start + count) if count else {start + 1})
 
-    for untracked in runGit(['ls-files', '--others', '--exclude-standard', '--', pattern], repo_root).splitlines():
+    for untracked in runGit(['ls-files', '--others', '--exclude-standard', '--', *patterns], repo_root).splitlines():
         untracked_path = (repo_root / untracked).resolve()
         line_count = len(untracked_path.read_text(encoding='utf-8', errors='replace').splitlines())
         changed.setdefault(untracked_path, set()).update(range(1, line_count + 1))
     return changed
 
 
+def pageSpans(page: Path) -> Spans:
+    """Map each line of a page passage to every line of the same passage. Those lines count for --since.
+
+    Returns:
+        The lines of the passage, by line. Empty for a page that cannot be read.
+    """
+    try:
+        passages = prose.readPassages(page)
+    except (OSError, UnicodeDecodeError):
+        return {}
+    return {line: frozenset(passage.lines) for passage in passages for line in passage.lines}
+
+
+def countEntries(listed: list[str]) -> int:
+    """Count the entries of one review list, from the lines of --prose, --review or --pronouns.
+
+    A list cut by listPage() ends with the count of every entry, and that count is returned.
+    """
+    entries = [line for line in listed if line.strip() and line != '(none)']
+    if entries and (cut := LEFT_OUT.match(entries[-1])):
+        return int(cut['total'])
+    return len(entries)
+
+
 def findFiles(directory: Path, pattern: str) -> list[Path]:
     """Find the files below a directory whose names match a glob.
 
-    A directory below with a `.git` entry is another checkout, such as the worktree of another
-    branch in .claude/worktrees/, or a submodule. The files of another checkout are not the files of
-    this one, so the walk does not enter it.
+    A directory below with a `.git` entry is another checkout, such as the worktree of another branch in
+    .claude/worktrees/, or a submodule. The files of another checkout are not the files of this one, so the walk does
+    not enter another checkout.
 
     Returns:
         The matching files, sorted.
@@ -227,11 +257,11 @@ def inChange(changed_lines: set[int], spans: Spans, line: int) -> bool:
 
 
 def changedLinesOf(changed: ChangedLines | None, checked_file: Path) -> set[int] | None:
-    """Return the changed lines of a source file under --since, or None for a file that is checked whole.
+    """Return the changed lines of a source file or a page under --since, or None when every line is checked.
 
-    With no --since, and for a page, every line is checked.
+    With no --since, every line is checked.
     """
-    if changed is None or isPage(checked_file):
+    if changed is None:
         return None
     return changed.get(checked_file.resolve(), set())
 

@@ -1,17 +1,19 @@
 """Read the comments and javadoc of a Java file as passages, for the prose checks of every language.
 
-Each language of Narrative has a module named codeprose.py, and the language's skill directory has
-that module beside agentverbs.py and wording.py. The prose checks read source files only through
-the names below, so the checks run on any language with a codeprose.py.
+Each language of Narrative has a module named codeprose.py, and the language's skill directory has that module beside
+agentverbs.py and wording.py. The prose checks read source files only through the names below, so the checks run on any
+language with a codeprose.py.
 
 - `GIT_PATTERN`: the git pathspec of a source file of the language
 - `passages()`: the comments and doc comments of one source file, as passages
 - `NOQA`: the comment that silences a finding on one line
+- `commentBlocks()`: the comments and doc comments of one source file, as blocks of lines for the re-wrap of rewrap.py
 
-In a Java file, a passage comes from one comment block: a run of whole-line `//` comments on
-consecutive lines at one column, one trailing comment, one block comment or one javadoc. A blank
-line, a pragma, a divider, a list item, `<p>` or a block tag starts a new passage, and a `<pre>`
-sample is not prose. javachecks.py reads the comments through lexComments() and groupBlocks() too.
+In a Java file, a passage comes from one comment block: a run of whole-line `//` comments on consecutive lines at one
+column, one trailing comment, one block comment or one javadoc. A blank line, a pragma, a divider, a list item, `<p>` or
+a block tag starts a new passage, and a `<pre>` sample is not prose. javachecks.py reads the comments through
+lexComments() and groupBlocks() too. A block for the re-wrap is a run of whole-line `//` comments at one column, or one
+javadoc. A trailing comment and a `/*` block comment are never re-wrapped.
 
 Usage, from a script in this directory:
     import codeprose
@@ -26,6 +28,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from prose import Passage
+from rewrap import Line
 
 
 ### standard library only. javachecks.py imports this, and javachecks.py runs wherever python3 does
@@ -35,8 +38,24 @@ GIT_PATTERN = '*.java'
 # `// noqa`
 # `// noqa: NAR017, NAR020`
 NOQA = re.compile(r'//\s*noqa(?::\s*(?P<codes>(?:[A-Z0-9]+(?:-[a-z]+)?[, ]*)+))?')
-# a text block, a string or character literal, a // comment or a /* comment. The literals are matched
-# so that a // or /* inside one is not read as a comment
+# matches:
+# `NOPMD`
+# `CHECKSTYLE:OFF`
+# `spotless:on`
+# `@formatter:off`
+# `noqa: NAR017`
+# `noinspection unchecked`
+# rejects:
+# `the plan file`
+PRAGMA = re.compile(
+    r'^(?:NOPMD|CHECKSTYLE:(?:ON|OFF)|spotless:(?:on|off)|@formatter:(?:on|off)|noinspection\b|noqa\b)',
+)
+# matches:
+# `----------`
+# `==========`
+DIVIDER = re.compile(r'^[-=#~*/]{4,}$')
+# a text block, a string or character literal, a // comment or a /* comment. The literals are matched so that a // or /*
+# inside one is not read as a comment
 # matches:
 # `"""` then a text block then `"""`
 # `"a // b"`
@@ -104,25 +123,9 @@ def groupBlocks(comments: list[Comment]) -> list[list[Comment]]:
 def blockPassages(block: list[Comment]) -> list[Passage]:
     """Split one comment block into passages of prose.
 
-    A blank line, a pragma, a divider or a list item starts a new passage. `<p>`, `<li>` and each
-    block tag start one too in javadoc, and a `<pre>` sample is not prose.
+    A blank line, a pragma, a divider or a list item starts a new passage. `<p>`, `<li>` and each block tag start one
+    too in javadoc, and a `<pre>` sample is not prose.
     """
-    # matches:
-    # `NOPMD`
-    # `CHECKSTYLE:OFF`
-    # `spotless:on`
-    # `@formatter:off`
-    # `noqa: NAR017`
-    # `noinspection unchecked`
-    # rejects:
-    # `the formatter keeps this line`
-    PRAGMA = re.compile(
-        r'^(?:NOPMD|CHECKSTYLE:(?:ON|OFF)|spotless:(?:on|off)|@formatter:(?:on|off)|noinspection\b|noqa\b)',
-    )
-    # matches:
-    # `----------`
-    # `==========`
-    DIVIDER = re.compile(r'^[-=#~*/]{4,}$')
     passages: list[Passage] = []
     current: Passage | None = None
     in_sample = False
@@ -189,6 +192,82 @@ def splitMarkup(text: str, *, javadoc: bool) -> tuple[bool, bool, str]:
     text = re.sub(r'</?code>', '`', text)
     text = re.sub(r'<[^>]+>', ' ', text)
     return breaks, list_item, ' '.join(text.split())
+
+
+def commentBlocks(source: str) -> list[list[Line]]:
+    """Read the whole-line comments and javadoc of one Java source as blocks of lines, for the re-wrap."""
+    lines = source.split('\n')
+    blocks: list[list[Line]] = []
+    for block in groupBlocks(lexComments(source)):
+        if block[0].trailing:
+            continue
+        if block[0].kind is CommentKind.LINE:
+            blocks.append([slashLine(lines, comment) for comment in block])
+        elif block[0].kind is CommentKind.JAVADOC:
+            blocks.append(javadocLines(lines, block[0]))
+    return blocks
+
+
+def slashLine(lines: list[str], comment: Comment) -> Line:
+    """Read one whole-line `//` comment. A pragma, a divider and a line with `// noqa` are fixed."""
+    raw = lines[comment.first_line - 1]
+    body = raw[comment.column + 2 :]
+    text = body.strip()
+    margin = raw[: comment.column + 2] + body[: len(body) - len(body.lstrip())]
+    fixed = bool(PRAGMA.search(text) or DIVIDER.match(text) or NOQA.search(raw))
+    return Line(comment.first_line, margin, text, fixed)
+
+
+def javadocLines(lines: list[str], comment: Comment) -> list[Line]:
+    """Read the lines of one javadoc, each with the `*` margin.
+
+    The lines with `/**` or `*/`, the lines of a `<pre>` sample and a line of HTML tags alone, such as `<p>` or `<ul>`,
+    are fixed. A block tag opens a paragraph, in the layout of the GTNH Eclipse formatter: the names of the `@param`
+    tags padded to the longest name, and the next lines of a tag under the description of the tag. An HTML tag opens a
+    paragraph too.
+    """
+    # matches:
+    # `     * the plan file`
+    # rejects:
+    # `    /** the plan file`
+    MARGIN = re.compile(r'^\s*\*(?!/)\s*')
+    # matches:
+    # `<p>`
+    # `</li></ul>`
+    TAGS_ALONE = re.compile(r'^(?:</?\w+[^>]*>\s*)+$')
+    # a block tag with a description, and the name of a `@param` or `@throws` tag
+    # matches:
+    # `@param planPath where the plan file is`
+    # `@throws PlanException when the file has no machine count`
+    # `@return the plans, sorted by name`
+    # rejects:
+    # `@deprecated`
+    TAG = re.compile(r'^(?P<tag>@(?:param|throws|exception)\s+\S+|@\w+)\s+(?=\S)')
+    tags = [TAG.match(cleanBlockLine(lines[number - 1])) for number, _raw in comment.texts]
+    params = [tag['tag'].split()[1] for tag in tags if tag and tag['tag'].startswith('@param')]
+    name_width = max(map(len, params), default=0)
+    block: list[Line] = []
+    in_sample = False
+    for number, _raw in comment.texts:
+        raw = lines[number - 1]
+        margin = MARGIN.match(raw)
+        text = raw[margin.end() :].rstrip() if margin else raw.strip()
+        sample = in_sample or '<pre>' in text
+        in_sample = sample and '</pre>' not in text
+        fixed = margin is None or '/**' in raw or '*/' in raw or sample or TAGS_ALONE.match(text) is not None
+        tag = TAG.match(text) if margin and not fixed else None
+        if margin is None or tag is None:
+            fixed = fixed or text.startswith('@')
+            hang = 0 if text.startswith('<') else None
+            block.append(Line(number, margin[0] if margin else '', text, fixed, hang))
+            continue
+        words = tag['tag'].split()
+        if words[0] == '@param':
+            words[1] = words[1].ljust(name_width)
+        prefix = ' '.join(words) + ' '
+        continuation = margin[0] + ' ' * len(prefix)
+        block.append(Line(number, margin[0] + prefix, text[tag.end() :], hang=0, continuation=continuation))
+    return block
 
 
 ### vocabulary #########################################################################################

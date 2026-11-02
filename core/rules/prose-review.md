@@ -1,8 +1,8 @@
 ### Prose review
 
-**Fix every finding of `verify.py` first. Then read the three lists at the end of the output, plus
-every error message and `--help` string.** You rewrite sentences when you fix findings, so read the
-lists from the run after the fixes. The first list has every sentence of every comment and
+**Fix every finding of `verify.py` first. Then read the three lists in the file named on the last
+line of the output, plus every error message and `--help` string.** You rewrite sentences when you
+fix findings, so read the lists from the run after the fixes. The first list has every sentence of every comment and
 docstring in the code, and every sentence of each named page. The second has each subject that
 cannot act, paired with the subject's verb, for every verb that is neither a `NAR017` finding nor
 an operation of code. A verb such as `reads` or `runs` is an operation of code only with a direct
