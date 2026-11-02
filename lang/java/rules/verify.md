@@ -7,10 +7,16 @@ python3 "${CLAUDE_SKILL_DIR}/verify.py"
 python3 "${CLAUDE_SKILL_DIR}/verify.py" --since origin/dev
 ```
 
+**To check only what changed, pass `--since` with the commit before your edits**, in any repository: `--since HEAD`
+for uncommitted edits, or `--since main` on a branch. In a repository with no commits, name the changed files as
+paths, and do not filter the output. In a stacked PR, pass `--since` with the branch that you created the PR's branch
+from, such as the branch of PR 2 for PR 3. (R11-since-any)
+
 **In a PR to another project, pass `--since` with the base branch.** Upstream code already breaks
 some of these rules, and a finding on a line the diff does not touch is not the PR's to fix. Only the
 lines that the diff against `merge-base(HEAD, base)` adds or changes are reported, and every line of
-an untracked file.
+an untracked file. List each finding that was already on the base branch under `upstream findings kept`, and ask the user once
+whether to fix those findings. (R11-upstream-ask)
 
 **Ask the user before you name something by an upstream convention that `NAR130` rejects.** For
 example, GT5's `MultiblockTooltipBuilder` has about 40 `TT_*` fields, such as `TT_machineType`. A new

@@ -1,6 +1,6 @@
 ---
 name: gtnh
-description: Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods on Java 25 with jvmDowngrader. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, and when reviewing a Java diff against this style. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages.
+description: Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods on Java 25 with jvmDowngrader. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, when planning a change, and when reviewing a Java diff against this style. For Python files in the same repository, load nar:python too, or load nar:code in place of both. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages.
 ---
 **Before you write or review anything, load the skill `nar:core` with the Skill tool**, unless
 `nar:core` is loaded already. `nar:core` has the rules for comments, javadoc, error messages and
@@ -22,7 +22,13 @@ gratuitous variation. When two rules conflict, follow the rule under which the r
 Second principle, for representation choices: **prefer what the type checker and IDE can follow**,
 even when a looser form is more flexible. The type checker here is javac. (R3-P2-rank)
 
-**The steps to run while writing and before you finish are in Procedures, the last section.**
+**The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
+1. Load `nar:core` and this skill before you plan a change, not only before you edit.
+2. Make a batch of edits, then run `verify.py` once for the batch.
+3. Read the findings and the three review lists of that run. Do not filter the output with `grep`, `head` or
+   `tail`.
+4. Fix every finding and answer every list entry from that one run, then run `verify.py` once more.
+5. In the report, say how many entries of each list you read, such as `read 212 of 212 sentences`.
 
 **This document applies to every file, however many there are.** `architecture.md` adds what happens
 **between** packages: which package may use which, where a shared type belongs, when one class
@@ -731,9 +737,17 @@ every method counts as reachable. (J1-F4)
 
 ### noqa
 
-The exceptions to **Never add a `noqa` yourself** are the three `noqa` uses prescribed in this
-skill: `NAR104` for two types of one name, `NAR142` in a degrade-and-report loop, and `NAR130` once
-the user approves an upstream name. (R11-findings)
+The exceptions to **Never add a `noqa` yourself** are the `noqa` uses prescribed in this skill:
+- `NAR104` for two types of one name
+- `NAR142` in a degrade-and-report loop
+- `NAR130` once the user approves an upstream name
+- in a Mixin class:
+  - `NAR130` for a member with the mod's `modid$` prefix
+  - `NAR106` for the abstract Mixin class
+  - `NAR131` for an injector method whose parameters Mixin fixes
+  - `NAR140` for a `@Shadow` field, whose type must match the target class
+
+(R11-findings, J1-mixin-noqa)
 
 A `// noqa: NARxxx` covers every line of the comment block, and the code line after a whole-line
 block, because spotless wraps a `//` comment over 120 columns and moves a trailing noqa to the next
@@ -793,10 +807,16 @@ python3 "${CLAUDE_SKILL_DIR}/verify.py"
 python3 "${CLAUDE_SKILL_DIR}/verify.py" --since origin/dev
 ```
 
+**To check only what changed, pass `--since` with the commit before your edits**, in any repository: `--since HEAD`
+for uncommitted edits, or `--since main` on a branch. In a repository with no commits, name the changed files as
+paths, and do not filter the output. In a stacked PR, pass `--since` with the branch that you created the PR's branch
+from, such as the branch of PR 2 for PR 3. (R11-since-any)
+
 **In a PR to another project, pass `--since` with the base branch.** Upstream code already breaks
 some of these rules, and a finding on a line the diff does not touch is not the PR's to fix. Only the
 lines that the diff against `merge-base(HEAD, base)` adds or changes are reported, and every line of
-an untracked file.
+an untracked file. List each finding that was already on the base branch under `upstream findings kept`, and ask the user once
+whether to fix those findings. (R11-upstream-ask)
 
 **Ask the user before you name something by an upstream convention that `NAR130` rejects.** For
 example, GT5's `MultiblockTooltipBuilder` has about 40 `TT_*` fields, such as `TT_machineType`. A new

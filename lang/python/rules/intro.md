@@ -14,7 +14,13 @@ Second principle, for representation choices: **prefer what the type checker and
 even when a looser form is more flexible. State in a `dict[str, Any]` passes `mypy --strict` only
 with a `cast()` or a key lookup at every use. Typed attributes pass with neither. (R3-P2-rank)
 
-**The steps to run while writing and before you finish are in Procedures, the last section.**
+**The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
+1. Load `nar:core` and this skill before you plan a change, not only before you edit.
+2. Make a batch of edits, then run `verify.py` once for the batch.
+3. Read the findings and the three review lists of that run. Do not filter the output with `grep`, `head` or
+   `tail`.
+4. Fix every finding and answer every list entry from that one run, then run `verify.py` once more.
+5. In the report, say how many entries of each list you read, such as `read 212 of 212 sentences`.
 
 **This document applies to every file, however many there are.** Naming, layout, types, errors and
 docstrings apply to each module of a package exactly as they apply to a single-file program.

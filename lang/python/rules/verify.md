@@ -14,6 +14,11 @@ tool that fails, `verify.py` prints that tool's output. With `--cache-dir DIR`,
 `.narrative_cache` is in DIR, such as a directory outside a checkout that the agent may not write. A path of `-` is a
 page read from stdin, such as a draft that is not in a file yet.
 
+**To check only what changed, pass `--since` with the commit before your edits**, in any repository: `--since HEAD`
+for uncommitted edits, or `--since main` on a branch. In a repository with no commits, name the changed files as
+paths, and do not filter the output. In a stacked PR, pass `--since` with the branch that you created the PR's branch
+from, such as the branch of PR 2 for PR 3. (R11-since-any)
+
 **In a PR to another project, pass `--since` with the base branch.** Upstream code already breaks
 some of these rules, and a finding on a line the diff does not touch is not the PR's to fix. Only
 the lines that the diff against `merge-base(HEAD, base)` adds or changes are reported, and every
@@ -22,7 +27,8 @@ definition, and a finding in a comment or docstring counts for every line of the
 `--since`, `verify.py` applies a fix of `ruff check` only when the fix edits a changed line, and
 `ruff format` formats only the changed lines. When the project's `pyproject.toml` is not a Narrative
 config, pass `--config` with a copy of `pyproject-snippet.toml` named `pyproject.toml`, outside the
-project. (R11-since, R11-same-workflow)
+project. List each finding that was already on the base branch under `upstream findings kept`, and ask the user once
+whether to fix those findings. (R11-upstream-ask) (R11-since, R11-same-workflow)
 
 `verify.py` resolves every tool to an absolute path. It exits 2 when a tool is missing or
 `pyproject.toml` is absent. **Do not replace it with a loop that greps tool output for findings.**

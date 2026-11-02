@@ -18,7 +18,9 @@ R11-literal-review)
    in a term is a claim**. For each pronoun in the third list, name the noun the pronoun stands for.
    If that noun is in another sentence, repeat the noun. (R10-stand-in)
 3. List the code paths that reach the line: each branch, each caller, each failure. Check the claim
-   on every path.
+   on every path. A missing log entry is not proof that the event never happened. Before you write a
+   claim such as `the log has no stop event, so the server never stopped`, check that the code logs a
+   stop event on every path where the server can stop. (R11-absence-proof)
 4. Test the sentence against **Sentence form**, and the comment against the restatement gate.
 
 For `an expired item is removed on lookup`:
@@ -27,9 +29,14 @@ For `an expired item is removed on lookup`:
   comment covers only `getItem()`.
 - The rewrite: `an expired item is removed on lookup, or before any eviction`.
 
-An entry on a review list is a question, not a finding. When the subject can do the verb in the
-domain's sense, such as a row that gets the default currency, leave the sentence unchanged.
+Rewrite a sentence from a review list only when the sentence fails a step of **Prose review**. When
+the subject can do the verb in the domain's sense, such as a row that gets the default currency, leave the sentence unchanged.
 (R11-review-question)
 
-Fix what fails and run `verify.py` again.
+Fix every finding and answer every list entry from one run, then run `verify.py` once more. Do not
+run `verify.py` after each single fix. (R11-batch-runs)
+
+**When you ask the user to choose in a report, show the text of each option before and after the
+change.** With only an id such as `B3`, or a path to a file, the user cannot compare the options.
+(R11-options-inline)
 

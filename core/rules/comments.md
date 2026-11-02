@@ -288,6 +288,12 @@ in three cases:
 3. **The code's name for the thing.** The flagged words come from an identifier, such as `the worker
    owns the lock` from `ownsLock()`. Leave the sentence, and list the sentence in your report.
 
+Do not drop a finding from the output, with `grep -v` or otherwise. A finding that you take for a
+tool error goes in your report with the file and line. When the user decides to keep a finding, keep
+only that finding, and only in that pass. (R11-no-filter)
+
 **Never add a `noqa` yourself.** The exceptions are under **noqa** in **Comments in <language>**, in
-the skill `nar:<language>`. (R11-findings)
+the skill `nar:<language>`. For a sentence left under case 1, 2 or 3, add no `noqa`: leave the
+sentence and the finding, and list the sentence in your report. Rewrite a sentence from a review
+list only when the sentence fails a step of **Prose review**. (R11-findings, R11-noqa-leave)
 

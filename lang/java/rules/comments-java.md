@@ -81,9 +81,17 @@ every method counts as reachable. (J1-F4)
 
 ### noqa
 
-The exceptions to **Never add a `noqa` yourself** are the three `noqa` uses prescribed in this
-skill: `NAR104` for two types of one name, `NAR142` in a degrade-and-report loop, and `NAR130` once
-the user approves an upstream name. (R11-findings)
+The exceptions to **Never add a `noqa` yourself** are the `noqa` uses prescribed in this skill:
+- `NAR104` for two types of one name
+- `NAR142` in a degrade-and-report loop
+- `NAR130` once the user approves an upstream name
+- in a Mixin class:
+  - `NAR130` for a member with the mod's `modid$` prefix
+  - `NAR106` for the abstract Mixin class
+  - `NAR131` for an injector method whose parameters Mixin fixes
+  - `NAR140` for a `@Shadow` field, whose type must match the target class
+
+(R11-findings, J1-mixin-noqa)
 
 A `// noqa: NARxxx` covers every line of the comment block, and the code line after a whole-line
 block, because spotless wraps a `//` comment over 120 columns and moves a trailing noqa to the next

@@ -9,6 +9,15 @@ These rules cover comments, docstrings, javadoc, error messages, help text and p
 every language of Narrative. Load this skill together with the skill of the language, such as
 `nar:python` or `nar:gtnh`. The checks run through the `verify.py` of the language skill.
 
+**The steps, in short. The details are in Procedures, the last section of `nar:<language>`.**
+(R11-steps-summary)
+1. Load this skill and `nar:<language>` before you plan a change, not only before you edit.
+2. Make a batch of edits, then run `verify.py` once for the batch.
+3. Read the findings and the three review lists of that run. Do not filter the output with `grep`, `head` or
+   `tail`.
+4. Fix every finding and answer every list entry from that one run, then run `verify.py` once more.
+5. In the report, say how many entries of each list you read, such as `read 212 of 212 sentences`.
+
 In these rules, a docstring is the doc comment of the language, such as a javadoc in Java, and a
 function is a function or a method. `nar:<language>` names the skill of the language of the file.
 For Python the skill is `nar:python`, and for Java in a GTNH mod the skill is `nar:gtnh`.
@@ -303,8 +312,14 @@ in three cases:
 3. **The code's name for the thing.** The flagged words come from an identifier, such as `the worker
    owns the lock` from `ownsLock()`. Leave the sentence, and list the sentence in your report.
 
+Do not drop a finding from the output, with `grep -v` or otherwise. A finding that you take for a
+tool error goes in your report with the file and line. When the user decides to keep a finding, keep
+only that finding, and only in that pass. (R11-no-filter)
+
 **Never add a `noqa` yourself.** The exceptions are under **noqa** in **Comments in <language>**, in
-the skill `nar:<language>`. (R11-findings)
+the skill `nar:<language>`. For a sentence left under case 1, 2 or 3, add no `noqa`: leave the
+sentence and the finding, and list the sentence in your report. Rewrite a sentence from a review
+list only when the sentence fails a step of **Prose review**. (R11-findings, R11-noqa-leave)
 
 ### Writing a comment
 
@@ -347,7 +362,9 @@ R11-literal-review)
    in a term is a claim**. For each pronoun in the third list, name the noun the pronoun stands for.
    If that noun is in another sentence, repeat the noun. (R10-stand-in)
 3. List the code paths that reach the line: each branch, each caller, each failure. Check the claim
-   on every path.
+   on every path. A missing log entry is not proof that the event never happened. Before you write a
+   claim such as `the log has no stop event, so the server never stopped`, check that the code logs a
+   stop event on every path where the server can stop. (R11-absence-proof)
 4. Test the sentence against **Sentence form**, and the comment against the restatement gate.
 
 For `an expired item is removed on lookup`:
@@ -356,11 +373,16 @@ For `an expired item is removed on lookup`:
   comment covers only `getItem()`.
 - The rewrite: `an expired item is removed on lookup, or before any eviction`.
 
-An entry on a review list is a question, not a finding. When the subject can do the verb in the
-domain's sense, such as a row that gets the default currency, leave the sentence unchanged.
+Rewrite a sentence from a review list only when the sentence fails a step of **Prose review**. When
+the subject can do the verb in the domain's sense, such as a row that gets the default currency, leave the sentence unchanged.
 (R11-review-question)
 
-Fix what fails and run `verify.py` again.
+Fix every finding and answer every list entry from one run, then run `verify.py` once more. Do not
+run `verify.py` after each single fix. (R11-batch-runs)
+
+**When you ask the user to choose in a report, show the text of each option before and after the
+change.** With only an id such as `B3`, or a path to a file, the user cannot compare the options.
+(R11-options-inline)
 
 ### Published prose
 
@@ -370,6 +392,11 @@ rest of the page is clearly written by an LLM, suggest cleaning the rest, and do
 rest unasked. A page that a person wrote and you did not change is left as it is, unless the user
 asks for it to be checked. Name each page to the `verify.py` of the language skill. The command is
 under **Pages** in **Comments in <language>**, in the skill `nar:<language>`.
+
+Write a page about the current code and data, with no changelog wording such as `now`, `no longer`
+or `was changed to`. Changelog wording belongs only in a changelog file that already exists in the
+repository, such as `CHANGELOG.md`. Do not create a changelog file unless the user asks for one.
+(R11-page-changelog)
 
 Only the wording checks and `agentverbs.py` run on a page. `verify.py` writes the three lists of
 **Prose review** for each named page too. With `--since`, only the passages of a page with a changed

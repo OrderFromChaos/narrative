@@ -7,6 +7,11 @@ rest unasked. A page that a person wrote and you did not change is left as it is
 asks for it to be checked. Name each page to the `verify.py` of the language skill. The command is
 under **Pages** in **Comments in <language>**, in the skill `nar:<language>`.
 
+Write a page about the current code and data, with no changelog wording such as `now`, `no longer`
+or `was changed to`. Changelog wording belongs only in a changelog file that already exists in the
+repository, such as `CHANGELOG.md`. Do not create a changelog file unless the user asks for one.
+(R11-page-changelog)
+
 Only the wording checks and `agentverbs.py` run on a page. `verify.py` writes the three lists of
 **Prose review** for each named page too. With `--since`, only the passages of a page with a changed
 line are checked and listed. Take the steps of **Prose review** for each sentence you wrote, and

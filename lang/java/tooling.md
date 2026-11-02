@@ -145,8 +145,8 @@ match, while each branch alone has one. Write a flat union of full paths, `//A[.
 **In a rule message, `{}` is read by PMD as a MessageFormat argument**, and every match of the rule
 is then an exception in the PMD log. No braces in a message.
 
-**`AvoidCatchingThrowable` is deprecated in PMD 7.28**, for removal in PMD 8. `AvoidCatchingGenericException`
-now covers `Throwable` and `Error`, by exact type, so `catch (NoClassDefFoundError)` passes.
+**`AvoidCatchingThrowable` is deprecated in PMD 7.28**, for removal in PMD 8. In PMD 7.28,
+`AvoidCatchingGenericException` covers `Throwable` and `Error`, by exact type, so `catch (NoClassDefFoundError)` passes.
 
 **javac with `-XDrawDiagnostics` prints the file name only**, and not the directory, so a warning
 is ambiguous in a project with two `Flagged.java` files. The init script uses the standard format, which has the full path.
