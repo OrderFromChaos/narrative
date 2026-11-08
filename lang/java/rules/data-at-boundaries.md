@@ -9,13 +9,14 @@
   contains a fact that the file does not. (R9-01)
 
 - **A record is the default for data.** A class that is just data is the record, not a wrapper
-  around a nested one. In other classes, a field is `final` unless code reassigns the field.
+  around a nested one. On jabel and Java 8, the record has the form of **Rules by level** in
+  **Scope**. In other classes, a field is `final` unless code reassigns the field.
   `NAR141` flags a field that could be final. (J1-P21, R8-D11-resolved)
 
 - **A record is shallowly immutable.** The compact constructor copies a collection component with
-  `List.copyOf`, or Guava `ImmutableList.copyOf`. **Never an array component:** `equals()` and
-  `hashCode()` of a record compare arrays by identity, so two equal plans compare unequal. `NAR108`
-  flags an array component. (J1-P22)
+  `List.copyOf`, or Guava `ImmutableList.copyOf`, which is the only one on jabel and Java 8. **Never
+  an array component:** `equals()` and `hashCode()` of a record compare arrays by identity, so two
+  equal plans compare unequal. `NAR108` flags an array component. (J1-P22)
 
 - **Genuinely schemaless input**: promote the fields the program computes on to typed components,
   and put the remainder in one `JsonObject` or `Map<String, JsonElement>` component. **Never merge

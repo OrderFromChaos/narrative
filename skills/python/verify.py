@@ -183,7 +183,7 @@ def main() -> int:
         print(f'\n{len(failed)} of {len(results)} checks failed')
     else:
         print(f'\nall {len(results)} checks passed')
-        print('A pass is no evidence about the rules that no check implements.')
+        print('These lint checks cover only some of the rules. Check the other rules by hand.')
 
     lists_path = cache_dir / LISTS_NAME
     review_arguments = [*prose_targets, *since]

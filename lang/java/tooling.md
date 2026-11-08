@@ -2,12 +2,15 @@
 
 Every check here was tested against two fixtures, one that breaks the rule and one that does not, in
 `lang/java/tests/fixtures/` of the narrative repository:
-`python3 lang/java/tests/run_fixtures.py --gradle <gradle>`.
+`python3 lang/java/tests/run_fixtures.py --gradle <gradle>`. The fixture project of each level is a
+separate Gradle build: `tests/` for Java 25, `tests/java8/` and `tests/jabel/`. The projects of Java 8
+and jabel have separate fixtures for the rules that differ by level. The sources of each also include the
+files of `tests/fixtures/` named in the project's `shared-fixtures.txt`.
 **Enabling a rule does not make it fire. Test it.**
 
-Tested with JDK 25, Gradle 9.4.0, PMD 7.28.0, Checkstyle 13.5.0, spotless 8.3.0 with Eclipse 4.19 and
-the GTNH formatter config, and the shared lint venv (Python 3.11, spaCy 3.8.16 with
-`en_core_web_md` 3.8.0). End to end on PlanNH `origin/dev` under GTNHGradle and RFG.
+Tested with JDK 25, with javac of JDK 8, and with javac of JDK 17 and Jabel 1.0.2-GTNH, Gradle
+9.4.0, PMD 7.28.0, Checkstyle 13.5.0, spotless 8.3.0 with Eclipse 4.19 and the GTNH formatter
+config, and the shared lint venv (Python 3.11, spaCy 3.8.16 with `en_core_web_md` 3.8.0). End to end on PlanNH `origin/dev` under GTNHGradle and RFG.
 
 ## Environments
 
@@ -133,6 +136,15 @@ syntax checks are PMD rules.
 
 **The default PMD of the Gradle pmd plugin is too old.** Gradle 9.4 has PMD 7.13.0, and the first PMD
 with Java 25 is 7.16.0. PMD 7.28.0 is set in the init script.
+
+**The Checkstyle and PMD tasks of Gradle run on the toolchain of the project by default**, and
+Checkstyle 13 does not start on a JDK older than 21. In the init script, both tasks have a JDK 25
+launcher. `compileJava` keeps the toolchain of the project.
+
+**The Gradle PMD plugin passes no Java version to PMD 7**, so PMD parses every project at the
+default Java version of PMD, at every level. The XPath rules are the same at each level. The
+rules that differ by level are in **Scope** of `SKILL.md`. The NAR107 message of the level comes
+from `verify.py`, which replaces `NAR107_MESSAGE` in `pmd-ruleset.xml`.
 
 **A PMD violation of a method is at the method name.** A violation on a `MethodDeclaration` has the
 line of the name as both the first and the last line. `javachecks.py` finds the end of a `NAR116`

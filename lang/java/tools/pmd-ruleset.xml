@@ -97,10 +97,11 @@
     </rule>
 
     <rule name="NAR107" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
-          message="default arm in a switch over an enum or sealed type. List every constant, so a missing one is a compile error">
+          message="NAR107_MESSAGE">
         <description>
             P19: exhaustive dispatch with no fallback arm. verify.py replaces the comment
-            SEALED_TYPES with one typeIs test per sealed type of the project.
+            SEALED_TYPES with one typeIs test per sealed type of the project, and the message
+            with the message of the Java level of the project.
         </description>
         <priority>3</priority>
         <properties>

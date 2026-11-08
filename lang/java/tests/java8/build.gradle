@@ -1,0 +1,17 @@
+// The Java 8 fixture project of narrative-gtnh, on the toolchain of GTNHGradle for
+// enableModernJavaSyntax = false. run_fixtures.py runs verify.py from this directory.
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+apply from: '../shared-fixtures.gradle'

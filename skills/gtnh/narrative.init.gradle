@@ -11,6 +11,11 @@
 //     narrativePmd         -> pmd.xml, with the ruleset in narrative.pmdRuleset
 // compileJava gets -Xlint:rawtypes,unchecked. javac prints each warning with the full path of its file.
 //
+// compileJava runs on the JDK of the project's toolchain (8, 17 or 25 under GTNHGradle), so the errors
+// and warnings of javac are those of the build. Checkstyle and PMD run on a JDK 25 at every level:
+// Checkstyle 13 does not start on a JDK older than 21, and a Checkstyle or PMD task takes the
+// project's toolchain by default.
+//
 // The tasks are registered in projectsEvaluated. GTNHGradle configures the checkstyle extension
 // after an allprojects block runs, so this script changes no extension and adds tasks of its own.
 
@@ -30,6 +35,8 @@ def pmdVersion = properties['narrative.pmdVersion'] ?: '7.28.0'
 def checkstyleVersion = properties['narrative.checkstyleVersion'] ?: '13.5.0'
 // under --since, verify.py lists the changed files here, and Checkstyle and PMD read only those
 def changedFiles = properties['narrative.files'] ? new File(properties['narrative.files']).readLines().collect { new File(it) } as Set : null
+// the JDK of Checkstyle and PMD
+def toolJdk = 25
 
 gradle.projectsEvaluated {
     gradle.rootProject.allprojects { project ->
@@ -50,11 +57,15 @@ gradle.projectsEvaluated {
                 project.dependencies.create("com.puppycrawl.tools:checkstyle:${checkstyleVersion}"))
 
             def checkedSources = changedFiles == null ? main.allJava : main.allJava.filter { changedFiles.contains(it) }
+            def toolLauncher = project.extensions.getByType(JavaToolchainService).launcherFor {
+                languageVersion = JavaLanguageVersion.of(toolJdk)
+            }
 
             def narrativeCheckstyle = project.tasks.register('narrativeCheckstyle', Checkstyle) {
                 source = checkedSources
                 classpath = project.files()
                 checkstyleClasspath = checkstyleTool
+                javaLauncher = toolLauncher
                 configFile = new File(skillDir, 'checkstyle.xml')
                 configDirectory = skillDir
                 configProperties = ['narrative.checkstyleCache': new File(projectReportDir, 'checkstyle.cache').path]
@@ -73,6 +84,7 @@ gradle.projectsEvaluated {
                 source = checkedSources
                 classpath = main.output + main.compileClasspath
                 pmdClasspath = project.configurations.pmd
+                javaLauncher = toolLauncher
                 ruleSetFiles = project.files(rulesetFile)
                 ruleSets = []
                 ignoreFailures = true

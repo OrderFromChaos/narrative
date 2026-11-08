@@ -1,0 +1,37 @@
+// The jabel fixture project of narrative-gtnh, set up as GTNHGradle sets up enableModernJavaSyntax =
+// jabel: a JDK 17 toolchain, --release 8, and the Jabel annotation processor of GTNH. run_fixtures.py
+// runs verify.py from this directory.
+plugins {
+    id 'java'
+}
+
+repositories {
+    maven {
+        name = 'GTNH Maven'
+        url = 'https://nexus.gtnewhorizons.com/repository/public/'
+    }
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+// the version that GTNHGradle 2.0.34 adds, in ToolchainModule
+def jabel = 'com.github.GTNewHorizons:jabel-javac-plugin:1.0.2-GTNH'
+
+dependencies {
+    annotationProcessor jabel
+    compileOnly(jabel) {
+        transitive = false
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    sourceCompatibility = '17'
+    options.release = 8
+}
+
+apply from: '../shared-fixtures.gradle'

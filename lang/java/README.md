@@ -17,8 +17,9 @@ for only the lines your PR adds or changes.
 - **No build change.** PMD and Checkstyle run through a Gradle init script, so `git status` stays
   clean and no `dependencies.gradle` change ends up in your PR.
 
-⚠️ For Java 25 projects only: GTNHGradle with `enableModernJavaSyntax = jvmDowngrader` or `modern`. A
-`jabel` project (Java 17 syntax, Java 8 library) exits 2 with the reason. The style also puts a
+⚠️ For GTNHGradle projects at three Java levels: `enableModernJavaSyntax = jvmDowngrader` or
+`modern` (Java 25), `jabel` (Java 17 syntax, Java 8 library), and `false` (Java 8). A few rules
+differ by level. For example, under jabel a record has `@Desugar`. The style also puts a
 caller above its callees in a class, which may differ from the rest of an existing codebase. **It will not
 migrate the rest of your codebase unless you ask.**
 
@@ -72,8 +73,10 @@ come from Maven Central on the first run.
   [`benchmark/java/proposals_java_mapping.md`](../../benchmark/java/proposals_java_mapping.md): each
   Python rule and the rule's Java form. [`benchmark/java/spikes.md`](../../benchmark/java/spikes.md):
   the toolchain tests, and the end-to-end runs on PlanNH.
-- [`tests/`](tests/): for each code, a fixture that breaks the rule and one that does not, 88 files,
-  checked by `python3 lang/java/tests/run_fixtures.py --gradle <gradle>`. The cases of
+- [`tests/`](tests/): for each code, a fixture that breaks the rule and one that does not, 89 files,
+  and a fixture project for each lower level, [`tests/java8/`](tests/java8/) and
+  [`tests/jabel/`](tests/jabel/). All three are checked by
+  `python3 lang/java/tests/run_fixtures.py --gradle <gradle>`. The cases of
   `javachecks.py --rewrap` are in `tests/rewrap/`, checked by `lang/java/tests/run_rewrap.py` with
   the interpreter of the lint venv.
 - The prose checks are in [`core/tools/`](../../core/tools/), shared with the Python skill.

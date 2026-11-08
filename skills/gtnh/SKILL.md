@@ -1,6 +1,6 @@
 ---
 name: gtnh
-description: Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods on Java 25 with jvmDowngrader. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, when planning a change, and when reviewing a Java diff against this style. For Python files in the same repository, load nar:python too, or load nar:code in place of both. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages.
+description: Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods, on Java 25 with jvmDowngrader, on jabel and on Java 8. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, when planning a change, and when reviewing a Java diff against this style. For Python files in the same repository, load nar:python too, or load nar:code in place of both. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages.
 ---
 **Before you write or review anything, load the skill `nar:core` with the Skill tool**, unless
 `nar:core` is loaded already. `nar:core` has the rules for comments, javadoc, error messages and
@@ -42,16 +42,47 @@ ids are provenance. They resolve in `benchmark/decisions.jsonl` in the source re
 
 ## Scope
 
-narrative-gtnh checks **Java 25 projects only**: GTNHGradle projects with
-`enableModernJavaSyntax = jvmDowngrader` or `modern` in `gradle.properties`. `verify.py` exits 2 on any
-other value, and on `forceToolchainVersion` other than `-1` or `25`. A `jabel` project has Java 17
-syntax and the Java 8 library, so records and `List.copyOf()` are not available. (J1-P05)
+narrative-gtnh checks GTNHGradle projects at three Java levels. `verify.py` takes the level from
+`enableModernJavaSyntax` in `gradle.properties`, with the values of GTNHGradle, and prints the level
+on the `level` line of each run. (J1-levels)
+
+| level | `enableModernJavaSyntax` | toolchain | syntax | library |
+|---|---|---|---|---|
+| Java 25 | `jvmDowngrader`, `modern` | 25 | Java 25 | Java 25, where the GTNHLib stubs of jvmDowngrader cover the API |
+| jabel | `jabel`, `true` | 17 | Java 17, with `@Desugar` on a record, and no sealed types | Java 8, with `--release 8` |
+| Java 8 | `false`, or no value | 8 | Java 8 | Java 8 |
+
+`true` and `false` match with any case. On any other value, `verify.py` exits 2, and also on
+`forceToolchainVersion` other than `-1` or the toolchain of the level. javac runs on the toolchain of
+the project, so a call to a method that the library of the level does not have is a compile error.
+Checkstyle and PMD run on a JDK 25 at every level.
 
 - No preview features.
-- A JDK API only where the GTNHLib stubs of jvmDowngrader cover the API.
 - On a guard for a runtime newer than the floor, the comment has the version:
   `// on Java 21 and later, Thread.ofVirtual() is available`. (R10-version-guard)
 
+### Rules by level
+
+Every rule and every check applies at every level, except these. Where a rule below has a record,
+`List.copyOf` or a `switch` expression, use the form of the level.
+
+- **A record.** Java 25: a record. jabel: a record with `@Desugar`
+  (`com.github.bsideup.jabel.Desugar`). The Jabel of GTNH compiles that record for Java 8, and a record
+  with no `@Desugar` does not compile. Java 8: a final class with private final fields, one constructor
+  and `getName()` getters, with `equals()` and `hashCode()` when code compares two instances. `NAR108`
+  can fire only on a record. (J1-P21-levels)
+- **`List.copyOf`.** jabel and Java 8: Guava `ImmutableList.copyOf`, and `ImmutableSet.copyOf` or
+  `ImmutableMap.copyOf` for the other collections. (J1-P21-levels)
+- **A `switch` over an enum.** Java 25 and jabel: a `switch` expression with no `default` arm. javac
+  rejects a missing constant at both levels. Java 8 has no `switch` expression. Put the behaviour on
+  the constant, where javac checks every constant. Where only one caller needs a mapping, write a
+  `switch` statement with a case for every constant, no `default` arm, and a throw after the switch.
+  `NAR107` flags a `default` arm at every level. (J1-P19-java8)
+- **A sealed type.** Java 25 only. So the `sealed abstract class` exception of `NAR106` and the sealed
+  types of `NAR107` are Java 25 only. (J1-levels)
+- **A pattern in a `switch`, and a record pattern.** Java 25 only. jabel: an `instanceof` pattern in
+  an `if` chain. Java 8: `instanceof` and a cast. (J1-levels)
+- **`var`, a text block and an `instanceof` pattern.** Java 25 and jabel only. (J1-levels)
 ## Class layout
 
 ```java
@@ -255,8 +286,8 @@ Name every magic number. (Q09) Then place it by this test:
 - **Composition over inheritance.** An `interface` for a seam with two real implementations. No
   `abstract class` in project code. `extends` only for a class the platform requires: Forge `Block`,
   `Item` and `TileEntity`, MUI2 widgets, GT bases. A `sealed abstract class` is allowed when its
-  permitted subclasses share fields: the fields are declared once, in the class. `NAR106` flags every other
-  abstract class. (J1-P18, R2-01, J1-F05)
+  permitted subclasses share fields: the fields are declared once, in the class. Only Java 25 has
+  sealed types. `NAR106` flags every other abstract class. (J1-P18, R2-01, J1-F05, J1-levels)
 
 - **Give a name to a type you cannot say out loud.** Could you refer to this type in a normal
   discussion with another programmer? `Map<String, List<Pair<Float, Float>>>` has five names below
@@ -278,15 +309,16 @@ private static Level levelOf(Outcome outcome) {
 For an `enum` or `sealed` type, write a `switch` expression with no `default` arm. javac then rejects
 a missing constant. **A `default ->` arm compiles clean and accepts the missing case.** `NAR107`
 flags a `default` arm in a switch over an enum or a sealed type of the project.
-(J1-P19, Q18, R3a-07)
+(J1-P19, Q18, R3a-07) Java 8 has no `switch` expression, and the form there is in **Rules by level**
+in **Scope**. (J1-P19-java8)
 
 - A `switch` **statement** over an enum has no exhaustiveness check. Rewrite it as a `switch`
   expression that returns a value.
 - **Keep the `switch` even where an `EnumMap` looks natural.** `EnumMap.get()` returns `null` for a
   missing key, at run time.
 - Under jvmDowngrader, the synthetic default of an exhaustive `switch` throws a stub
-  `MatchException`. It is reachable only when a newer enum class is loaded than the one compiled
-  against.
+  `MatchException`, and under jabel an `IncompatibleClassChangeError`. It is reachable only when a
+  newer enum class is loaded than the one compiled against.
 - **Where the behaviour is a property of the constant**, such as the amount format of a resource
   type, write the behaviour on the constant, as an abstract method or a constructor argument. javac
   then requires it of every constant, and call sites get no branches. **Where only one caller needs
@@ -305,13 +337,14 @@ flags a `default` arm in a switch over an enum or a sealed type of the project.
   contains a fact that the file does not. (R9-01)
 
 - **A record is the default for data.** A class that is just data is the record, not a wrapper
-  around a nested one. In other classes, a field is `final` unless code reassigns the field.
+  around a nested one. On jabel and Java 8, the record has the form of **Rules by level** in
+  **Scope**. In other classes, a field is `final` unless code reassigns the field.
   `NAR141` flags a field that could be final. (J1-P21, R8-D11-resolved)
 
 - **A record is shallowly immutable.** The compact constructor copies a collection component with
-  `List.copyOf`, or Guava `ImmutableList.copyOf`. **Never an array component:** `equals()` and
-  `hashCode()` of a record compare arrays by identity, so two equal plans compare unequal. `NAR108`
-  flags an array component. (J1-P22)
+  `List.copyOf`, or Guava `ImmutableList.copyOf`, which is the only one on jabel and Java 8. **Never
+  an array component:** `equals()` and `hashCode()` of a record compare arrays by identity, so two
+  equal plans compare unequal. `NAR108` flags an array component. (J1-P22)
 
 - **Genuinely schemaless input**: promote the fields the program computes on to typed components,
   and put the remainder in one `JsonObject` or `Map<String, JsonElement>` component. **Never merge
@@ -795,7 +828,8 @@ uv venv --python 3.11 $env:LOCALAPPDATA\narrative\lintenv
 uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -r "${CLAUDE_SKILL_DIR}/requirements-lock.txt"
 ```
 
-A JDK 25 comes from the Gradle toolchain of the project. PMD 7.28.0 and Checkstyle 13.5.0 come from
+The JDK of the level (8, 17 or 25) comes from the Gradle toolchain of the project, and a JDK 25 for
+Checkstyle and PMD comes from the Gradle toolchains too. PMD 7.28.0 and Checkstyle 13.5.0 come from
 Maven Central on the first run. No project file changes.
 
 ### Verify
@@ -825,9 +859,9 @@ example, GT5's `MultiblockTooltipBuilder` has about 40 `TT_*` fields, such as `T
 
 `verify.py` runs one Gradle invocation with the init script `narrative.init.gradle`: `spotlessApply`
 (or `spotlessCheck` with `--no-fix`), `compileJava` with the raw-type and unchecked warnings of
-javac, then Checkstyle and PMD with the configs beside `verify.py`. `javachecks.py` then reads the
-comments, runs the prose checks, and merges the three reports into one list with NAR codes. A run
-with exit 0 or 1 writes three lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+javac, then Checkstyle and PMD with the configs beside `verify.py`, at every level of **Scope**.
+`javachecks.py` then reads the comments, runs the prose checks, and merges the three reports into
+one list with NAR codes. A run with exit 0 or 1 writes three lists to `.narrative_cache/review-lists.txt`, the input to **Prose
 review**: every sentence of every comment, javadoc and named page, every verb whose subject cannot
 act, and every sentence with a pronoun. The file and the number of entries in each list are
 on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` writes
@@ -839,7 +873,7 @@ entries, with the command for the next 1000. (J1-F01, J1-F09, J1-F14, J1-F15, J1
 |---|---|
 | 0 | every check passed. Warnings may be printed |
 | 1 | at least one finding, or the code does not compile or is not formatted |
-| 2 | the toolchain, `gradle.properties`, `gradlew` or a report is missing, the project is not Java 25, `--since` names no commit, the diff changes no line, or the review lists could not be written |
+| 2 | the toolchain, `gradle.properties`, `gradlew` or a report is missing, `enableModernJavaSyntax` or `forceToolchainVersion` has a value with no level in **Scope**, `--since` names no commit, the diff changes no line, or the review lists could not be written |
 
 Pass `--max-workers 1` on a busy machine. The job of each tool, the code table and the tool defaults
 that break rules of this skill are in `tooling.md`. Read it before you change a config.

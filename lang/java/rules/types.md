@@ -41,8 +41,8 @@
 - **Composition over inheritance.** An `interface` for a seam with two real implementations. No
   `abstract class` in project code. `extends` only for a class the platform requires: Forge `Block`,
   `Item` and `TileEntity`, MUI2 widgets, GT bases. A `sealed abstract class` is allowed when its
-  permitted subclasses share fields: the fields are declared once, in the class. `NAR106` flags every other
-  abstract class. (J1-P18, R2-01, J1-F05)
+  permitted subclasses share fields: the fields are declared once, in the class. Only Java 25 has
+  sealed types. `NAR106` flags every other abstract class. (J1-P18, R2-01, J1-F05, J1-levels)
 
 - **Give a name to a type you cannot say out loud.** Could you refer to this type in a normal
   discussion with another programmer? `Map<String, List<Pair<Float, Float>>>` has five names below
@@ -64,15 +64,16 @@ private static Level levelOf(Outcome outcome) {
 For an `enum` or `sealed` type, write a `switch` expression with no `default` arm. javac then rejects
 a missing constant. **A `default ->` arm compiles clean and accepts the missing case.** `NAR107`
 flags a `default` arm in a switch over an enum or a sealed type of the project.
-(J1-P19, Q18, R3a-07)
+(J1-P19, Q18, R3a-07) Java 8 has no `switch` expression, and the form there is in **Rules by level**
+in **Scope**. (J1-P19-java8)
 
 - A `switch` **statement** over an enum has no exhaustiveness check. Rewrite it as a `switch`
   expression that returns a value.
 - **Keep the `switch` even where an `EnumMap` looks natural.** `EnumMap.get()` returns `null` for a
   missing key, at run time.
 - Under jvmDowngrader, the synthetic default of an exhaustive `switch` throws a stub
-  `MatchException`. It is reachable only when a newer enum class is loaded than the one compiled
-  against.
+  `MatchException`, and under jabel an `IncompatibleClassChangeError`. It is reachable only when a
+  newer enum class is loaded than the one compiled against.
 - **Where the behaviour is a property of the constant**, such as the amount format of a resource
   type, write the behaviour on the constant, as an abstract method or a constructor argument. javac
   then requires it of every constant, and call sites get no branches. **Where only one caller needs

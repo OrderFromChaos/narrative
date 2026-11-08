@@ -2,13 +2,15 @@
 
 Use this instead of calling the tools by hand. A missing tool, report or JDK is exit 2, so a pass means every check ran.
 
-The project is the current directory, a Gradle build with GTNHGradle. First, javachecks.py --rewrap fills each paragraph
-of the javadoc and the whole-line // comments again up to column 120, unless --no-fix is given. Under --since, only a
-paragraph with a changed line is re-wrapped. Then, in one Gradle run, the code is formatted (spotlessApply, or
-spotlessCheck with --no-fix), compiled with the raw-type and unchecked warnings of javac, and checked with Checkstyle
-and PMD and the configs beside this script. Those tasks come from the init script narrative.init.gradle, so no project
-file changes. javachecks.py then reads the comments, runs the prose checks, and merges the three reports into one list
-of findings.
+The project is the current directory, a Gradle build with GTNHGradle. The Java level of the project comes from
+enableModernJavaSyntax in gradle.properties: Java 25 for jvmDowngrader or modern, Java 17 syntax with the Java 8 library
+for jabel or true, and Java 8 for false or no value. First, javachecks.py --rewrap fills each paragraph of the javadoc
+and the whole-line // comments again up to column 120, unless --no-fix is given. Under --since, only a paragraph with a
+changed line is re-wrapped. Then, in one Gradle run, the code is formatted (spotlessApply, or spotlessCheck with
+--no-fix), compiled with the raw-type and unchecked warnings of javac, and checked with Checkstyle and PMD and the
+configs beside this script. javac comes from the JDK of the project's toolchain, and Checkstyle and PMD run on a JDK 25
+at every level. Those tasks come from the init script narrative.init.gradle, so no project file changes. javachecks.py
+then reads the comments, runs the prose checks, and merges the three reports into one list of findings.
 
 A Markdown, HTML or plain text file named on the command line gets the prose checks of javachecks.py, in the same list
 of findings as the Java sources. A Gradle project is required only when Java sources are checked. When only pages are
@@ -44,8 +46,9 @@ Usage:
 Exit codes:
     0  every check passed. Warnings may be printed
     1  at least one finding, or the code does not compile or is not formatted
-    2  the toolchain, gradle.properties, gradlew or a report is missing, the project is not Java 25,
-       nothing was checked, or javachecks.py --prose failed and wrote no review list
+    2  the toolchain, gradle.properties, gradlew or a report is missing, enableModernJavaSyntax or
+       forceToolchainVersion has a value with no level in Scope of SKILL.md, nothing was checked, or javachecks.py
+       --prose failed and wrote no review list
 """
 
 from __future__ import annotations
@@ -56,6 +59,7 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 from wording import countEntries
@@ -71,11 +75,9 @@ DATA_HOME = Path(os.environ.get('LOCALAPPDATA') or os.environ.get('XDG_DATA_HOME
 SHARED_VENV = DATA_HOME / 'narrative' / 'lintenv'
 VENV_PYTHON = Path('Scripts/python.exe') if sys.platform == 'win32' else Path('bin/python')
 GRADLEW = 'gradlew.bat' if sys.platform == 'win32' else 'gradlew'
-# the GTNHGradle enableModernJavaSyntax values for Java 25 with the modern library
-JAVA_25_SYNTAX = frozenset({'jvmDowngrader', 'modern'})
 REPORT_DIR = Path('build/narrative')
 CHECK_TASKS = ('narrativeCheckstyle', 'narrativePmd')
-PASS_NOTE = 'A pass is no evidence about the rules that no check implements.'
+PASS_NOTE = 'These lint checks cover only some of the rules. Check the other rules by hand.'
 # the default cache directory: the spaCy results of a run without Gradle, a page read from stdin, and the three review
 # lists of the last run, for Prose review
 CACHE_DIR = Path('.narrative_cache')
@@ -158,6 +160,7 @@ def main() -> int:
         print(f'verify.py: {exc}', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
+    print(f'level          {settings.level.summary}', flush=True)
     report_dir = project_dir / REPORT_DIR
     try:
         changed_files = readChangedFiles(args.since, project_dir) if args.since else None
@@ -174,7 +177,7 @@ def main() -> int:
     if not args.no_fix:
         print(f'rewrap         {rewrapComments(venv_python, sources, args.since)}', flush=True)
 
-    ruleset_path = writeRuleset(sources, report_dir)
+    ruleset_path = writeRuleset(sources, report_dir, settings.level)
     gradle_run = runGradle(
         gradle_command,
         settings,
@@ -365,10 +368,13 @@ def setupCommands(venv: Path) -> str:
 
 
 def readGradleProperties(properties_path: Path) -> GradleSettings:
-    """Read the GTNHGradle settings for the language level and the formatter.
+    """Read the GTNHGradle settings for the Java level and the formatter.
+
+    GTNHGradle reads `true` and `false` with any case, and the other values of enableModernJavaSyntax exactly.
 
     Raises:
-        PrerequisiteError: the file does not exist, or the project is not set to Java 25.
+        PrerequisiteError: the file does not exist, enableModernJavaSyntax has an unknown value, or
+            forceToolchainVersion names a JDK other than the toolchain of the level.
     """
     if not properties_path.is_file():
         raise PrerequisiteError(f'no {properties_path}. Run verify.py from the root of a GTNHGradle project')
@@ -379,16 +385,23 @@ def readGradleProperties(properties_path: Path) -> GradleSettings:
             key, value = line.split('=', 1)
             values[key.strip()] = value.strip()
 
-    syntax = values.get('enableModernJavaSyntax', 'false')
-    if syntax not in JAVA_25_SYNTAX:
+    syntax = values.get('enableModernJavaSyntax', '')
+    # GTNHGradle ModernJavaSyntaxMode.fromString: an empty value is false, and true and false match with any case
+    named = syntax.lower() if syntax.lower() in {'true', 'false'} else syntax
+    level = next((level for level in JavaLevel if named in level.syntax_values), None)
+    if level is None:
         raise PrerequisiteError(
-            f'enableModernJavaSyntax = {syntax} in {properties_path} (expected jvmDowngrader or modern). '
-            'narrative-gtnh checks Java 25 projects only',
+            f'enableModernJavaSyntax = {syntax} in {properties_path} (expected jvmDowngrader, modern, jabel, true, '
+            'false or no value)',
         )
+
     forced = values.get('forceToolchainVersion', '-1')
-    if forced not in {'-1', '25'}:
-        raise PrerequisiteError(f'forceToolchainVersion = {forced} in {properties_path} (expected -1 or 25)')
-    return GradleSettings(spotless=values.get('disableSpotless', 'false') != 'true')
+    if forced not in {'-1', str(level.toolchain)}:
+        raise PrerequisiteError(
+            f'forceToolchainVersion = {forced} in {properties_path} (expected -1 or {level.toolchain}, the toolchain '
+            f'of enableModernJavaSyntax = {syntax}). The rules are tested on that toolchain only',
+        )
+    return GradleSettings(spotless=values.get('disableSpotless', 'false') != 'true', level=level)
 
 
 def findGradlew(project_dir: Path) -> Path:
@@ -403,8 +416,8 @@ def findGradlew(project_dir: Path) -> Path:
     return wrapper.absolute()
 
 
-def writeRuleset(source_paths: list[Path], report_dir: Path) -> Path:
-    """Write the PMD ruleset with one typeIs test per sealed type of the project for NAR107.
+def writeRuleset(source_paths: list[Path], report_dir: Path, level: JavaLevel) -> Path:
+    """Write the PMD ruleset for NAR107: one typeIs test per sealed type of the project, and the message of the level.
 
     A typeIs() test is by qualified name. The name of a nested sealed type is taken as the name of the file, a dot and
     the simple name of the type, so a sealed type nested two levels deep is not tested.
@@ -432,7 +445,12 @@ def writeRuleset(source_paths: list[Path], report_dir: Path) -> Path:
             )
 
     tests = ''.join(f" or pmd-java:typeIs('{name}')" for name in names)
-    ruleset = (SKILL_DIR / 'pmd-ruleset.xml').read_text(encoding='utf-8').replace('(: SEALED_TYPES :)', tests)
+    ruleset = (
+        (SKILL_DIR / 'pmd-ruleset.xml')
+        .read_text(encoding='utf-8')
+        .replace('(: SEALED_TYPES :)', tests)
+        .replace('NAR107_MESSAGE', level.nar107_message)
+    )
     report_dir.mkdir(parents=True, exist_ok=True)
     ruleset_path = report_dir / 'pmd-ruleset.xml'
     ruleset_path.write_text(ruleset, encoding='utf-8')
@@ -548,9 +566,43 @@ class PrerequisiteError(RuntimeError):
     pass
 
 
+class JavaLevel(Enum):
+    """A Java level of GTNHGradle: the enableModernJavaSyntax values, the toolchain, and the level's NAR107 message.
+
+    The values and toolchains are those of ToolchainModule.computeToolchainVersion in GTNHGradle 2.0.34. A jabel build
+    compiles with --release 8, so the library is that of Java 8.
+    """
+
+    JAVA_25 = (
+        frozenset({'jvmDowngrader', 'modern'}),
+        25,
+        'Java 25',
+        'default arm in a switch over an enum or sealed type. List every constant, so a missing one is a compile error',
+    )
+    JABEL = (
+        frozenset({'jabel', 'true'}),
+        17,
+        'jabel: Java 17 syntax, Java 8 library',
+        'default arm in a switch over an enum. List every constant, so a missing one is a compile error',
+    )
+    JAVA_8 = (
+        frozenset({'false', ''}),
+        8,
+        'Java 8',
+        'default arm in a switch over an enum. List every constant, and throw after the switch',
+    )
+
+    def __init__(self, syntax_values: frozenset[str], toolchain: int, summary: str, nar107_message: str) -> None:
+        self.syntax_values = syntax_values
+        self.toolchain = toolchain
+        self.summary = summary
+        self.nar107_message = nar107_message
+
+
 @dataclass(frozen=True)
 class GradleSettings:
     spotless: bool
+    level: JavaLevel
 
 
 @dataclass(frozen=True)

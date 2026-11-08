@@ -1,0 +1,23 @@
+// The sources of a fixture project for one Java level, applied by java8/build.gradle and
+// jabel/build.gradle: the project's own fixtures/, the stubs, and the files of ../fixtures that
+// shared-fixtures.txt of the project names. Each line of shared-fixtures.txt names a directory or a
+// file of ../fixtures, and run_fixtures.py reads the same lines.
+def sharedRoot = file('../fixtures')
+def shared = file('shared-fixtures.txt').readLines().findAll { it && !it.startsWith('#') }
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['fixtures', '../stubs', sharedRoot]
+            exclude { element ->
+                if (!element.file.toPath().startsWith(sharedRoot.toPath())) {
+                    return false
+                }
+                def path = element.relativePath.pathString
+                // a directory stays when it is named, is inside a named one, or holds a named file
+                def kept = shared.any { entry -> path == entry || path.startsWith("${entry}/") || entry.startsWith("${path}/") }
+                return !kept
+            }
+        }
+    }
+}
