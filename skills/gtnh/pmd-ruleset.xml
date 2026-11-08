@@ -178,26 +178,54 @@
     </rule>
 
     <rule name="NAR112" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
-          message="+ in user-facing text. Put %s placeholders in the lang entry, and pass the values to the localization call">
-        <description>P04: no + in user-facing text.</description>
+          message="+ in user-facing text. Put %s placeholders in the lang entry, and pass the values to the localization call. A computed key starts with its literal prefix">
+        <description>
+            P04: no + in user-facing text. A localization call is a call of StatCollector,
+            I18n.format, IKey.lang, ChatComponentTranslation, or any method named translate*,
+            localize*, trans, tr or i18n, such as the NEIClientUtils.translate wrapper of NEI. Its
+            first argument is a lang key, and a key that starts with a literal prefix ending in a
+            dot, with no space in any literal, is allowed: "chat.mode." + mode. The text calls
+            (drawString, ChatComponentText, IKey.str, the chat messages) get no such exception.
+        </description>
         <priority>3</priority>
         <properties>
             <property name="xpath">
                 <value><![CDATA[
-//MethodCall[@MethodName = ('translateToLocal', 'translateToLocalFormatted', 'addChatMessage', 'addChatComponentMessage',
-                           'drawString', 'drawCenteredString', 'drawStringWithShadow')]
+//MethodCall[@MethodName = ('addChatMessage', 'addChatComponentMessage', 'drawString', 'drawCenteredString',
+                           'drawStringWithShadow')]
   /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+|
+//MethodCall[matches(@MethodName, '^(translate|localize)\w*$|^(trans|tr|i18n)$')]
+  /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+  [not(count(preceding-sibling::*) = 0
+       and descendant::*[not(*)][1][self::StringLiteral][ends-with(@Image, '."')]
+       and not(descendant::StringLiteral[contains(@Image, ' ')]))]
 |
 //MethodCall[@MethodName = 'format'][*[1][pmd-java:typeIs('net.minecraft.client.resources.I18n')]]
   /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+  [not(count(preceding-sibling::*) = 0
+       and descendant::*[not(*)][1][self::StringLiteral][ends-with(@Image, '."')]
+       and not(descendant::StringLiteral[contains(@Image, ' ')]))]
 |
-//MethodCall[@MethodName = ('str', 'lang')][*[1][pmd-java:typeIs('com.cleanroommc.modularui.api.drawable.IKey')]]
+//MethodCall[@MethodName = 'lang'][*[1][pmd-java:typeIs('com.cleanroommc.modularui.api.drawable.IKey')]]
+  /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+  [not(count(preceding-sibling::*) = 0
+       and descendant::*[not(*)][1][self::StringLiteral][ends-with(@Image, '."')]
+       and not(descendant::StringLiteral[contains(@Image, ' ')]))]
+|
+//MethodCall[@MethodName = 'str'][*[1][pmd-java:typeIs('com.cleanroommc.modularui.api.drawable.IKey')]]
   /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
 |
-//ConstructorCall[pmd-java:typeIs('net.minecraft.util.ChatComponentText') or pmd-java:typeIs('net.minecraft.util.ChatComponentTranslation')]
+//ConstructorCall[pmd-java:typeIs('net.minecraft.util.ChatComponentTranslation')]
+  /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
+  [not(count(preceding-sibling::*) = 0
+       and descendant::*[not(*)][1][self::StringLiteral][ends-with(@Image, '."')]
+       and not(descendant::StringLiteral[contains(@Image, ' ')]))]
+|
+//ConstructorCall[pmd-java:typeIs('net.minecraft.util.ChatComponentText')]
   /ArgumentList/InfixExpression[@Operator = '+'][pmd-java:typeIs('java.lang.String')]
 |
-//InfixExpression[@Operator = '+'][*[self::MethodCall[@MethodName = ('translateToLocal', 'translateToLocalFormatted')]]]
+//InfixExpression[@Operator = '+'][*[self::MethodCall[matches(@MethodName, '^(translate|localize)\w*$|^(trans|tr|i18n)$')]]]
 ]]></value>
             </property>
         </properties>

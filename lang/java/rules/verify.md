@@ -39,7 +39,7 @@ entries, with the command for the next 1000. (J1-F01, J1-F09, J1-F14, J1-F15, J1
 |---|---|
 | 0 | every check passed. Warnings may be printed |
 | 1 | at least one finding, or the code does not compile or is not formatted |
-| 2 | the toolchain, `gradle.properties`, `gradlew` or a report is missing, `enableModernJavaSyntax` or `forceToolchainVersion` has a value with no level in **Scope**, `--since` names no commit, the diff changes no line, or the review lists could not be written |
+| 2 | the toolchain, `gradle.properties`, `gradlew` or a report is missing, `enableModernJavaSyntax` or `forceToolchainVersion` has a value with no level in **Scope**, `--since` names no commit, the diff changes no line, `javachecks.py` stopped before the count line of the findings, or the review lists could not be written |
 
 Pass `--max-workers 1` on a busy machine. The job of each tool, the code table and the tool defaults
 that break rules of this skill are in `tooling.md`. Read it before you change a config.

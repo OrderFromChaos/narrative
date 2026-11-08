@@ -62,6 +62,10 @@ gradle.projectsEvaluated {
             }
 
             def narrativeCheckstyle = project.tasks.register('narrativeCheckstyle', Checkstyle) {
+                // compileJava depends on each task that generates sources, such as the ANTLR
+                // grammar of NotEnoughItems. Without the dependency, Gradle stops the build on a
+                // generated source directory in main
+                dependsOn main.compileJavaTaskName
                 source = checkedSources
                 classpath = project.files()
                 checkstyleClasspath = checkstyleTool

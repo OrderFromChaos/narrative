@@ -242,7 +242,8 @@ def javadocLines(lines: list[str], comment: Comment) -> list[Line]:
     # `@return the plans, sorted by name`
     # rejects:
     # `@deprecated`
-    TAG = re.compile(r'^(?P<tag>@(?:param|throws|exception)\s+\S+|@\w+)\s+(?=\S)')
+    # `@param planPath`
+    TAG = re.compile(r'^(?P<tag>@(?:param|throws|exception)\s+\S+|@(?!(?:param|throws|exception)\b)\w+)\s+(?=\S)')
     tags = [TAG.match(cleanBlockLine(lines[number - 1])) for number, _raw in comment.texts]
     params = [tag['tag'].split()[1] for tag in tags if tag and tag['tag'].startswith('@param')]
     name_width = max(map(len, params), default=0)

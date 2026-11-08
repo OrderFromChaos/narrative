@@ -47,8 +47,8 @@ Exit codes:
     0  every check passed. Warnings may be printed
     1  at least one finding, or the code does not compile or is not formatted
     2  the toolchain, gradle.properties, gradlew or a report is missing, enableModernJavaSyntax or
-       forceToolchainVersion has a value with no level in Scope of SKILL.md, nothing was checked, or javachecks.py
-       --prose failed and wrote no review list
+       forceToolchainVersion has a value with no level in Scope of SKILL.md, nothing was checked, javachecks.py
+       stopped before its count line, or javachecks.py --prose failed and wrote no review list
 """
 
 from __future__ import annotations
@@ -155,7 +155,7 @@ def main() -> int:
 
     try:
         settings = readGradleProperties(project_dir / 'gradle.properties')
-        gradle_command = args.gradle.split() if args.gradle else [str(findGradlew(project_dir))]
+        gradle_command = args.gradle.split() if args.gradle else findGradlew(project_dir)
     except PrerequisiteError as exc:
         print(f'verify.py: {exc}', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
@@ -245,7 +245,7 @@ def reportFindings(
     line of javachecks.py comes before the last line.
 
     Returns:
-        The exit code of javachecks.py.
+        The exit code of javachecks.py, or 2 when javachecks.py printed no count line, as after a Python exception.
     """
     checked = subprocess.run(
         [str(venv_python), str(SKILL_DIR / 'javachecks.py'), *check_arguments],
@@ -256,6 +256,14 @@ def reportFindings(
     print(checked.stdout, end='')
     if checked.returncode not in {EXIT_SUCCESS, EXIT_FINDINGS}:
         return checked.returncode
+
+    # javachecks.py prints the count line last in every run that checked. A Python exception is also exit 1, but
+    # with no count line
+    # matches:
+    # `4 findings, 0 warnings over 226 files`
+    if not re.search(r'^\d+ findings, \d+ warnings over \d+ files$', checked.stdout, re.MULTILINE):
+        print('verify.py: javachecks.py stopped before the count line of its findings', file=sys.stderr)
+        return EXIT_NO_TOOLCHAIN
 
     if checked.returncode == EXIT_SUCCESS:
         print(PASS_NOTE, flush=True)
@@ -404,8 +412,11 @@ def readGradleProperties(properties_path: Path) -> GradleSettings:
     return GradleSettings(spotless=values.get('disableSpotless', 'false') != 'true', level=level)
 
 
-def findGradlew(project_dir: Path) -> Path:
-    """Return the Gradle wrapper of the project.
+def findGradlew(project_dir: Path) -> list[str]:
+    """Return the command that runs the Gradle wrapper of the project.
+
+    A wrapper with no executable bit, as in a checkout of a repository that stores gradlew with mode 644, runs through
+    sh on Linux and macOS.
 
     Raises:
         PrerequisiteError: the project has no wrapper.
@@ -413,7 +424,9 @@ def findGradlew(project_dir: Path) -> Path:
     wrapper = project_dir / GRADLEW
     if not wrapper.is_file():
         raise PrerequisiteError(f'no {wrapper}. Pass --gradle to name another Gradle command')
-    return wrapper.absolute()
+    if sys.platform != 'win32' and not os.access(wrapper, os.X_OK):
+        return ['sh', str(wrapper.absolute())]
+    return [str(wrapper.absolute())]
 
 
 def writeRuleset(source_paths: list[Path], report_dir: Path, level: JavaLevel) -> Path:

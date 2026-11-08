@@ -61,8 +61,8 @@ silences a code on the same line.
 | `NAR109` | an exception class whose name does not end in `Exception`, or any `Error` subclass (J1-P23) | PMD |
 | `NAR110` | a mutable static field with no comment for the reason (J1-P27) | PMD, then `javachecks.py` |
 | `NAR111` | `+` or `format()` in a log message (J1-P28) | PMD |
-| `NAR112-gtnh` | `+` in user-facing text (J1-P04) | PMD |
-| `NAR113-gtnh` | literal user-facing text (J1-S15) | PMD |
+| `NAR112-gtnh` | `+` in user-facing text, or in a lang key other than a literal prefix that ends in a dot, joined to values (J1-P04, J1-P04-keys) | PMD |
+| `NAR113-gtnh` | literal user-facing text in a text call (J1-S15) | PMD |
 | `NAR114-gtnh` | `new` or `.stream()` in a `draw*` or `render*` method (J1-S03) | PMD |
 | `NAR115` | a `java.io.File` operation (J1-P14) | PMD |
 | `NAR116` | a method with more than 3 parameters or more than 20 body lines and no javadoc (J1-P34) | PMD, then `javachecks.py` |
@@ -105,6 +105,10 @@ Below is *why* each non-obvious setting is there.
   `pmd-java:typeIs()` test per sealed type found in the sources, because XPath has no test for a
   sealed type. The name of a nested sealed type is the file name, a dot and the type name, so a
   sealed type nested two levels deep is not tested.
+- **NAR112** has no type test for a wrapper, only the method names `translate*`, `localize*`,
+  `trans`, `tr` and `i18n`. A method of another kind with one of those names and a `+` in a `String`
+  argument is a finding too. Mark that call `// noqa: NAR112-gtnh`. The key-prefix exception is for
+  the first argument of a localization call only, and not for a text call such as `drawString`.
 - **NAR110** has exemptions for `@Mod.Instance`, `@SidedProxy`, loggers, and the fields of a class that is
   annotated `@Config` or whose name ends in `Config` or `Configuration`.
 - A type-pattern switch over a type that is not sealed, such as an NEI handler object, needs a
