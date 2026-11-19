@@ -35,7 +35,7 @@ gradle         spotless, compileJava, narrativeCheckstyle and narrativePmd ran
 ./src/main/java/com/sbancuz/plannh/Planted.java:5: NAR124-gtnh package-private member. Make it private or public
 ./src/main/java/com/sbancuz/plannh/data/MachineProfile.java:125: NAR017 'profile knows'
 ./src/main/java/com/sbancuz/plannh/data/MachineProfile.java:126: NAR104 fully-qualified name in code. Import the type
-4 findings, 0 warnings over 226 files
+4 findings, 0 warnings, 0 kept over 226 files
 ```
 
 ## Install

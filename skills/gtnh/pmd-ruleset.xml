@@ -58,11 +58,19 @@
 
     <rule name="NAR104" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
           message="fully-qualified name in code. Import the type">
-        <description>P08: no fully-qualified name outside the imports.</description>
+        <description>P08: no fully-qualified name outside the imports. A qualified name that clashes with an import of
+            another type or with a type declared in the file is allowed.</description>
         <priority>3</priority>
         <properties>
             <property name="xpath">
-                <value><![CDATA[//ClassType[@FullyQualified = true()][not(ancestor::ImportDeclaration)]]]></value>
+                <value><![CDATA[
+//ClassType[@FullyQualified = true()][not(ancestor::ImportDeclaration)]
+  [not(
+    let $simple := @SimpleName, $full := concat(@PackageQualifier, '.', @SimpleName)
+    return //ImportDeclaration[@Static = false()][@ImportedSimpleName = $simple][@ImportedName != $full]
+      or //(ClassDeclaration | EnumDeclaration | RecordDeclaration | AnnotationTypeDeclaration)[@SimpleName = $simple]
+  )]
+]]></value>
             </property>
         </properties>
     </rule>
@@ -87,11 +95,14 @@
 
     <rule name="NAR106" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
           message="abstract class. Use an interface, or extend only a class the platform requires">
-        <description>P18: composition over inheritance. A sealed abstract class is allowed: its permitted subclasses share its fields.</description>
+        <description>P18: composition over inheritance. A sealed abstract class is allowed: its permitted subclasses share its fields. A Mixin class is allowed, because a Mixin class must be abstract to declare members of the target class.</description>
         <priority>3</priority>
         <properties>
             <property name="xpath">
-                <value><![CDATA[//ClassDeclaration[@Abstract = true()][@RegularClass = true()][not(pmd-java:modifiers() = 'sealed')]]]></value>
+                <value><![CDATA[
+//ClassDeclaration[@Abstract = true()][@RegularClass = true()][not(pmd-java:modifiers() = 'sealed')]
+  [not(ModifierList/Annotation[@SimpleName = 'Mixin'])]
+]]></value>
             </property>
         </properties>
     </rule>
@@ -340,9 +351,20 @@
 
     <!-- EnumMap(Map) and EnumSet.copyOf(Collection) throw on an empty argument of another type, so the
          enum types are part of the contract -->
+    <!-- in a @Shadow, @Accessor or @Invoker member and in an injector signature, each type must be the type in the
+         Mixin target class, so a concrete collection type is allowed -->
     <rule ref="category/java/bestpractices.xml/LooseCoupling">
         <properties>
             <property name="allowedTypes" value="java.util.Properties,java.util.EnumMap,java.util.EnumSet"/>
+            <property name="violationSuppressXPath">
+                <value><![CDATA[
+./self::*[not(ancestor::Block)]/ancestor::*[self::FieldDeclaration or self::MethodDeclaration]
+  [ModifierList/Annotation[@SimpleName = ('Shadow', 'Accessor', 'Invoker', 'Overwrite', 'Inject', 'Redirect',
+                                          'ModifyArg', 'ModifyArgs', 'ModifyVariable', 'ModifyConstant',
+                                          'WrapOperation', 'WrapWithCondition', 'ModifyExpressionValue',
+                                          'ModifyReturnValue', 'ModifyReceiver')]]
+]]></value>
+            </property>
         </properties>
     </rule>
     <rule ref="category/java/design.xml/ImmutableField"/>

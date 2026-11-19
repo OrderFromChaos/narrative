@@ -222,8 +222,9 @@ public final class PlanFiles {
 - **No fully-qualified name in code.** Import the type. Call a static method through its class
   where the call is unclear without the class name: `Math.max`, `Objects.requireNonNull`.
   Static-import test assertions, and members used on most lines of a file. `NAR104` flags a
-  qualified name outside the imports. Where two types of one simple name meet in a file, keep the
-  rarer one qualified and silence the line with `// noqa: NAR104`. (J1-P08, R3a-08)
+  qualified name outside the imports. Where two types with one simple name are used in one file,
+  import the more frequent type, and write the full name of the other type. A qualified name that clashes with an import or
+  with a type declared in the file is not a `NAR104` finding. (J1-P08, R3a-08, J1-no-noqa)
 
 ## Constants
 
@@ -384,20 +385,22 @@ in **Scope**. (J1-P19-java8)
   `catch (RuntimeException)`, `catch (NullPointerException)`, `catch (Throwable)` or `catch (Error)`.
   `NAR142` flags them. There are two exceptions. One is `catch (NoClassDefFoundError)` at the
   optional-mod boundary, described in `architecture.md`. The other is `catch (RuntimeException)` in
-  a degrade-and-report loop over code from another mod, whose exceptions you cannot list. Mark the
-  catch `// noqa: NAR142`, with the reason:
+  a degrade-and-report loop over code from another mod, whose exceptions you cannot list. Write the
+  reason in a comment in the catch block, and ask the user whether to keep the finding (see
+  **noqa**):
 
   ```java
   for (MTEMultiBlockBase machine : machines) {
       try {
           checkConformance(machine);
-      } catch (RuntimeException exception) { // noqa: NAR142, degrade and report over GT machine code
+      } catch (RuntimeException exception) {
+          // GT machines throw undeclared unchecked exceptions. Record the failure and check the next machine
           failures.add(machine.getLocalName() + ": " + exception);
       }
   }
   ```
 
-  (J1-P24, Q19, J1-F04)
+  (J1-P24, Q19, J1-F04, J1-no-noqa)
 
 - **Related means the handling is the same, not that the classes share a base.** Where two failures
   produce one outcome, one multi-catch `catch (A | B exception)` is correct. But check the premise
@@ -780,21 +783,33 @@ every method counts as reachable. (J1-F4)
 
 ### noqa
 
-The exceptions to **Never add a `noqa` yourself** are the `noqa` uses prescribed in this skill:
-- `NAR104` for two types of one name
-- `NAR142` in a degrade-and-report loop
-- `NAR130` once the user approves an upstream name
+Never write a `noqa` in Java code. This skill is not used upstream, so each `// noqa` in a PR is a
+comment that the upstream maintainer must delete.
+
+These cases are exempt from the checks:
+- `NAR104` on a qualified name that clashes with an import or with a type declared in the file
 - in a Mixin class:
-  - `NAR130` for a member with the mod's `modid$` prefix
-  - `NAR106` for the abstract Mixin class
-  - `NAR131` for an injector method whose parameters Mixin fixes
-  - `NAR140` for a `@Shadow` field, whose type must match the target class
+  - `NAR130` on a member with the prefix `modid$`
+  - `NAR106` on the abstract Mixin class
+  - `NAR131` on an injector method, because the parameter list must match the target method
+  - `NAR140` on a `@Shadow`, `@Accessor` or `@Invoker` member and on an injector signature, because
+    each type must be the type in the target class
 
-(R11-findings, J1-mixin-noqa)
+Keep these findings only when the user approves:
+- `NAR142` in a degrade-and-report loop
+- `NAR130` on a name in the style of upstream names, such as `TT_parallels`
+- `NAR112-gtnh` on a call to a method named `translate*`, `localize*`, `trans`, `tr` or `i18n` that
+  does not localize text
 
-A `// noqa: NARxxx` covers every line of the comment block, and the code line after a whole-line
-block, because spotless wraps a `//` comment over 120 columns and moves a trailing noqa to the next
-line. The same syntax silences a finding from any tool. (J1-P35)
+Ask the user about each finding. If the user approves, add the finding to the keep-list:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/verify.py" --keep src/main/java/com/example/Scan.java:57:NAR142 --reason 'GT machine code'
+```
+
+The keep-list is `.git/info/narrative-keep`. Files in `.git/info` are not part of any commit. A
+kept finding is not printed, and is counted as `kept` in the last line of the output. When the line
+of the finding changes, the finding is printed again. (R11-findings, J1-no-noqa)
 
 ### Pages
 
@@ -864,8 +879,8 @@ whether to fix those findings. (R11-upstream-ask)
 
 **Ask the user before you name something by an upstream convention that `NAR130` rejects.** For
 example, GT5's `MultiblockTooltipBuilder` has about 40 `TT_*` fields, such as `TT_machineType`. A new
-`TT_parallels` field beside those fields breaks the Java naming convention. With approval, mark the field
-`// noqa: NAR130`. (J1-F06)
+`TT_parallels` field beside those fields breaks the Java naming convention. If the user approves, add the finding
+to the keep-list (see **noqa**). (J1-F06, J1-no-noqa)
 
 `verify.py` runs one Gradle invocation with the init script `narrative.init.gradle`: `spotlessApply`
 (or `spotlessCheck` with `--no-fix`), `compileJava` with the raw-type and unchecked warnings of

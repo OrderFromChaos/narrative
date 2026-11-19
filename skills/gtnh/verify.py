@@ -33,6 +33,9 @@ each list are on the last line of the output, so `tail -1` shows them. verify.py
 Gradle failure. Without --since, each list stops after 1000 entries, with the command for the next 1000. Under --since,
 a passage of a source file or a page is checked and listed when a line of the passage changed.
 
+With --keep FILE:LINE:CODE, nothing is checked. The finding is added to the keep-list, and is not printed in later runs.
+The keep-list is described in the docstring of javachecks.py.
+
 Usage:
     $ python3 verify.py                          # every src/*/java of the mod in the current directory
     $ python3 verify.py --since origin/dev       # only lines changed since merge-base(HEAD, origin/dev)
@@ -42,6 +45,7 @@ Usage:
     $ python3 verify.py --prose-only --since origin/dev     # comments and pages only, with no Gradle run
     $ python3 verify.py --project ../MyMod --cache-dir /tmp/narrative     # a mod in another directory
     $ printf '%s\n' "$DRAFT" | python3 verify.py - --cache-dir /tmp/narrative      # a page from stdin
+    $ python3 verify.py --keep src/main/java/com/example/Scan.java:57:NAR142 --reason 'GT machine code'
 
 Exit codes:
     0  every check passed. Warnings may be printed
@@ -114,6 +118,13 @@ def main() -> int:
     parser.add_argument('--project', type=Path, help='the mod directory (default: the current directory)')
     parser.add_argument('--cache-dir', type=Path, default=CACHE_DIR, help=f'the cache directory (default: {CACHE_DIR})')
     parser.add_argument('--stdin-suffix', default='.md', help='the suffix of a page read from stdin (default: .md)')
+    parser.add_argument(
+        '--keep',
+        action='append',
+        metavar='FILE:LINE:CODE',
+        help='add a finding that the user chose to keep to the keep-list, check nothing, and exit',
+    )
+    parser.add_argument('--reason', help='with --keep, the reason, as a # line above the entry')
     args = parser.parse_args()
     print(f'narrative-gtnh skill: {readInstalledVersion()}', flush=True)
 
@@ -122,6 +133,12 @@ def main() -> int:
         print(f'verify.py: {", ".join(missing)} missing from {args.venv}. Set the venv up with:', file=sys.stderr)
         print(setupCommands(args.venv), file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
+
+    if args.keep:
+        keep_arguments = [f'--keep={keep}' for keep in args.keep]
+        reason = [f'--reason={args.reason}'] if args.reason else []
+        command = [str(venv_python), str(SKILL_DIR / 'javachecks.py'), *keep_arguments, *reason]
+        return subprocess.run(command, check=False).returncode
 
     cache_dir = prepareCache(args.cache_dir.absolute())
     paths = [readStdinPage(cache_dir, args.stdin_suffix) if path == STDIN_PATH else path for path in args.paths]
@@ -257,11 +274,11 @@ def reportFindings(
     if checked.returncode not in {EXIT_SUCCESS, EXIT_FINDINGS}:
         return checked.returncode
 
-    # javachecks.py prints the count line last in every run that checked. A Python exception is also exit 1, but
-    # with no count line
+    # javachecks.py prints the count line last in every run that checked. A Python exception is also exit 1, but with no
+    # count line
     # matches:
-    # `4 findings, 0 warnings over 226 files`
-    if not re.search(r'^\d+ findings, \d+ warnings over \d+ files$', checked.stdout, re.MULTILINE):
+    # `4 findings, 0 warnings, 1 kept over 226 files`
+    if not re.search(r'^\d+ findings, \d+ warnings, \d+ kept over \d+ files$', checked.stdout, re.MULTILINE):
         print('verify.py: javachecks.py stopped before the count line of its findings', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 

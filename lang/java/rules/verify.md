@@ -20,8 +20,8 @@ whether to fix those findings. (R11-upstream-ask)
 
 **Ask the user before you name something by an upstream convention that `NAR130` rejects.** For
 example, GT5's `MultiblockTooltipBuilder` has about 40 `TT_*` fields, such as `TT_machineType`. A new
-`TT_parallels` field beside those fields breaks the Java naming convention. With approval, mark the field
-`// noqa: NAR130`. (J1-F06)
+`TT_parallels` field beside those fields breaks the Java naming convention. If the user approves, add the finding
+to the keep-list (see **noqa**). (J1-F06, J1-no-noqa)
 
 `verify.py` runs one Gradle invocation with the init script `narrative.init.gradle`: `spotlessApply`
 (or `spotlessCheck` with `--no-fix`), `compileJava` with the raw-type and unchecked warnings of

@@ -81,21 +81,33 @@ every method counts as reachable. (J1-F4)
 
 ### noqa
 
-The exceptions to **Never add a `noqa` yourself** are the `noqa` uses prescribed in this skill:
-- `NAR104` for two types of one name
-- `NAR142` in a degrade-and-report loop
-- `NAR130` once the user approves an upstream name
+Never write a `noqa` in Java code. This skill is not used upstream, so each `// noqa` in a PR is a
+comment that the upstream maintainer must delete.
+
+These cases are exempt from the checks:
+- `NAR104` on a qualified name that clashes with an import or with a type declared in the file
 - in a Mixin class:
-  - `NAR130` for a member with the mod's `modid$` prefix
-  - `NAR106` for the abstract Mixin class
-  - `NAR131` for an injector method whose parameters Mixin fixes
-  - `NAR140` for a `@Shadow` field, whose type must match the target class
+  - `NAR130` on a member with the prefix `modid$`
+  - `NAR106` on the abstract Mixin class
+  - `NAR131` on an injector method, because the parameter list must match the target method
+  - `NAR140` on a `@Shadow`, `@Accessor` or `@Invoker` member and on an injector signature, because
+    each type must be the type in the target class
 
-(R11-findings, J1-mixin-noqa)
+Keep these findings only when the user approves:
+- `NAR142` in a degrade-and-report loop
+- `NAR130` on a name in the style of upstream names, such as `TT_parallels`
+- `NAR112-gtnh` on a call to a method named `translate*`, `localize*`, `trans`, `tr` or `i18n` that
+  does not localize text
 
-A `// noqa: NARxxx` covers every line of the comment block, and the code line after a whole-line
-block, because spotless wraps a `//` comment over 120 columns and moves a trailing noqa to the next
-line. The same syntax silences a finding from any tool. (J1-P35)
+Ask the user about each finding. If the user approves, add the finding to the keep-list:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/verify.py" --keep src/main/java/com/example/Scan.java:57:NAR142 --reason 'GT machine code'
+```
+
+The keep-list is `.git/info/narrative-keep`. Files in `.git/info` are not part of any commit. A
+kept finding is not printed, and is counted as `kept` in the last line of the output. When the line
+of the finding changes, the finding is printed again. (R11-findings, J1-no-noqa)
 
 ### Pages
 

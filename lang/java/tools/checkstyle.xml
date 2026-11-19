@@ -44,5 +44,16 @@
             <property name="max" value="3"/>
             <property name="ignoreOverriddenMethods" value="true"/>
         </module>
+        <!-- the parameters of an injector are the parameters of the target method, then CallbackInfo -->
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="ParameterNumber"/>
+            <property name="query" value="//METHOD_DEF[./MODIFIERS/ANNOTATION/IDENT[@text = ('Overwrite', 'Inject', 'Redirect', 'ModifyArg', 'ModifyArgs', 'ModifyVariable', 'ModifyConstant', 'WrapOperation', 'WrapWithCondition', 'ModifyExpressionValue', 'ModifyReturnValue', 'ModifyReceiver')]]/(self::METHOD_DEF | IDENT)"/>
+        </module>
+        <!-- a member added to the target class by a Mixin has the prefix modid$, so that the name is unique in the
+             target class -->
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="MethodName|MemberName|StaticVariableName"/>
+            <property name="query" value="//*[self::CLASS_DEF or self::INTERFACE_DEF][./MODIFIERS/ANNOTATION/IDENT[@text = 'Mixin']]//IDENT[matches(@text, '^[a-z][a-zA-Z0-9]*\$[a-z][a-zA-Z0-9]*$')]"/>
+        </module>
     </module>
 </module>

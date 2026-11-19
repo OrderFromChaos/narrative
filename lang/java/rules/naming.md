@@ -34,6 +34,7 @@
 - **No fully-qualified name in code.** Import the type. Call a static method through its class
   where the call is unclear without the class name: `Math.max`, `Objects.requireNonNull`.
   Static-import test assertions, and members used on most lines of a file. `NAR104` flags a
-  qualified name outside the imports. Where two types of one simple name meet in a file, keep the
-  rarer one qualified and silence the line with `// noqa: NAR104`. (J1-P08, R3a-08)
+  qualified name outside the imports. Where two types with one simple name are used in one file,
+  import the more frequent type, and write the full name of the other type. A qualified name that clashes with an import or
+  with a type declared in the file is not a `NAR104` finding. (J1-P08, R3a-08, J1-no-noqa)
 

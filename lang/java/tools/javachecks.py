@@ -20,6 +20,7 @@ Usage:
     $ python3 javachecks.py src/main/java README.md docs/page.html --prose
     $ python3 javachecks.py src/main/java --cache build/narrative/prose-cache.json
     $ python3 javachecks.py src/main/java --rewrap --since origin/dev
+    $ python3 javachecks.py --keep src/main/java/com/example/Scan.java:57:NAR142 --reason 'GT machine code'
 
 One line per finding, and a warning has the word `warning` before the warning's code:
 
@@ -41,10 +42,19 @@ With --prose and without --since, each of the three lists stops after 1000 entri
 entries of that list. --from-sentence, --from-pair and --from-pronoun print only the list they name, from the given
 entry. With --all-sentences, every entry is listed.
 
+With --keep FILE:LINE:CODE, a finding that the user approved is added to the keep-list. A Java source gets no `// noqa`,
+because the maintainer of an upstream project must delete each `// noqa` from a PR. The keep-list is
+.git/info/narrative-keep, or the file given with --keep-list. The file is the same in every worktree of the repository,
+and is not part of any commit. Each line has three tab-separated fields, the path from the top of the working tree, the
+code and the text of the line. The reason is on a `#` line above the entry. An entry is matched by the text of the line,
+not by the line number. A kept finding is not printed, and is counted as kept in the count line. A finding on a line
+under a `// noqa` comment is not printed either.
+
 Exit codes:
     0  no finding. Warnings may be printed
     1  at least one finding
-    2  a file or a report could not be read, --since names no commit, or the diff changes no line
+    2  a file, a report or the keep-list could not be read, --since names no commit, the diff changes no line, or a
+       --keep names no line of a file
 """
 
 from __future__ import annotations
@@ -52,6 +62,7 @@ from __future__ import annotations
 import argparse
 import bisect
 import itertools
+import os
 import re
 import sys
 import xml.etree.ElementTree as ElementTree
@@ -72,6 +83,8 @@ SKIPPED_DIRS = frozenset({'.git', '.gradle', 'build', 'run', 'out', 'bin'})
 # `NAR017`
 # `NAR113-gtnh`
 CODE = r'NAR\d{3}(?:-[a-z]+)?'
+# the file name of the keep-list, in the info directory of the common git directory
+KEEP_LIST_NAME = 'narrative-keep'
 # Checkstyle check name, without the Check suffix: the NAR code
 CHECKSTYLE_CODES = {
     'MethodName': 'NAR130',
@@ -96,7 +109,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description='Check Java sources for the narrative-gtnh rules.')
     parser.add_argument(
         'paths',
-        nargs='+',
+        nargs='*',
         type=Path,
         help='Java files, directories to search for them, and pages',
     )
@@ -116,7 +129,20 @@ def main() -> int:
     parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every entry of every list')
     parser.add_argument('--cache', type=Path, help='a file that keeps the spaCy results between runs')
     parser.add_argument('--rewrap', action='store_true', help='fill the javadoc and // comments again, in place')
+    parser.add_argument(
+        '--keep',
+        action='append',
+        metavar='FILE:LINE:CODE',
+        help='add the finding to the keep-list, check nothing, and exit',
+    )
+    parser.add_argument('--reason', help='with --keep, the reason, as a # line above the entry')
+    parser.add_argument('--keep-list', type=Path, help=f'the keep-list (default: .git/info/{KEEP_LIST_NAME})')
     args = parser.parse_args()
+
+    if args.keep:
+        return addKeptFindings(args.keep, args.reason, args.keep_list)
+    if not args.paths:
+        parser.error('name a Java file, a directory of Java files or a page')
 
     java_paths = discoverJava(args.paths)
     page_paths = [path for path in args.paths if path.suffix.lower() in PROSE_SUFFIXES]
@@ -169,18 +195,74 @@ def main() -> int:
         reader.save()
         return EXIT_SUCCESS
 
-    findings: list[JavaFinding] = []
+    try:
+        keep_list = readKeepList((java_paths or page_paths)[0], args.keep_list)
+    except ReportError as exc:
+        print(f'javachecks.py: {exc}', file=sys.stderr)
+        return EXIT_UNREADABLE
+
+    checked: list[JavaFinding] = []
     for java_path in java_paths:
-        findings.extend(checkFile(reader, java_path, tool_findings.get(java_path.resolve(), []), changed))
+        checked.extend(checkFile(reader, java_path, tool_findings.get(java_path.resolve(), []), changed))
     for page_path in page_paths:
-        findings.extend(checkPage(reader, page_path, changed))
+        checked.extend(checkPage(reader, page_path, changed))
     reader.save()
+    findings = [finding for finding in checked if not keep_list.keeps(finding)]
     for finding in findings:
         print(finding)
     failing = [finding for finding in findings if not finding.warning]
     file_count = len(java_paths) + len(page_paths)
-    print(f'{len(failing)} findings, {len(findings) - len(failing)} warnings over {file_count} files')
+    warning_count = len(findings) - len(failing)
+    kept_count = len(checked) - len(findings)
+    print(f'{len(failing)} findings, {warning_count} warnings, {kept_count} kept over {file_count} files')
     return EXIT_FINDINGS if failing else EXIT_SUCCESS
+
+
+def addKeptFindings(keeps: list[str], reason: str | None, keep_list_path: Path | None) -> int:
+    """Append one keep-list entry for each FILE:LINE:CODE, with the reason as a # line above the entry.
+
+    Returns:
+        0 when every entry was added or was in the keep-list already. 2 when a --keep names no line of a file or no
+        code, or when the file is in no git repository and no --keep-list is given.
+    """
+    # matches:
+    # `src/main/java/com/example/Scan.java:57:NAR142`
+    # `Scan.java:7:NAR112-gtnh`
+    KEEP = re.compile(rf'^(?P<file>.+):(?P<line>\d+):(?P<code>{CODE})$')
+    for keep in keeps:
+        parts = KEEP.match(keep)
+        if parts is None or not Path(parts['file']).is_file():
+            print(f'javachecks.py: --keep {keep} is not FILE:LINE:CODE with an existing file', file=sys.stderr)
+            return EXIT_UNREADABLE
+
+        java_path = Path(parts['file'])
+        lines = java_path.read_text(encoding='utf-8', errors='replace').splitlines()
+        line = int(parts['line'])
+        if not 0 < line <= len(lines):
+            print(f'javachecks.py: --keep {keep}: {java_path} has {len(lines)} lines', file=sys.stderr)
+            return EXIT_UNREADABLE
+
+        located = locateKeepList(java_path, keep_list_path)
+        if located is None:
+            print(f'javachecks.py: {java_path} is in no git repository. Pass --keep-list', file=sys.stderr)
+            return EXIT_UNREADABLE
+
+        path, root = located
+        entry = KeepEntry(relativePath(java_path, root), parts['code'], lines[line - 1].strip())
+        try:
+            present = entry in readKeepList(java_path, keep_list_path).entries
+        except ReportError as exc:
+            print(f'javachecks.py: {exc}', file=sys.stderr)
+            return EXIT_UNREADABLE
+
+        if not present:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open('a', encoding='utf-8') as keep_file:
+                if reason:
+                    keep_file.write(f'# {reason}\n')
+                keep_file.write(f'{entry.path}\t{entry.code}\t{entry.text}\n')
+        print(f'kept {java_path}:{line} {entry.code} in {path}')
+    return EXIT_SUCCESS
 
 
 def discoverJava(paths: list[Path]) -> list[Path]:
@@ -679,6 +761,58 @@ def inChange(changed: ChangedLines | None, java_path: Path, span: set[int]) -> b
     return changed is None or bool(changed.get(java_path.resolve(), set()) & span)
 
 
+def readKeepList(any_path: Path, keep_list_path: Path | None) -> KeepList:
+    """Read the keep-list of the repository of `any_path`, or the keep-list at `keep_list_path`.
+
+    Returns:
+        The entries and the root directory of the entry paths. No entry when there is no keep-list.
+
+    Raises:
+        ReportError: a line of the keep-list is not FILE, CODE and LINE TEXT with a tab between them.
+    """
+    located = locateKeepList(any_path, keep_list_path)
+    if located is None or not located[0].is_file():
+        return KeepList(Path.cwd(), frozenset())
+
+    path, root = located
+    entries: set[KeepEntry] = set()
+    for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), start=1):
+        if not line.strip() or line.startswith('#'):
+            continue
+        fields = line.split('\t', 2)
+        if len(fields) != 3:
+            raise ReportError(f'{path}:{number}: a keep-list entry is FILE, CODE and LINE TEXT with a tab between them')
+        entries.add(KeepEntry(fields[0], fields[1], fields[2].strip()))
+    return KeepList(root, frozenset(entries))
+
+
+def locateKeepList(any_path: Path, keep_list_path: Path | None) -> tuple[Path, Path] | None:
+    """Return the path of the keep-list and the root directory of the entry paths.
+
+    The default keep-list is KEEP_LIST_NAME in the info directory of the common git directory, so the keep-list is the
+    same file in every worktree of the repository. The root is the top of the working tree, or the current directory
+    outside a repository.
+
+    Returns:
+        The path of the keep-list and the root. None outside a git repository with no `keep_list_path`.
+    """
+    directory = any_path if any_path.is_dir() else any_path.parent
+    try:
+        output = wording.runGit(
+            ['rev-parse', '--path-format=absolute', '--show-toplevel', '--git-common-dir'],
+            directory.absolute(),
+        )
+    except wording.GitError:
+        return None if keep_list_path is None else (keep_list_path, Path.cwd())
+
+    root, common_dir = output.splitlines()[:2]
+    return keep_list_path or Path(common_dir) / 'info' / KEEP_LIST_NAME, Path(root)
+
+
+def relativePath(any_path: Path, root: Path) -> str:
+    return Path(os.path.relpath(any_path.resolve(), root.resolve())).as_posix()
+
+
 ### vocabulary #########################################################################################
 
 
@@ -727,6 +861,31 @@ BARE_CODES = {
 
 class ReportError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True)
+class KeepEntry:
+    """One finding that the user chose to keep: the file relative to the root, the code, and the stripped line."""
+
+    path: str
+    code: str
+    text: str
+
+
+@dataclass(frozen=True)
+class KeepList:
+    root: Path
+    entries: frozenset[KeepEntry]
+
+    def keeps(self, finding: JavaFinding) -> bool:
+        """Return True when an entry matches the file, the code or bare code, and the line text of the finding."""
+        if not self.entries:
+            return False
+        lines = finding.java_path.read_text(encoding='utf-8', errors='replace').splitlines()
+        text = lines[finding.line - 1].strip() if 0 < finding.line <= len(lines) else ''
+        path = relativePath(finding.java_path, self.root)
+        codes = {finding.code, BARE_CODES.get(finding.code, finding.code)}
+        return any(KeepEntry(path, code, text) in self.entries for code in codes)
 
 
 @dataclass(frozen=True)

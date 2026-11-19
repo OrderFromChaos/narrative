@@ -30,7 +30,7 @@ of the narrative repository, and `build_skills.py` copies them into `skills/gtnh
 | javac `-Xlint:rawtypes,unchecked` | raw types and unchecked operations (`NAR121`) |
 | Checkstyle | naming (`NAR130`) and the parameter limit (`NAR131`), with `checkstyle.xml` |
 | PMD | the structural checks, as XPath rules in `pmd-ruleset.xml`, plus four built-in rules |
-| `javachecks.py` | comments and javadoc with a lexer, the prose checks, the checks on comments (`NAR118` to `NAR120`, `NAR125`), the comment and javadoc lookups of `NAR110`, `NAR116` and `NAR117`, then noqa and `--since` over every finding. With `--rewrap`, `javachecks.py` re-wraps comments in place instead. `verify.py` runs the re-wrap before Gradle unless `--no-fix` is given |
+| `javachecks.py` | comments and javadoc with a lexer, the prose checks, the checks on comments (`NAR118` to `NAR120`, `NAR125`), the comment and javadoc lookups of `NAR110`, `NAR116` and `NAR117`, then noqa, the keep-list and `--since` over every finding. With `--rewrap`, `javachecks.py` re-wraps comments in place instead. `verify.py` runs the re-wrap before Gradle unless `--no-fix` is given |
 | `codeprose.py` | the lexer that reads Java comments and javadoc into passages for the prose checks, and into blocks of lines for the re-wrap |
 | `rewrap.py` | the re-wrap of every language: the paragraphs of a block of comment lines, filled up to column 120 |
 | `wording.py`, `agentverbs.py`, `prose.py` | the prose checks of every language: `NAR012` to `NAR018`, and `NAR020` to `NAR022` |
@@ -84,7 +84,8 @@ silences a code on the same line.
 
 A code with `-gtnh` is a rule of the GTNH environment, such as the lang file or the draw loop. A new
 rule of Java itself, with no Python form, gets `-java`. Each `-gtnh` code had a bare code before the
-suffix, and a `noqa` with the bare code, such as `// noqa: NAR113`, still silences the finding.
+suffix. A keep-list entry or a `noqa` comment with the bare code, such as `// noqa: NAR113`, also
+matches the finding.
 
 A PMD rule or a Checkstyle check with no entry in `PMD_CODES` or `CHECKSTYLE_CODES` of
 `javachecks.py` is exit 2, so no finding of a new rule is printed without a code.
@@ -107,8 +108,9 @@ Below is *why* each non-obvious setting is there.
   sealed type nested two levels deep is not tested.
 - **NAR112** has no type test for a wrapper, only the method names `translate*`, `localize*`,
   `trans`, `tr` and `i18n`. A method of another kind with one of those names and a `+` in a `String`
-  argument is a finding too. Mark that call `// noqa: NAR112-gtnh`. The key-prefix exception is for
-  the first argument of a localization call only, and not for a text call such as `drawString`.
+  argument is a finding too. Ask the user whether to keep that finding (see **noqa** in
+  `SKILL.md`). The key-prefix exception is for the first argument of a localization call only, and
+  not for a text call such as `drawString`.
 - **NAR110** has exemptions for `@Mod.Instance`, `@SidedProxy`, loggers, and the fields of a class that is
   annotated `@Config` or whose name ends in `Config` or `Configuration`.
 - A type-pattern switch over a type that is not sealed, such as an NEI handler object, needs a
@@ -179,8 +181,16 @@ set.
 **The configuration cache is on in GTNH projects.** `verify.py` passes `--no-configuration-cache`.
 
 **spotless wraps a `//` comment over 120 columns**, and a trailing `// noqa: NARxxx` moves to the next
-line as `// // noqa: NARxxx`. So a noqa covers every line of the comment block, and the code line
-after a whole-line block.
+line as `// // noqa: NARxxx`. So the scope of a `noqa` comment is every line of the comment block,
+and the code line after a whole-line block. The same syntax applies to a finding from any tool. (J1-P35)
+
+**The keep-list is `.git/info/narrative-keep`.** The file is the same in every worktree of the
+repository, and is not part of any commit. Each line has three tab-separated fields, the path from
+the top of the working tree, the code and the text of the line. The reason is on a `#` line above
+the entry. To add an entry, run `verify.py --keep FILE:LINE:CODE --reason TEXT`. An entry is matched
+by the text of the line, not by the line number, so an entry matches the finding at any line
+number. Kept findings are counted in the last line of the output, for example
+`4 findings, 0 warnings, 1 kept over 226 files`.
 
 **In `<pre>{@code …}</pre>`, spotless moves each tag to a separate line.** A plain `<pre>` block and
 consecutive `//` lines keep their alignment.

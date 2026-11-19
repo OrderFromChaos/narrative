@@ -31,20 +31,22 @@
   `catch (RuntimeException)`, `catch (NullPointerException)`, `catch (Throwable)` or `catch (Error)`.
   `NAR142` flags them. There are two exceptions. One is `catch (NoClassDefFoundError)` at the
   optional-mod boundary, described in `architecture.md`. The other is `catch (RuntimeException)` in
-  a degrade-and-report loop over code from another mod, whose exceptions you cannot list. Mark the
-  catch `// noqa: NAR142`, with the reason:
+  a degrade-and-report loop over code from another mod, whose exceptions you cannot list. Write the
+  reason in a comment in the catch block, and ask the user whether to keep the finding (see
+  **noqa**):
 
   ```java
   for (MTEMultiBlockBase machine : machines) {
       try {
           checkConformance(machine);
-      } catch (RuntimeException exception) { // noqa: NAR142, degrade and report over GT machine code
+      } catch (RuntimeException exception) {
+          // GT machines throw undeclared unchecked exceptions. Record the failure and check the next machine
           failures.add(machine.getLocalName() + ": " + exception);
       }
   }
   ```
 
-  (J1-P24, Q19, J1-F04)
+  (J1-P24, Q19, J1-F04, J1-no-noqa)
 
 - **Related means the handling is the same, not that the classes share a base.** Where two failures
   produce one outcome, one multi-catch `catch (A | B exception)` is correct. But check the premise
