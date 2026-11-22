@@ -1,8 +1,8 @@
 """The wording checks and the --since helpers, shared by the checkers of every language of Narrative.
 
-NAR012 to NAR016 and NAR018 flag wording that no comment, docstring or published page needs. The checks read lines of
-prose. A language's checker passes in the lines of the language's comments and doc comments, and checkPage() reads a
-Markdown, HTML or plain text page through prose.py.
+NAR012 to NAR016, NAR018 and NAR024 flag wording that no comment, docstring or published page needs. The checks read
+lines of prose. A language's checker passes in the lines of the language's comments and doc comments, and checkPage()
+reads a Markdown, HTML or plain text page through prose.py.
 
 readChangedLines() lists the lines that the diff against a base branch adds or changes, for --since. pageSpans() maps
 each line of a page to the lines of the line's passage, for --since. countEntries() counts the entries of a review list,
@@ -37,6 +37,7 @@ RULES = {
     'NAR015': 'changelog wording in a comment or docstring. State the current code or data plainly',
     'NAR016': 'container verb in a comment or docstring. State the fact without making the subject hold or carry it',
     'NAR018': 'possessive "own" in a comment or docstring. Drop "own", or name the owner',
+    'NAR024': 'contrast with ", not" or "not merely". State the fact, and a fact about the other thing separately',
     'NAR000': 'file could not be read or parsed',
 }
 
@@ -72,7 +73,7 @@ def checkPage(checked_file: Path) -> list[Finding]:
 
 
 def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], checked_file: Path) -> list[Finding]:
-    """Flag six kinds of wording that no comment, docstring or published page needs.
+    """Flag seven kinds of wording that no comment, docstring or published page needs.
 
     - NAR012: a decision id, unresolvable outside the repository where the id was recorded
     - NAR013: a dash or a semicolon joining clauses, outside backticked code
@@ -80,6 +81,8 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
     - NAR015: changelog wording about code that is gone
     - NAR016: a container verb on a subject that is not a container, listed in WORDING
     - NAR018: a possessive followed by `own`, listed in WORDING
+    - NAR024: a contrast with `, not` or `not merely`, outside backticked code: `amounts are in cents, not dollars`.
+      `, not only`, `, not yet`, `, not even`, `, not necessarily` and `, not always` are left out
 
     `used to` counts as changelog only after a pronoun subject. In `the key used to sort`, it means employed for. A bare
     `now` is not flagged. `now that X` and `until now` are common in correct prose. A dash after a list-item term is a
@@ -124,6 +127,12 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
     # rejects:
     # `a;b`
     SEMICOLON = re.compile(r';(?:\s|$)')
+    # matches:
+    # `amounts are in cents, not dollars`
+    # `where the contract is complex, not merely where the body is long`
+    # rejects:
+    # `not only the first file, not yet the second`
+    CONTRAST = re.compile(r',\s+not\s+(?!only\b|yet\b|even\b|necessarily\b|always\b)|\bnot merely\b', re.IGNORECASE)
     findings: list[Finding] = []
     for number, text in prose_lines:
         for code, pattern in WORDING.items():
@@ -132,8 +141,11 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
             if found := pattern.search(text):
                 findings.append(Finding(checked_file, number, code, repr(found.group(0).strip())))
         # a semicolon in backticked code is code. A list item gets no semicolon exemption
-        if SEMICOLON.search(re.sub(r'`[^`]*`', '', text)):
+        prose_text = re.sub(r'`[^`]*`', '', text)
+        if SEMICOLON.search(prose_text):
             findings.append(Finding(checked_file, number, 'NAR013', repr(';')))
+        if found := CONTRAST.search(prose_text):
+            findings.append(Finding(checked_file, number, 'NAR024', repr(found.group(0).strip())))
 
     return findings
 

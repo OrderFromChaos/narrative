@@ -8,7 +8,7 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   A reader who has the file open does not need either restated.
 - **Its negation would be a bug, an absurdity, or an implementation nobody would ship.** Negate the
   sentence and read it back. `it never holds a value that the file did not state` negates to a bug.
-  `An empty line holds nothing` negates to an absurdity. `Other files are skipped, so the quota file
+  `An empty line doesn't have a value` negates to an absurdity. `Other files are skipped, so the quota file
   can share the directory` negates to a scanner that dies on a stray file. Nobody would ship that scanner.
   All three are free sentences and all three go. **Assume the reader expects competent code, and
   document only the departures.**
@@ -35,12 +35,12 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 
 - an **ordering or tie-break**, invisible without reading a sort key
 - a **unit, a nullability or a provenance** absent from the annotation — `Sizes are plain byte
-  counts`, `host is null when the entry's report has no host`
+  counts`, `host is null when the entry's report doesn't have a host`
 - **where the leftover, default and failure cases go**. Most awkward docstrings are awkward because
   they circle an unstated default.
 - a **sample** of concrete text the module reads or writes
 - a **constraint from outside the program** — `the standard formatter of logging discards extra`
-- a **guarantee a caller needs** — `The call writes no file, prints nothing, and records nothing`
+- a **guarantee a caller needs** — `The call doesn't write a file, print output or log an event`
 
 - **A function gets a docstring when the function's contract is complex**, meaning the function
   takes more than three parameters, or exceeds 20 lines. Below both, the contract goes in `#`
@@ -69,8 +69,8 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   sentence already implies. (Q05)
 
 - **A docstring is about its file alone.** Do not assert what another module does, do not claim to
-  be the only place something happens, and do not count callers. `nothing outside this module
-  imports sqlite3` and `this is the one place that builds it` are claims that no tool checks and
+  be the only place something happens, and do not count callers. `only this module imports
+  sqlite3` and `this is the one place that builds it` are claims that no tool checks and
   that the next commit can make false. Name another module only where a reader of *this* file needs
   the name in order to use this file. (R9-02)
 

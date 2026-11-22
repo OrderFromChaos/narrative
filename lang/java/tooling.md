@@ -65,8 +65,8 @@ silences a code on the same line.
 | `NAR113-gtnh` | literal user-facing text in a text call (J1-S15) | PMD |
 | `NAR114-gtnh` | `new` or `.stream()` in a `draw*` or `render*` method (J1-S03) | PMD |
 | `NAR115` | a `java.io.File` operation (J1-P14) | PMD |
-| `NAR116` | a method with more than 3 parameters or more than 20 body lines and no javadoc (J1-P34) | PMD, then `javachecks.py` |
-| `NAR117` | a `throw new X` with no `@throws X` line in the javadoc of such a method (J1-P34) | `javachecks.py` |
+| `NAR116` | a review list of each method over 20 body lines. The list has methods with a javadoc too (J1-P34, R12-nar116-review) | PMD, then `javachecks.py` |
+| `NAR117` | a `throw new X` with no `@throws X` line in the javadoc of a method over 20 body lines (J1-P34) | `javachecks.py` |
 | `NAR118` | a top-level type with no javadoc (J1-F3) | `javachecks.py` |
 | `NAR119` | a FIXME, as a warning (J1-F4) | `javachecks.py` |
 | `NAR120` | a return contract in a `//` comment at the top of a method | `javachecks.py` |

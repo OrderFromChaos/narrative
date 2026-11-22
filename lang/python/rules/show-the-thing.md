@@ -44,7 +44,7 @@ Avoid the same table as prose:
 """Format the result of a reconciliation as a table for a terminal.
 
 The table has one row for each team, then the largest paths of each team above its quota, then
-the bytes that no team owns, then the outcome of every file. Every size carries a unit suffix.
+the unassigned bytes, then the outcome of every file. Every size carries a unit suffix.
 """
 ```
 

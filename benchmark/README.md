@@ -21,6 +21,7 @@ round7/key.md            what each probes; do not read before answering
 round8/                  red team: 35 defects from four fresh-context agents, plus the NAR008 measurement
 round9/                  the skill read as a text: four defects in it, and V4 as the held-out test
 round10/                 comments: the corpus, the profile against human code, 13 cycles of agent runs and ratings
+round12/                 rules from the Claudish inbox: the drafts, the user's labels, the measurements of sentence shape
 validation/              held-out tasks for the blind skill-vs-doc comparison
 java/                    narrative-java round j1: the Java mapping, the toolchain spikes, the GT5 run feedback
 java-merge/              the merge of narrative-java: the drift between the two copies of the shared rules, the rulings, the example rewrites
@@ -86,6 +87,10 @@ directory when the round produces material a later reader must see to judge the 
     nouns in one sentence, and `agentverbs.py --pronouns` lists each sentence with a pronoun for the
     review.
 
+12. **Round 12**: rules from the Claudish inbox, `eval/units/claudish_inbox.jsonl`, the sentences that the
+    user flagged as Claude-style prose. Each rule is tested on fresh agents with a full copy of the skill
+    before the rule reaches `core/` or `lang/`. The decisions are `R12-*`. Directory: `round12/`.
+
 ## decisions.jsonl schema
 
 One object per line. Every rule in the skill's rule modules (`core/rules/`, `lang/*/rules/`) must
@@ -95,7 +100,7 @@ cite an `id` from this file. A rule with no `id` and no linter behind the rule d
 |---|---|---|
 | `id` | str | `Q07`, `R2-03`, `R3-P1-rank`, `R5-06`, `V-03` |
 | `dimension` | str | dotted, e.g. `errors.chaining` |
-| `round` | str | `1`, `2`, `2b`, `3`, `3a`, `4`, `5`, `6`, `7`, `8`, `9`, `10`, `11`, `validation`, and `j1` for the first round of narrative-java |
+| `round` | str | `1`, `2`, `2b`, `3`, `3a`, `4`, `5`, `6`, `7`, `8`, `9`, `10`, `11`, `12`, `validation`, and `j1` for the first round of narrative-java |
 | `kind` | str | `control` \| `gap` \| `provocation` \| `derived` |
 | `options` | list[str] | short labels in the order presented |
 | `choice` | str | chosen label, or `depends` |

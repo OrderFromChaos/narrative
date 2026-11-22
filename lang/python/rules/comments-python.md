@@ -49,7 +49,7 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 ### Depth
 
 ```python
-# The vendor API returns at most 100 rows per page and no total count.
+# The vendor API returns at most 100 rows per page, and doesn't return a total count.
 # Keep requesting until a page comes back short.
 while len(page := fetchPage(cursor)) == PAGE_SIZE:
 ```

@@ -1,7 +1,6 @@
 ### Javadoc rules
 
-**Most members get no javadoc.** A top-level type (`NAR118`) and a method over the contract
-threshold (`NAR116`) need one. Any other field, constant or method gets a javadoc only for a fact
+**Most members get no javadoc.** Write one for a top-level type (`NAR118`), and for a method by the `NAR116` review list. Any other field, constant or method gets a javadoc only for a fact
 that the name, type, value and signature do not show. A javadoc whose facts are already in the
 declaration only costs the reader time. Cut such a javadoc whole, not sentence by sentence. The Java
 habit of a javadoc on every public member does not apply here. (J1-F07)
@@ -55,14 +54,18 @@ not earn its place.** (R9-09)
 - **where the leftover, default and failure cases go**
 - a **sample** of concrete text the class reads or writes
 - a **constraint from outside the program**: `Forge drops a tile entity whose readFromNBT() throws`
-- a **guarantee a caller needs**: `The call writes no file, sends no packet, and changes no world`
+- a **guarantee a caller needs**: `The call doesn't write a file, send a packet or change a world`
 
-- **A method gets a javadoc when its contract is complex**, meaning the method takes more than three
-  parameters, or the method's body exceeds 20 lines. Below both, the contract goes in `//` comments.
-  `NAR116` flags a method over that threshold with no javadoc. (J1-P34, Q05, R8-D18-resolved)
+- **A method gets a javadoc when a reader can't learn from the name of the method and the comments
+  of the body what the method does.** Answer one question for each method in the `NAR116` review
+  list of `verify.py`:
+  - without a javadoc: can a reader learn from the name of the method and the comments of the body
+    what the method does? If not, write a javadoc.
+  - with a javadoc: what does a reader learn from the javadoc, and not from the name of the method
+    or the comments of the body? If nothing, cut the javadoc.
+  (J1-P34, Q05, R8-D18-resolved, R12-nar116-review)
 
-- **`@throws` for every exception absent from the `throws` clause**, for a method over that
-  threshold. A checked exception is in the signature already. `NAR117` flags a `throw new X` with no
+- **`@throws` for every exception absent from the `throws` clause**, in the javadoc of a method. A checked exception is in the signature already. `NAR117` flags a `throw new X` with no
   `@throws X` line. `@param` and `@return` only for a fact absent from the signature: an ordering, a
   nullability, a unit, or a count whose meaning is not obvious. (J1-P34, R8-D28-resolved)
 

@@ -9,6 +9,14 @@ NAR021 is a clause that `as` or `, where` joins to a sentence: `a float, as in t
 `as the recipe works it out`, and in a comment `the values it takes, where the spec has no range`. To fix a NAR021
 finding, cut the clause, or make the clause's fact a new sentence.
 
+NAR025 is `no`, `nothing`, `none` or `nobody` on a subject or an object, or after `is`: `writes nothing`, `is no proof`,
+`no invoice is sent twice`. To fix a NAR025 finding, put the negation on the verb: `doesn't write a file`. A negation in
+a phrase after a preposition, such as `a time with no offset`, is left out, and so is the Python value `None`.
+
+NAR026 is a condition as a phrase after `at`, `with`, `without`, `beside`, `against`, `on`, `under` or `over` and a
+comma, at the start of a sentence: `With a full disk, export() deletes the partial file`. To fix a NAR026 finding, write
+the condition as a clause after `when` or `if`. An opener with a platform, such as `On Windows,`, is left out.
+
 NAR022 is `it` or `its` after two or more singular nouns in one sentence:
 `PumpController extends MachineBase, and it ticks every second`. A reader can take the pronoun for either noun, even
 when only one of the nouns makes sense. A noun for a person, such as `reader`, is not counted, because `it` never stands
@@ -50,17 +58,21 @@ Usage, with the shared lint venv of SKILL.md (Scripts\python.exe in place of bin
     src/store.py:12: NAR020 'Named': clause with no subject before ", so"
     src/tiers.py:30: NAR021 'as in': clause joined by "as" or ", where". Cut the clause, or make its fact a new sentence
     src/pump.py:8: NAR022 'it runs': pronoun after two or more singular nouns. Repeat the noun, or split the sentence
+    src/export.py:14: NAR025 'writes nothing': no, nothing or none on a subject or an object. Put the negation on...
+    src/export.py:20: NAR026 'With a full disk': a condition as a phrase before a comma. Write a clause after when or if
     README.md:40: NAR017 'table shows': agent verb on a subject that cannot act
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --review src/ README.md
     src/join.py:40: 'path breaks'
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --pronouns src/
+    $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --free-modifiers src/
+    src/queue.py:7: ', in one list for each tenant': 'The retry jobs, in one list for each tenant.'
     src/join.py:52: it: 'Its newest snapshot wins.' after 'A period has several snapshots.'
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --lines sample.txt
     $ ~/.local/share/narrative/lintenv/bin/python agentverbs.py --score gold.tsv
     precision 1.00, recall 0.91 (29 of 32 found, 0 false)
 
-A line with `# noqa: NAR017`, `# noqa: NAR020`, `# noqa: NAR021`, `# noqa: NAR022` or a bare `# noqa` is
-skipped for that code. In a page, the comment is `<!-- noqa: NAR017 -->`.
+A line with `# noqa: NAR017`, `# noqa: NAR020`, `# noqa: NAR021`, `# noqa: NAR022`, `# noqa: NAR025`,
+`# noqa: NAR026` or a bare `# noqa` is skipped for that code. In a page, the comment is `<!-- noqa: NAR017 -->`.
 
 `--review` lists every other subject that cannot act, with its verb, for the manual prose review: a verb that is not
 stative, such as `breaks` or `stays`, and a verb on LITERAL unless the verb has a direct object and code as the subject:
@@ -72,8 +84,14 @@ is 0.
 `--pronouns` lists every sentence with `it`, `its` or a standalone `that`, each after the sentence before. spaCy has no
 coreference resolution, so a reader names the noun for each pronoun. The list is no finding, and the exit code is 0.
 
-Without --since, each of the two lists stops after 1000 entries, with the command for the next 1000: --from-pair N with
---review, and --from-pronoun N with --pronouns. With --all-sentences, every entry is listed.
+`--free-modifiers` lists every sentence with a free modifier: a phrase without a verb after a comma, that opens with a
+preposition, a past participle or a number, such as `, in one list for each tenant`. A reader writes the phrase as a
+clause or a separate sentence, or cuts the phrase. A phrase after `and`, `or`, `but`, `so` or `then`, and a list of
+numbers, are left out. The list isn't a finding, and the exit code is 0.
+
+Without --since, each of the three lists stops after 1000 entries, with the command for the next 1000: --from-pair N
+with --review, --from-pronoun N with --pronouns, and --from-modifier N with --free-modifiers. With --all-sentences,
+every entry is listed.
 
 With --since REF, only the comment, docstring and page passages with a line that the diff against merge-base(HEAD, REF)
 adds or changes are checked and listed.
@@ -120,6 +138,10 @@ CONNECTIVE_CODE = 'NAR021'
 CONNECTIVE_MESSAGE = 'clause joined by "as" or ", where". Cut the clause, or make its fact a new sentence'
 PRONOUN_CODE = 'NAR022'
 PRONOUN_MESSAGE = 'pronoun after two or more singular nouns. Repeat the noun, or split the sentence'
+NEGATION_CODE = 'NAR025'
+NEGATION_MESSAGE = 'no, nothing or none on a subject or an object. Put the negation on the verb'
+OPENER_CODE = 'NAR026'
+OPENER_MESSAGE = 'a condition as a phrase before a comma. Write a clause after when or if'
 WORDS_PATH = Path(__file__).resolve().parent / 'words.json'
 MODEL = 'en_core_web_md'
 
@@ -209,6 +231,24 @@ QUOTE_MARKS = frozenset({'"', '\u201c', '\u201d'})
 FINITE_TAGS = frozenset({'VBZ', 'VBP', 'VBD', 'MD'})
 # the parse of a longer clause before `, so` is unreliable
 FRAGMENT_MAX_WORDS = 8
+# the roles of a noun that a negation must not have: the subject, the object, and the noun after `is`
+NEGATED_DEPS = frozenset({'nsubj', 'nsubjpass', 'dobj', 'attr', 'oprd'})
+NEGATING_PRONOUNS = frozenset({'nothing', 'none', 'nobody'})
+# matches:
+# `With a full disk, export() deletes the partial file`
+# `at 1,000 requests per second, the queue grows`
+# rejects:
+# `When the disk is full, export() deletes the partial file`
+CONDITION_OPENER = re.compile(r'^(?:at|with|without|beside|against|on|under|over)\s+[^,.;:]{1,80},', re.IGNORECASE)
+# matches:
+# `On Windows,`
+# `Under Python 3.10,`
+PLATFORM_OPENER = re.compile(
+    r'^(?:on|under|with)\s+(?:Windows|Linux|macOS|Mac|POSIX|Unix|Solaris|FreeBSD|BSD|Android|iOS|Python|Java|JDK|Forge|Minecraft)\b',
+    re.IGNORECASE,
+)
+# the words that open a phrase after a comma without making the phrase a free modifier
+LIST_WORDS = frozenset({'and', 'or', 'but', 'so', 'then', 'nor'})
 
 
 def main() -> int:
@@ -223,9 +263,11 @@ def main() -> int:
     parser.add_argument('--score', type=Path, help='score against a label<TAB>text file')
     parser.add_argument('--review', action='store_true', help='list every other subject that cannot act, with its verb')
     parser.add_argument('--pronouns', action='store_true', help='list every sentence with a pronoun, for the review')
+    parser.add_argument('--free-modifiers', action='store_true', help='list every sentence with a free modifier')
     parser.add_argument('--from-pair', type=int, default=1, help='with --review, start the list at this pair')
     parser.add_argument('--from-pronoun', type=int, default=1, help='with --pronouns, start the list at this sentence')
-    parser.add_argument('--all-sentences', action='store_true', help='with --review or --pronouns, list every entry')
+    parser.add_argument('--from-modifier', type=int, default=1, help='with --free-modifiers, start at this sentence')
+    parser.add_argument('--all-sentences', action='store_true', help='with a review list, list every entry')
     parser.add_argument('--since', help='check only the passages changed since merge-base(HEAD, SINCE)')
     parser.add_argument('--cache', type=Path, help='a file that keeps the spaCy results between runs')
     args = parser.parse_args()
@@ -270,6 +312,23 @@ def main() -> int:
         print(*listed, sep='\n')
         reader.save()
         return 0
+    if args.free_modifiers:
+        listed = [
+            f'{checked_file}:{line}: {phrase!r}: {sentence!r}'
+            for checked_file in checked_files
+            for line, phrase, sentence in freeModifierFile(
+                reader,
+                checked_file,
+                wording.changedLinesOf(changed, checked_file),
+            )
+        ]
+        if paged:
+            option = ['agentverbs.py', '--free-modifiers', '--from-modifier']
+            arguments = [*args.paths, *cache_arguments]
+            listed = wording.listPage(listed, args.from_modifier, unit='sentences', option=option, arguments=arguments)
+        print(*listed, sep='\n')
+        reader.save()
+        return 0
     if args.lines:
         flagged = 0
         for text in args.lines.read_text(encoding='utf-8').splitlines():
@@ -278,6 +337,8 @@ def main() -> int:
                 *(f'{head},' for head in reader.fragments(text)),
                 *reader.connectives(text, page=False),
                 *reader.ambiguousPronouns(text),
+                *reader.negations(text),
+                *conditionOpeners(text),
             ]
             if hits:
                 flagged += 1
@@ -293,6 +354,8 @@ def main() -> int:
         FRAGMENT_CODE: FRAGMENT_MESSAGE,
         CONNECTIVE_CODE: CONNECTIVE_MESSAGE,
         PRONOUN_CODE: PRONOUN_MESSAGE,
+        NEGATION_CODE: NEGATION_MESSAGE,
+        OPENER_CODE: OPENER_MESSAGE,
     }
     for finding in findings:
         message = messages[finding.code]
@@ -362,7 +425,7 @@ def checkFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] 
         codeprose.passages(source),
         changed_lines,
     )
-    codes = (CODE, FRAGMENT_CODE, CONNECTIVE_CODE, PRONOUN_CODE)
+    codes = (CODE, FRAGMENT_CODE, CONNECTIVE_CODE, PRONOUN_CODE, NEGATION_CODE, OPENER_CODE)
     silenced = {code: silencedLines(source, code) for code in codes}
     return passageFindings(reader, checked_file, passages, silenced, page=False)
 
@@ -388,6 +451,8 @@ def passageFindings(
             (FRAGMENT_CODE, reader.fragments),
             (CONNECTIVE_CODE, lambda text: reader.connectives(text, page=page)),
             (PRONOUN_CODE, reader.ambiguousPronouns),
+            (NEGATION_CODE, reader.negations),
+            (OPENER_CODE, conditionOpeners),
         )
         for code, find in hits:
             if not silenced.get(code, set()) & lines:
@@ -455,6 +520,43 @@ def pronounFile(reader: CachedReader, checked_file: Path, changed_lines: set[int
             line = passage.lines[bisect.bisect_right(ends, cursor)]
             listed.append(PronounLine(line, pronouns, sentence, previous))
     return listed
+
+
+def freeModifierFile(
+    reader: CachedReader,
+    checked_file: Path,
+    changed_lines: set[int] | None = None,
+) -> list[tuple[int, str, str]]:
+    """List each sentence of one file with a free modifier, for the review.
+
+    When `changed_lines` is given, only the passages with a changed line are listed.
+
+    Returns:
+        The line, the phrase and the sentence of each free modifier, in passage order.
+    """
+    source = checked_file.read_text(encoding='utf-8')
+    if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
+        passages = changedPassages(prose.readPassages(checked_file), changed_lines)
+    else:
+        passages = changedPassages(codeprose.passages(source), changed_lines)
+    listed: list[tuple[int, str, str]] = []
+    for passage in sorted(passages, key=lambda passage: passage.lines[0]):
+        for phrase, sentence in reader.freeModifiers(passage.text):
+            listed.append((passage.lineOf(phrase.lstrip(', ')), phrase, sentence))
+    return listed
+
+
+def conditionOpeners(text: str) -> list[str]:
+    """Find each sentence that opens with a condition as a phrase before a comma: `With a full disk, ...`.
+
+    Returns:
+        The phrase before the comma, per sentence.
+    """
+    hits: list[str] = []
+    for sentence in re.split(r'(?<=[.!?])\s+', text.strip()):
+        if (opener := CONDITION_OPENER.match(sentence)) and not PLATFORM_OPENER.match(sentence):
+            hits.append(opener.group(0).rstrip(',').strip())
+    return hits
 
 
 def changedPassages(passages: list[Passage], changed_lines: set[int] | None) -> list[Passage]:
@@ -753,6 +855,64 @@ class SentenceReader:
                     hits.append(pronounHit(token))
         return hits
 
+    def negations(self, text: str) -> list[str]:
+        """Find each `no`, `nothing`, `none` or `nobody` on a subject or an object, or after `is`.
+
+        A noun or a pronoun joined by `and` or `or` takes the role of the first noun of the join. A negation in a phrase
+        after a preposition, such as `with no offset`, has another role and is left out. `None` is read as the Python
+        value, except before `of`.
+
+        Returns:
+            The negation with the noun, or the verb with the negating pronoun, per hit.
+        """
+        doc = self.nlp(QUOTED.sub(MASK_WORD, text))
+        hits: list[str] = []
+        for token in doc:
+            if token.text == 'None' and (token.i + 1 >= len(doc) or doc[token.i + 1].lower_ != 'of'):
+                continue
+            negated = token.head if token.lower_ == 'no' and token.dep_ == 'det' else token
+            if negated is token and token.lower_ not in NEGATING_PRONOUNS:
+                continue
+            role = negated
+            while role.dep_ == 'conj' and role.head is not role:
+                role = role.head
+            if role.dep_ not in NEGATED_DEPS:
+                continue
+            hits.append(f'{token.text} {negated.text}' if negated is not token else f'{role.head.text} {token.text}')
+        return hits
+
+    def freeModifiers(self, text: str) -> list[list[str]]:
+        """Find each phrase without a verb after a comma, that opens with a preposition, a past participle or a number.
+
+        The phrase is the text from a comma to the next comma or to the end of the sentence. A phrase that opens with a
+        word on LIST_WORDS, a phrase of one word, and the rest of a list of numbers, such as `32 and 40 blocks` after
+        `24`, are left out.
+
+        Returns:
+            The phrase with the comma, and the sentence, per hit. Each hit is a list, because JSON doesn't have a tuple
+            type.
+        """
+        hits: list[list[str]] = []
+        for sentence in self.nlp(QUOTED.sub(MASK_WORD, text)).sents:
+            segments: list[list[Token]] = [[]]
+            for token in sentence:
+                if token.text == ',':
+                    segments.append([])
+                else:
+                    segments[-1].append(token)
+            for before, segment in itertools.pairwise(segments):
+                words = [token for token in segment if not token.is_punct]
+                if len(words) < 2 or words[0].lower_ in LIST_WORDS:
+                    continue
+                if any(token.pos_ in ('VERB', 'AUX') and token.tag_ != 'VBN' for token in words):
+                    continue
+                # the rest of a list of numbers: `at drops of 24, 32 and 40 blocks`
+                if words[0].pos_ == 'NUM' and before and before[-1].pos_ == 'NUM':
+                    continue
+                if words[0].pos_ == 'ADP' or words[0].tag_ == 'VBN' or words[0].pos_ == 'NUM':
+                    hits.append([', ' + ' '.join(token.text for token in words), sentence.text.strip()])
+        return hits
+
     def pronounSentences(self, text: str) -> list[tuple[str, str, str]]:
         """List each sentence with `it`, `its`, or `that` as a pronoun, each with the sentence before.
 
@@ -1043,6 +1203,14 @@ class CachedReader:
 
     def reviewPairs(self, text: str) -> list[str]:
         return self._cached(text, 'pairs', lambda reader: reader.reviewPairs(text))
+
+    def negations(self, text: str) -> list[str]:
+        return self._cached(text, 'negations', lambda reader: reader.negations(text))
+
+    def freeModifiers(self, text: str) -> list[tuple[str, str]]:
+        # JSON doesn't have a tuple type, so each entry is stored in the cache as a list
+        stored = self._cached(text, 'free_modifiers', lambda reader: reader.freeModifiers(text))
+        return [(phrase, sentence) for phrase, sentence in stored]
 
     def pronounSentences(self, text: str) -> list[tuple[str, str, str]]:
         # JSON has no tuple, so each entry is stored in the cache as a list

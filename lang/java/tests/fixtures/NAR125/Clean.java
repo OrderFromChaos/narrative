@@ -18,6 +18,7 @@ public final class Clean {
     public static int product() {
         // a run of whole-line comments filled up to column 120 passes too, because the next word does not fit on the
         // line above
-        return 1;
+        final int product = 1;
+        return product;
     }
 }

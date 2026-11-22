@@ -1,7 +1,7 @@
 """Check that a prose rewrite did not corrupt the technical record.
 
-Cross-checks the documents against the sources of truth rather than against a saved copy, so the
-check works even without a pre-rewrite baseline.
+Cross-checks the documents against the sources of truth rather than against a saved copy, so the check works even
+without a pre-rewrite baseline.
 
 Usage:
     $ python3 verify_docs.py
@@ -36,7 +36,9 @@ DECISION_FIELDS = (
     'date',
     'scope',
 )
-DECISION_ROUNDS = frozenset({'1', '2', '2b', '3', '3a', '4', '5', '6', '7', '8', '9', '10', '11', 'validation', 'j1'})
+DECISION_ROUNDS = frozenset(
+    {'1', '2', '2b', '3', '3a', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'validation', 'j1'},
+)
 # where a decision applies: every language, one language, or the benchmark and the project itself
 DECISION_SCOPES = frozenset({'core', 'python', 'java', 'project'})
 DECISION_KINDS = frozenset({'control', 'gap', 'provocation', 'derived'})
@@ -72,8 +74,8 @@ SKILL_SOURCE_DIRECTORIES = frozenset({'core', 'lang', 'mode', 'skills'})
 def schemaProblems(decisions: list[dict[str, object]]) -> list[str]:
     """Report every decision record that does not match the schema in benchmark/README.md.
 
-    The evidence base gets the same treatment as a pyproject.toml: present and unchecked is how a
-    document becomes wrong.
+    The evidence base gets the same treatment as a pyproject.toml: present and unchecked is how a document becomes
+    wrong.
     """
     problems: list[str] = []
     known = {record['id'] for record in decisions}
@@ -121,8 +123,8 @@ def schemaProblems(decisions: list[dict[str, object]]) -> list[str]:
 def supersededBy(record: dict[str, object]) -> list[str]:
     """Return the ids a decision replaces.
 
-    The record type is dict[str, object] because schema values are strings, lists and nulls, so the
-    optional field must be narrowed before the field can be walked.
+    The record type is dict[str, object] because schema values are strings, lists and nulls, so the optional field must
+    be narrowed before the field can be walked.
 
     Returns:
         The superseded ids, in record order. Empty when the field is absent.
@@ -137,9 +139,8 @@ def supersededBy(record: dict[str, object]) -> list[str]:
 def supersessions(decisions: list[dict[str, object]]) -> dict[str, str]:
     """Map every superseded decision id to the replacing decision's id.
 
-    Declared in a field rather than parsed out of the reasoning. A marker read from free prose is
-    the kind of check that silently stops matching and then reports nothing, which is the failure
-    this whole script exists to prevent.
+    Declared in a field rather than parsed out of the reasoning. A marker read from free prose is the kind of check that
+    silently stops matching and then reports nothing, which is the failure this whole script exists to prevent.
     """
     replaced: dict[str, str] = {}
     for record in decisions:
@@ -152,9 +153,8 @@ def supersessions(decisions: list[dict[str, object]]) -> dict[str, str]:
 def statesCurrentRules(relative: Path) -> bool:
     """Report whether a document is a description of the current rules.
 
-    The rule modules, the built skills and the top-level README are. A round writeup is not: it is a
-    record of what was decided then, so naming a decision that a later round replaced is the point
-    rather than a defect.
+    The rule modules, the built skills and the top-level README are. A round writeup is not: it is a record of what was
+    decided then, so naming a decision that a later round replaced is the point rather than a defect.
     """
     return relative.parts[0] in SKILL_SOURCE_DIRECTORIES or str(relative) == 'README.md'
 
@@ -162,9 +162,8 @@ def statesCurrentRules(relative: Path) -> bool:
 def citableScopes(relative: Path) -> frozenset[str] | None:
     """Return the decision scopes allowed in the citations of one document of the skill sources.
 
-    A rule in core/rules/ applies to every language, so the citations of the rule are decisions of
-    scope core or project. The citations of a rule of one language can also be decisions of that
-    language.
+    A rule in core/rules/ applies to every language, so the citations of the rule are decisions of scope core or
+    project. The citations of a rule of one language can also be decisions of that language.
 
     Returns:
         The scopes, or None for a document outside core/rules/ and lang/. Any decision is allowed there.
@@ -178,8 +177,8 @@ def citableScopes(relative: Path) -> frozenset[str] | None:
 def pointerProblems() -> list[str]:
     """Report each pointer in core/rules/ to a heading that the comments module of a language lacks.
 
-    A pointer reads `under **Source facts** in **Comments in <language>**`. Every language has the
-    heading `### Source facts` in lang/<language>/rules/comments-<language>.md.
+    A pointer reads `under **Source facts** in **Comments in <language>**`. Every language has the heading
+    `### Source facts` in lang/<language>/rules/comments-<language>.md.
 
     Returns:
         One problem per pointer and language without the heading.
@@ -206,9 +205,9 @@ def pointerProblems() -> list[str]:
 def declarationPrefix(relative: Path) -> str:
     """Return the decision-id prefix a round directory is allowed to name before any answer exists.
 
-    `R7-` ids are declared in `benchmark/round7/` documents. That is where a question is born, so
-    those ids are not in `decisions.jsonl` yet. In every other document an id is a citation, and a
-    citation must resolve. Returns an empty string for a document with citations only.
+    `R7-` ids are declared in `benchmark/round7/` documents. That is where a question is born, so those ids are not in
+    `decisions.jsonl` yet. In every other document an id is a citation, and a citation must resolve. Returns an empty
+    string for a document with citations only.
     """
     parts = relative.parts
     if len(parts) < MIN_ROUND_PATH_PARTS or parts[0] != 'benchmark' or not parts[1].startswith('round'):
@@ -246,8 +245,8 @@ def main() -> int:
                 registries[name] |= {k.value for k in keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
 
     rule_codes, retired = registries['RULES'], registries['RETIRED']
-    # the codes of agentverbs.py findings are the CODE, FRAGMENT_CODE, CONNECTIVE_CODE and PRONOUN_CODE constants
-    code_names = ('CODE', 'FRAGMENT_CODE', 'CONNECTIVE_CODE', 'PRONOUN_CODE')
+    # the codes of agentverbs.py findings are the constants that end with CODE
+    code_names = ('CODE', 'FRAGMENT_CODE', 'CONNECTIVE_CODE', 'PRONOUN_CODE', 'NEGATION_CODE', 'OPENER_CODE')
     for node in ast.parse((ROOT / 'core/tools/agentverbs.py').read_text()).body:
         if not isinstance(node, ast.Assign) or getattr(node.targets[0], 'id', '') not in code_names:
             continue
@@ -292,8 +291,8 @@ def main() -> int:
 
         for block in re.findall(r'```python\n(.*?)```', text, re.S):
             blocks += 1
-            # Many blocks are deliberate fragments, so a parse failure is not itself a defect.
-            # Counting them proves the sweep did not silently delete one.
+            # Many blocks are deliberate fragments, so a parse failure is not itself a defect. Counting them proves the
+            # sweep did not silently delete one.
             with contextlib.suppress(SyntaxError):
                 ast.parse(block.replace('...', 'pass'))
 
@@ -309,8 +308,8 @@ def main() -> int:
 
     unanswered = sorted(declared_ids - decision_ids)
     if unanswered:
-        # Not a problem. A question is written before it is answered, and this is the count of the
-        # gap between the two. It reaches zero when the round is recorded.
+        # Not a problem. A question is written before it is answered, and this is the count of the gap between the two.
+        # It reaches zero when the round is recorded.
         print(f'{len(unanswered)} question ids declared with no decision yet: {unanswered[0]} .. {unanswered[-1]}')
 
     for problem in problems:

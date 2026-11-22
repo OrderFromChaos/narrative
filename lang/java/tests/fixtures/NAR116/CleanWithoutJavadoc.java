@@ -2,8 +2,8 @@ package fixtures.nar116;
 
 import java.util.List;
 
-/** Fixture for NAR116: a long method with no javadoc. */
-    public final class Flagged {
+/** Fixture for NAR116: a long method without a javadoc is only an entry of the review list. */
+    public final class CleanWithoutJavadoc {
 
         public static int total(List<Integer> values) {
             int total = 0;

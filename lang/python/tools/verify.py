@@ -11,11 +11,11 @@ Python files are checked. A path of `-` is a page read from stdin, Markdown, or 
 The page is saved in the cache directory as `stdin` with that suffix, and each finding is reported at the path of the
 saved page.
 
-Unless nothing was checked, verify.py writes three review lists, over the Python files and the pages, to
-review-lists.txt in the cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every
-subject that cannot act paired with the subject's verb, and every sentence with a pronoun. The path of the file and the
-number of entries in each list are on the last line of the output, so `tail -1` shows them. Without --since, each list
-stops after 1000 entries, with the command for the next 1000.
+Unless nothing was checked, verify.py writes four review lists, over the Python files and the pages, to review-lists.txt
+in the cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every subject that
+cannot act paired with the subject's verb, every sentence with a pronoun, and every sentence with a free modifier. The
+path of the file and the number of entries in each list are on the last line of the output, so `tail -1` shows them.
+Without --since, each list stops after 1000 entries, with the command for the next 1000.
 
 With --since REF, only the Python files and pages that the diff against merge-base(HEAD, REF) adds or changes are
 checked, and only the findings and list entries on changed lines are reported. A finding on a `def` or `class` line
@@ -80,7 +80,7 @@ SHARED_VENV = DATA_HOME / 'narrative' / 'lintenv'
 VENV_BIN = 'Scripts' if sys.platform == 'win32' else 'bin'
 VENV_PYTHON = 'python.exe' if sys.platform == 'win32' else 'python'
 SKIPPED = frozenset({'.venv', 'venv', '.lintenv', '.git', 'build', 'dist', '__pycache__'})
-# the default cache directory: the spaCy results of agentverbs.py, a page read from stdin, and the three review lists of
+# the default cache directory: the spaCy results of agentverbs.py, a page read from stdin, and the four review lists of
 # the last run, for Prose review. .ruff_cache and .mypy_cache are in the directory of the run
 CACHE_DIR = Path('.narrative_cache')
 LISTS_NAME = 'review-lists.txt'
@@ -209,7 +209,8 @@ def writeReviewLists(
     *,
     all_sentences: bool,
 ) -> str | None:
-    """Write the three lists for Prose review in SKILL.md to `lists_path`: sentences, agent verbs and pronouns.
+    """Write the four lists for Prose review in SKILL.md to `lists_path`: sentences, agent verbs, pronouns and free
+    modifiers.
 
     Args:
         python: The interpreter with the parser modules installed, for agentverbs.py.
@@ -219,8 +220,9 @@ def writeReviewLists(
         all_sentences: List every entry, not only the first 1000 of each list.
 
     Returns:
-        The number of entries in each list, such as `12 sentences, 3 pairs and 1 pronoun sentences`. None when the
-        command of a list exits nonzero.
+        The number of entries in each list, such as
+        `12 sentences, 3 pairs, 1 pronoun sentences and 2 free modifier sentences`. None when the command of a list
+        exits nonzero.
     """
     checker = Path(__file__).resolve().parent / 'checks.py'
     agent_verbs = Path(__file__).resolve().parent / 'agentverbs.py'
@@ -241,6 +243,12 @@ def writeReviewLists(
             '--- every sentence with a pronoun, after the one before it: which noun does each pronoun stand for? ---',
             run([python, str(agent_verbs), '--pronouns', *every, *arguments, *cache]),
         ),
+        (
+            'free modifier sentences',
+            '--- every sentence with a free modifier, a phrase without a verb after a comma: write the phrase as a'
+            ' clause or a separate sentence, or cut the phrase ---',
+            run([python, str(agent_verbs), '--free-modifiers', *every, *arguments, *cache]),
+        ),
     )
     if any(listed.code != 0 for _unit, _heading, listed in review_lists):
         return None
@@ -251,7 +259,7 @@ def writeReviewLists(
         written.extend([heading, listed.text.rstrip() or '(none)', ''])
         counts.append(f'{countEntries(listed.text.splitlines())} {unit}')
     lists_path.write_text('\n'.join(written), encoding='utf-8')
-    return f'{counts[0]}, {counts[1]} and {counts[2]}'
+    return f'{counts[0]}, {counts[1]}, {counts[2]} and {counts[3]}'
 
 
 def checkConfig(config: Path) -> int | None:

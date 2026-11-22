@@ -2,8 +2,9 @@
 
 Comments and javadoc are read with a lexer, not a parser, so the comments of a file are read even when the file uses
 syntax newer than a Java grammar. The prose checks are the ones of every language: the wording checks of wording.py
-(NAR012 to NAR016, NAR018) and the agent-verb checks of agentverbs.py (NAR017, NAR020, NAR021, NAR022). The structural
-checks are PMD XPath rules in pmd-ruleset.xml. Every tool finding is mapped to a NAR code here.
+(NAR012 to NAR016, NAR018, NAR024) and the agent-verb checks of agentverbs.py (NAR017, NAR020, NAR021, NAR022, NAR025,
+NAR026). The value of a constant in a comment is a NAR027 finding. The structural checks are PMD XPath rules in
+pmd-ruleset.xml. Every tool finding is mapped to a NAR code here.
 
 With --rewrap, javachecks.py checks nothing. Each paragraph of the javadoc and the whole-line // comments is filled
 again up to column 120 in place, by rewrap.py, and under --since only a paragraph with a changed line. Without --rewrap,
@@ -13,6 +14,7 @@ Usage:
     $ python3 javachecks.py src/main/java/com/example/PlanReader.java
     $ python3 javachecks.py src/main/java --since origin/dev
     $ python3 javachecks.py src/main/java --pmd build/narrative/pmd.xml --checkstyle build/narrative/checkstyle.xml
+    $ python3 javachecks.py src/main/java --pmd build/narrative/pmd.xml --method-list .narrative_cache/methods.txt
     $ python3 javachecks.py src/main/java --prose
     $ python3 javachecks.py src/main/java --prose --from-sentence 1001
     $ python3 javachecks.py src/main/java --prose --from-pair 1001
@@ -38,9 +40,14 @@ passage is not in the cache.
 A Markdown, HTML or plain text page named on the command line gets the prose checks, and with --prose, the lists cover
 the page too. Under --since, a page passage is checked and listed when a line of the passage changed.
 
-With --prose and without --since, each of the three lists stops after 1000 entries, with the command for the next 1000
-entries of that list. --from-sentence, --from-pair and --from-pronoun print only the list they name, from the given
-entry. With --all-sentences, every entry is listed.
+With --prose and without --since, each of the four lists stops after 1000 entries, with the command for the next 1000
+entries of that list: the sentences, the subject-verb pairs, the pronoun sentences and the free modifiers.
+--from-sentence, --from-pair, --from-pronoun and --from-modifier print only the list they name, from the given entry.
+With --all-sentences, every entry is listed.
+
+NAR116 isn't a finding. When --method-list PATH is given, javachecks.py writes each hit of the NAR116 rule of
+pmd-ruleset.xml, a method over 20 body lines, to PATH, with or without a javadoc. verify.py adds the file to the review
+lists. For a method with a javadoc, each `throw new X` with no `@throws X` line is a NAR117 finding.
 
 With --keep FILE:LINE:CODE, a finding that the user approved is added to the keep-list. A Java source gets no `// noqa`,
 because the maintainer of an upstream project must delete each `// noqa` from a PR. The keep-list is
@@ -126,8 +133,10 @@ def main() -> int:
     paging.add_argument('--from-sentence', type=int, help='with --prose, list only the sentences, from this one')
     paging.add_argument('--from-pair', type=int, help='with --prose, list only the subject-verb pairs, from this one')
     paging.add_argument('--from-pronoun', type=int, help='with --prose, list only the pronoun sentences, from this one')
+    paging.add_argument('--from-modifier', type=int, help='with --prose, list only the free modifiers, from this one')
     parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every entry of every list')
     parser.add_argument('--cache', type=Path, help='a file that keeps the spaCy results between runs')
+    parser.add_argument('--method-list', type=Path, help='write each method over 20 body lines to this file (NAR116)')
     parser.add_argument('--rewrap', action='store_true', help='fill the javadoc and // comments again, in place')
     parser.add_argument(
         '--keep',
@@ -182,6 +191,7 @@ def main() -> int:
             '--from-sentence': args.from_sentence,
             '--from-pair': args.from_pair,
             '--from-pronoun': args.from_pronoun,
+            '--from-modifier': args.from_modifier,
         }
         flag, first = next(((flag, first) for flag, first in starts.items() if first is not None), (None, 1))
         cache = ['--cache', str(args.cache)] if args.cache else []
@@ -207,6 +217,10 @@ def main() -> int:
     for page_path in page_paths:
         checked.extend(checkPage(reader, page_path, changed))
     reader.save()
+    methods = [finding for finding in checked if finding.code == 'NAR116']
+    checked = [finding for finding in checked if finding.code != 'NAR116']
+    if args.method_list is not None:
+        args.method_list.write_text(''.join(f'{methodEntry(method)}\n' for method in methods), encoding='utf-8')
     findings = [finding for finding in checked if not keep_list.keeps(finding)]
     for finding in findings:
         print(finding)
@@ -382,7 +396,8 @@ def proseInventory(
     changed: ChangedLines | None,
     list_page: ListPage | None,
 ) -> list[str]:
-    """List every sentence of every comment and page, every review pair that is not a NAR017 finding, and every pronoun.
+    """List every sentence of every comment and page, the review pairs that are no NAR017 finding, the pronouns and the
+    free modifiers.
 
     With a ListPage, each list printed stops after wording.LIST_PAGE entries, with the command for the next entries of
     that list. Under --since, a passage of a source file or a page is listed when a line of the passage changed.
@@ -390,6 +405,7 @@ def proseInventory(
     sentences: list[str] = []
     pairs: list[str] = []
     pronouns: list[str] = []
+    modifiers: list[str] = []
     readings = [
         (path, readComments(path.read_text(encoding='utf-8', errors='replace')).passages) for path in java_paths
     ]
@@ -405,6 +421,10 @@ def proseInventory(
                     f'{file_path}:{sentenceLine(passage, sentence)}: {pronoun_words}: {sentence!r}'
                     + (f' after {previous!r}' if previous else '')
                     for pronoun_words, sentence, previous in reader.pronounSentences(passage.text)
+                )
+                modifiers.extend(
+                    f'{file_path}:{passage.lineOf(phrase.lstrip(", "))}: {phrase!r}: {sentence!r}'
+                    for phrase, sentence in reader.freeModifiers(passage.text)
                 )
     review_lists = (
         (
@@ -424,6 +444,13 @@ def proseInventory(
             'pronoun sentences',
             '--- every sentence with a pronoun, after the one before it: which noun does each pronoun stand for? ---',
             pronouns,
+        ),
+        (
+            '--from-modifier',
+            'free modifier sentences',
+            '--- every sentence with a free modifier, a phrase without a verb after a comma: write the phrase as a'
+            ' clause or a separate sentence, or cut the phrase ---',
+            modifiers,
         ),
     )
     listed: list[str] = []
@@ -498,6 +525,8 @@ def checkFile(
             (agentverbs.FRAGMENT_CODE, reader.fragments(passage.text)),
             (agentverbs.CONNECTIVE_CODE, reader.connectives(passage.text, page=False)),
             (agentverbs.PRONOUN_CODE, reader.ambiguousPronouns(passage.text)),
+            (agentverbs.NEGATION_CODE, reader.negations(passage.text)),
+            (agentverbs.OPENER_CODE, agentverbs.conditionOpeners(passage.text)),
         )
         for code, hits in coded_hits:
             for hit in hits:
@@ -505,6 +534,8 @@ def checkFile(
                     (JavaFinding(java_path, passage.lineOf(hit), code, repr(hit)), frozenset(passage.lines)),
                 )
     candidates.extend((finding, frozenset({finding.line})) for finding in commentFindings(java_path, lines, reading))
+    constant_values = constantValueFindings(java_path, lines, reading)
+    candidates.extend((finding, frozenset({finding.line})) for finding in constant_values)
     masked = maskLiterals(source) if any(tool_finding.code == 'NAR116' for tool_finding in tool_findings) else ''
     for tool_finding in tool_findings:
         # a PMD violation of a method is at the method name. The end of a NAR116 method is found by the method's braces
@@ -529,6 +560,42 @@ def checkFile(
         if not silenced(reading.silenced, finding) and inChange(changed, java_path, set(span))
     ]
     return sorted(kept, key=lambda finding: (finding.line, finding.code))
+
+
+def constantValueFindings(java_path: Path, lines: list[str], reading: CommentReading) -> list[JavaFinding]:
+    """Flag a number in a comment that is the value of a constant the comment names, or of a constant just below.
+
+    A constant is a `final` field or local with an UPPER_CASE name and a number literal. Just below is on the 3 lines
+    after the comment, or on the line of a trailing comment. 0 and 1 are left out, and so is a number in backticks.
+
+    Returns:
+        One NAR027 finding per comment line and constant.
+    """
+    # matches:
+    # `private static final int REFRESH_TICKS = 10;`
+    # `final double OVERLAY_GAP = 0.02;`
+    CONSTANT = re.compile(r'\bfinal\s+[\w<>\[\]]+\s+([A-Z][A-Z0-9_]*)\s*=\s*(-?\d+(?:\.\d+)?)[dDfFlL]?\s*;')
+    # matches:
+    # `10` and `0.25`
+    # rejects:
+    # `v2` and `1.2.0`
+    NUMBER = re.compile(r'(?<![\w.])\d+(?:\.\d+)?(?![\w.])')
+    constants = [
+        (number, found.group(1), float(found.group(2)))
+        for number, line in enumerate(lines, 1)
+        if (found := CONSTANT.search(line)) and float(found.group(2)) not in {0.0, 1.0}
+    ]
+    findings: list[JavaFinding] = []
+    for comment in reading.comments:
+        for number, text in comment.texts:
+            values = {float(value) for value in NUMBER.findall(re.sub(r'`[^`]*`|\{@code [^}]*\}', '', text))}
+            for declared, name, value in constants:
+                is_below = comment.last_line < declared <= comment.last_line + 3
+                is_beside = comment.trailing and declared == number
+                if value in values and (is_below or is_beside or re.search(rf'\b{name}\b', text)):
+                    detail = f'{name} is in the declaration. Cut the value'
+                    findings.append(JavaFinding(java_path, number, 'NAR027', detail))
+    return findings
 
 
 def maskLiterals(source: str) -> str:
@@ -638,7 +705,7 @@ def commentFindings(java_path: Path, lines: list[str], reading: CommentReading) 
     for number, text in enumerate(lines, start=1):
         declaration = TOP_LEVEL_TYPE.match(text)
         if declaration and number not in in_comment and lineAboveAnnotations(lines, number) not in javadoc_ends:
-            detail = f'{declaration["name"]} has no javadoc. A top-level type has one of at least one sentence'
+            detail = f"{declaration['name']} doesn't have a javadoc. A top-level type has one of at least one sentence"
             findings.append(JavaFinding(java_path, number, 'NAR118', detail))
 
     for comment in reading.comments:
@@ -703,7 +770,8 @@ def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: Com
 
     - NAR110: a mutable static field. With a comment for the reason, above the field or after the field on the same
       line, there is no finding
-    - NAR116: a method over the javadoc threshold. With no javadoc above the method, the finding is reported. With one,
+    - NAR023: a method of one line. When a javadoc is above the method, the finding is reported
+    - NAR116: a method over 20 body lines, an entry of the NAR116 review list. When a javadoc is above the method,
       NAR117 is reported for each `throw new X` in the method where X is absent from the throws clause and from the
       `@throws` lines of the javadoc
 
@@ -718,13 +786,26 @@ def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: Com
             if lineAboveAnnotations(lines, line) in above or line in beside:
                 return []
             return [JavaFinding(tool_finding.java_path, line, 'NAR110', tool_finding.message)]
+        case 'NAR023':
+            if javadocAbove(reading, lines, line) is None:
+                return []
+            detail = 'javadoc on a method of one line. Cut the javadoc'
+            return [JavaFinding(tool_finding.java_path, line, 'NAR023', detail)]
         case 'NAR116':
             javadoc = javadocAbove(reading, lines, line)
             if javadoc is None:
-                return [JavaFinding(tool_finding.java_path, line, 'NAR116', tool_finding.message)]
-            return missingThrowsTags(tool_finding, lines, javadoc)
+                return [JavaFinding(tool_finding.java_path, line, 'NAR116', 'without a javadoc')]
+            entry = JavaFinding(tool_finding.java_path, line, 'NAR116', 'with a javadoc')
+            return [entry, *missingThrowsTags(tool_finding, lines, javadoc)]
         case _:
             return [JavaFinding(tool_finding.java_path, line, tool_finding.code, tool_finding.message)]
+
+
+def methodEntry(method: JavaFinding) -> str:
+    """Format a method of the NAR116 review list: the path, the line, the declaration and whether a javadoc is above."""
+    lines = method.java_path.read_text(encoding='utf-8', errors='replace').splitlines()
+    declaration = lines[method.line - 1].strip() if method.line <= len(lines) else ''
+    return f'{method.java_path}:{method.line}: {declaration} ({method.detail})'
 
 
 def javadocAbove(reading: CommentReading, lines: list[str], declaration_line: int) -> str | None:
@@ -840,6 +921,7 @@ PMD_CODES = {
     'NAR113': ('NAR113-gtnh', Scope.SPAN),
     'NAR114': ('NAR114-gtnh', Scope.SPAN),
     'NAR115': ('NAR115', Scope.SPAN),
+    'NAR023': ('NAR023', Scope.SPAN),
     'NAR116': ('NAR116', Scope.SPAN),
     'NAR122': ('NAR122', Scope.SPAN),
     'NAR123': ('NAR123', Scope.SPAN),
@@ -926,7 +1008,7 @@ class JavaFinding:
 
 @dataclass(frozen=True)
 class ListPage:
-    """The part of the three lists that --prose prints.
+    """The part of the four lists that --prose prints.
 
     `flag` is the option of the one list to print, from entry `first`, or None for every list from entry 1. The
     arguments are the paths and the cache, for the command of the next entries.

@@ -12,7 +12,7 @@ public final class Flagged {
     /** The runs of a recipe, as {@link Flagged#size} works them out. */
     public static final int RUN = 3;
 
-    /** The values of this kind, where the spec has no range. */
+    /** The values of this kind, where the spec doesn't have a range. */
     public static final int RANGE = 4;
 
     public static int size() {

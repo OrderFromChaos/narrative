@@ -25,7 +25,7 @@ even when a looser form is more flexible. The type checker here is javac. (R3-P2
 **The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
 1. Load `nar:core` and this skill before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
-3. Read the findings and the three review lists of that run. Do not filter the output with `grep`, `head` or
+3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head` or
    `tail`.
 4. Fix every finding and answer every list entry from that one run, then run `verify.py` once more.
 5. In the report, say how many entries of each list you read, such as `read 212 of 212 sentences`.
@@ -503,6 +503,10 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
   reads private state through reflection, not through a new accessor, unless the accessor is worth
   adding for other code. (J1-S14)
 
+- **No test only because a bug was fixed.** Write a regression test when the code under test is
+  likely to break the same way again, or when the test checks an invariant of the program. Write the
+  case and the expected result in the name and the docstring of the test. Use the present tense.
+  (R12-no-changelog-tests)
 ## GTNH
 
 - **Every user-facing string is a key in the lang file** (`assets/<modid>/lang/en_US.lang`), read
@@ -624,8 +628,7 @@ A conversion takes a table of cases rather than a sentence per case:
 
 ### Javadoc rules
 
-**Most members get no javadoc.** A top-level type (`NAR118`) and a method over the contract
-threshold (`NAR116`) need one. Any other field, constant or method gets a javadoc only for a fact
+**Most members get no javadoc.** Write one for a top-level type (`NAR118`), and for a method by the `NAR116` review list. Any other field, constant or method gets a javadoc only for a fact
 that the name, type, value and signature do not show. A javadoc whose facts are already in the
 declaration only costs the reader time. Cut such a javadoc whole, not sentence by sentence. The Java
 habit of a javadoc on every public member does not apply here. (J1-F07)
@@ -679,14 +682,18 @@ not earn its place.** (R9-09)
 - **where the leftover, default and failure cases go**
 - a **sample** of concrete text the class reads or writes
 - a **constraint from outside the program**: `Forge drops a tile entity whose readFromNBT() throws`
-- a **guarantee a caller needs**: `The call writes no file, sends no packet, and changes no world`
+- a **guarantee a caller needs**: `The call doesn't write a file, send a packet or change a world`
 
-- **A method gets a javadoc when its contract is complex**, meaning the method takes more than three
-  parameters, or the method's body exceeds 20 lines. Below both, the contract goes in `//` comments.
-  `NAR116` flags a method over that threshold with no javadoc. (J1-P34, Q05, R8-D18-resolved)
+- **A method gets a javadoc when a reader can't learn from the name of the method and the comments
+  of the body what the method does.** Answer one question for each method in the `NAR116` review
+  list of `verify.py`:
+  - without a javadoc: can a reader learn from the name of the method and the comments of the body
+    what the method does? If not, write a javadoc.
+  - with a javadoc: what does a reader learn from the javadoc, and not from the name of the method
+    or the comments of the body? If nothing, cut the javadoc.
+  (J1-P34, Q05, R8-D18-resolved, R12-nar116-review)
 
-- **`@throws` for every exception absent from the `throws` clause**, for a method over that
-  threshold. A checked exception is in the signature already. `NAR117` flags a `throw new X` with no
+- **`@throws` for every exception absent from the `throws` clause**, in the javadoc of a method. A checked exception is in the signature already. `NAR117` flags a `throw new X` with no
   `@throws X` line. `@param` and `@return` only for a fact absent from the signature: an ordering, a
   nullability, a unit, or a count whose meaning is not obvious. (J1-P34, R8-D28-resolved)
 
@@ -726,7 +733,7 @@ A fact about a value from vanilla Minecraft, Forge, another mod or an old save, 
 field or a missing NBT tag, goes above the code for the value (J1-F12):
 
 ```java
-// worlds saved before 1.2.0 have no "tier" tag
+// worlds saved before 1.2.0 don't have a "tier" tag
 final int tier = tag.hasKey("tier") ? tag.getInteger("tier") : 1;
 ```
 
@@ -761,7 +768,7 @@ final int tier = tag.hasKey("tier") ? tag.getInteger("tier") : 1;
 ### Depth
 
 ```java
-// The vendor API returns at most 100 rows per page and no total count.
+// The vendor API returns at most 100 rows per page, and doesn't return a total count.
 // Keep requesting until a page comes back short.
 while ((page = fetchPage(cursor)).size() == PAGE_SIZE) {
 ```
@@ -886,9 +893,10 @@ to the keep-list (see **noqa**). (J1-F06, J1-no-noqa)
 (or `spotlessCheck` with `--no-fix`), `compileJava` with the raw-type and unchecked warnings of
 javac, then Checkstyle and PMD with the configs beside `verify.py`, at every level of **Scope**.
 `javachecks.py` then reads the comments, runs the prose checks, and merges the three reports into
-one list with NAR codes. A run with exit 0 or 1 writes three lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+one list with NAR codes. A run with exit 0 or 1 writes five lists to `.narrative_cache/review-lists.txt`, the input to **Prose
 review**: every sentence of every comment, javadoc and named page, every verb whose subject cannot
-act, and every sentence with a pronoun. The file and the number of entries in each list are
+act, every sentence with a pronoun, every sentence with a free modifier, and every method over 20 body lines (`NAR116`).
+The list of methods comes from the PMD report, so a run with `--prose-only` has no methods in the list. The file and the number of entries in each list are
 on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` writes
 no lists, because `javachecks.py` has not read the comments yet. With `--since`, the lists cover only
 the changed lines of the code and the pages. Without `--since`, each list stops after 1000

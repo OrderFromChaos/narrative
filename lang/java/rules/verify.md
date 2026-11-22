@@ -27,9 +27,10 @@ to the keep-list (see **noqa**). (J1-F06, J1-no-noqa)
 (or `spotlessCheck` with `--no-fix`), `compileJava` with the raw-type and unchecked warnings of
 javac, then Checkstyle and PMD with the configs beside `verify.py`, at every level of **Scope**.
 `javachecks.py` then reads the comments, runs the prose checks, and merges the three reports into
-one list with NAR codes. A run with exit 0 or 1 writes three lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+one list with NAR codes. A run with exit 0 or 1 writes five lists to `.narrative_cache/review-lists.txt`, the input to **Prose
 review**: every sentence of every comment, javadoc and named page, every verb whose subject cannot
-act, and every sentence with a pronoun. The file and the number of entries in each list are
+act, every sentence with a pronoun, every sentence with a free modifier, and every method over 20 body lines (`NAR116`).
+The list of methods comes from the PMD report, so a run with `--prose-only` has no methods in the list. The file and the number of entries in each list are
 on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` writes
 no lists, because `javachecks.py` has not read the comments yet. With `--since`, the lists cover only
 the changed lines of the code and the pages. Without `--since`, each list stops after 1000

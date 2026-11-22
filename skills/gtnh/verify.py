@@ -26,12 +26,14 @@ done.
 With --project DIR, DIR is the project in place of the current directory. Each named path is read from the current
 directory.
 
-After the checks, verify.py writes three review lists over the Java sources and the pages to review-lists.txt in the
+After the checks, verify.py writes five review lists over the Java sources and the pages to review-lists.txt in the
 cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every subject that cannot act
-paired with the subject's verb, and every sentence with a pronoun. The path of the file and the number of entries in
-each list are on the last line of the output, so `tail -1` shows them. verify.py writes no lists on exit 2, or after a
-Gradle failure. Without --since, each list stops after 1000 entries, with the command for the next 1000. Under --since,
-a passage of a source file or a page is checked and listed when a line of the passage changed.
+paired with the subject's verb, every sentence with a pronoun, every sentence with a free modifier, and every method
+over 20 body lines (NAR116). The list of methods is from the PMD report, so a run with --prose-only or with pages only
+doesn't list methods. The path of the file and the number of entries in each list are on the last line of the output, so
+`tail -1` shows them. verify.py writes no lists on exit 2, or after a Gradle failure. Without --since, each list stops
+after 1000 entries, with the command for the next 1000. Under --since, a passage of a source file or a page is checked
+and listed when a line of the passage changed.
 
 With --keep FILE:LINE:CODE, nothing is checked. The finding is added to the keep-list, and is not printed in later runs.
 The keep-list is described in the docstring of javachecks.py.
@@ -86,10 +88,17 @@ PASS_NOTE = 'These lint checks cover only some of the rules. Check the other rul
 # lists of the last run, for Prose review
 CACHE_DIR = Path('.narrative_cache')
 LISTS_NAME = 'review-lists.txt'
+# the methods over 20 body lines that javachecks.py writes for the NAR116 review list
+METHODS_NAME = 'methods.txt'
+METHODS_HEADING = (
+    '--- each method over 20 body lines (NAR116). Without a javadoc: can a reader learn from the name of the method and'
+    ' the comments of the body what the method does? With a javadoc: what does a reader learn from the javadoc, and not'
+    ' from the name or the comments of the body? ---'
+)
 # the command-line path of a page read from stdin
 STDIN_PATH = Path('-')
-# the units of the three lists of javachecks.py --prose, in the order javachecks.py prints them
-LIST_UNITS = ('sentences', 'pairs', 'pronoun sentences')
+# the units of the four lists of javachecks.py --prose, in the order javachecks.py prints them
+LIST_UNITS = ('sentences', 'pairs', 'pronoun sentences', 'free modifier sentences')
 EXIT_SUCCESS = 0
 EXIT_FINDINGS = 1
 EXIT_NO_TOOLCHAIN = 2
@@ -256,7 +265,7 @@ def reportFindings(
     *,
     all_sentences: bool,
 ) -> int:
-    """Print the findings of javachecks.py, then write the three review lists to LISTS_NAME in the cache directory.
+    """Print the findings of javachecks.py, then write the review lists to LISTS_NAME in the cache directory.
 
     The path of the lists and the number of entries in each list are on the last line. On a run with findings, the count
     line of javachecks.py comes before the last line.
@@ -264,8 +273,10 @@ def reportFindings(
     Returns:
         The exit code of javachecks.py, or 2 when javachecks.py printed no count line, as after a Python exception.
     """
+    methods_path = cache_dir / METHODS_NAME
+    methods_path.unlink(missing_ok=True)
     checked = subprocess.run(
-        [str(venv_python), str(SKILL_DIR / 'javachecks.py'), *check_arguments],
+        [str(venv_python), str(SKILL_DIR / 'javachecks.py'), *check_arguments, '--method-list', str(methods_path)],
         stdout=subprocess.PIPE,
         text=True,
         check=False,
@@ -289,6 +300,11 @@ def reportFindings(
     if counts is None:
         print('verify.py: javachecks.py --prose failed, so no review list was written', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
+
+    methods = methods_path.read_text(encoding='utf-8').splitlines() if methods_path.is_file() else []
+    with lists_path.open('a', encoding='utf-8') as lists_file:
+        lists_file.write(METHODS_HEADING + '\n' + ''.join(f'{method}\n' for method in methods))
+    counts = f'{counts} and {len(methods)} methods'
     if checked.returncode == EXIT_SUCCESS:
         print(f'Prose review: read the {counts} in {lists_path}')
         return EXIT_SUCCESS
@@ -299,7 +315,7 @@ def reportFindings(
 
 
 def writeReviewLists(venv_python: Path, arguments: list[str], lists_path: Path, *, all_sentences: bool) -> str | None:
-    """Write the three lists for Prose review in SKILL.md to `lists_path`, with javachecks.py --prose.
+    """Write the four lists for Prose review in SKILL.md to `lists_path`, with javachecks.py --prose.
 
     Args:
         venv_python: The interpreter of the lint venv, with spaCy.
@@ -308,8 +324,9 @@ def writeReviewLists(venv_python: Path, arguments: list[str], lists_path: Path, 
         all_sentences: List every entry, not only the first 1000 of each list.
 
     Returns:
-        The number of entries in each list, such as `12 sentences, 3 pairs and 1 pronoun sentences`. None when
-        javachecks.py --prose fails or prints fewer lists than LIST_UNITS.
+        The number of entries in each list, such as
+        `12 sentences, 3 pairs, 1 pronoun sentences, 2 free modifier sentences`. None when javachecks.py --prose fails
+        or prints fewer lists than LIST_UNITS.
     """
     every = ['--all-sentences'] if all_sentences else []
     listed = subprocess.run(
@@ -330,7 +347,7 @@ def writeReviewLists(venv_python: Path, arguments: list[str], lists_path: Path, 
 
     lists_path.write_text(listed.stdout, encoding='utf-8')
     counts = [f'{countEntries(entries)} {unit}' for entries, unit in zip(sections, LIST_UNITS, strict=True)]
-    return f'{counts[0]}, {counts[1]} and {counts[2]}'
+    return f'{counts[0]}, {counts[1]}, {counts[2]}, {counts[3]}'
 
 
 def prepareCache(cache_dir: Path) -> Path:

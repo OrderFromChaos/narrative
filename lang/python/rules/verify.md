@@ -36,9 +36,9 @@ With such a loop, a missing binary or config produces empty output, and empty ou
 
 `verify.py` runs these tools, in the order that converges: `checks.py --rewrap`,
 `ruff check --fix`, `ruff format`, `pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`.
-A run with exit 0 or 1 writes three lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+A run with exit 0 or 1 writes four lists to `.narrative_cache/review-lists.txt`, the input to **Prose
 review**: every sentence of every comment, docstring and named page, every verb whose subject cannot
-act, and every sentence with a pronoun. The file and the number of entries in each list are
+act, every sentence with a pronoun, and every sentence with a free modifier. The file and the number of entries in each list are
 on the last line of the output. With `--since`, the lists cover only the changed lines of the code and the
 pages. Without `--since`, each list stops after 1000 entries, with the command for the next 1000.
 `verify.py` keeps the spaCy results of each comment in `.narrative_cache/` in the current

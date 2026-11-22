@@ -26,7 +26,7 @@ with a `cast()` or a key lookup at every use. Typed attributes pass with neither
 **The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
 1. Load `nar:core` and this skill before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
-3. Read the findings and the three review lists of that run. Do not filter the output with `grep`, `head` or
+3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head` or
    `tail`.
 4. Fix every finding and answer every list entry from that one run, then run `verify.py` once more.
 5. In the report, say how many entries of each list you read, such as `read 212 of 212 sentences`.
@@ -537,6 +537,10 @@ asyncio is the default for I/O-bound work. (R2-04)
   Where a single file is required, put the tests behind `### tests` before the
   `### vocabulary` divider and import hypothesis lazily.
 
+- **No test only because a bug was fixed.** Write a regression test when the code under test is
+  likely to break the same way again, or when the test checks an invariant of the program. Write the
+  case and the expected result in the name and the docstring of the test. Use the present tense.
+  (R12-no-changelog-tests)
 ## The module docstring
 
 **Every module opens with a docstring. Anything runnable has a usage example.** A reader meets it
@@ -624,7 +628,7 @@ Avoid the same table as prose:
 """Format the result of a reconciliation as a table for a terminal.
 
 The table has one row for each team, then the largest paths of each team above its quota, then
-the bytes that no team owns, then the outcome of every file. Every size carries a unit suffix.
+the unassigned bytes, then the outcome of every file. Every size carries a unit suffix.
 """
 ```
 
@@ -652,7 +656,7 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   A reader who has the file open does not need either restated.
 - **Its negation would be a bug, an absurdity, or an implementation nobody would ship.** Negate the
   sentence and read it back. `it never holds a value that the file did not state` negates to a bug.
-  `An empty line holds nothing` negates to an absurdity. `Other files are skipped, so the quota file
+  `An empty line doesn't have a value` negates to an absurdity. `Other files are skipped, so the quota file
   can share the directory` negates to a scanner that dies on a stray file. Nobody would ship that scanner.
   All three are free sentences and all three go. **Assume the reader expects competent code, and
   document only the departures.**
@@ -679,12 +683,12 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 
 - an **ordering or tie-break**, invisible without reading a sort key
 - a **unit, a nullability or a provenance** absent from the annotation — `Sizes are plain byte
-  counts`, `host is null when the entry's report has no host`
+  counts`, `host is null when the entry's report doesn't have a host`
 - **where the leftover, default and failure cases go**. Most awkward docstrings are awkward because
   they circle an unstated default.
 - a **sample** of concrete text the module reads or writes
 - a **constraint from outside the program** — `the standard formatter of logging discards extra`
-- a **guarantee a caller needs** — `The call writes no file, prints nothing, and records nothing`
+- a **guarantee a caller needs** — `The call doesn't write a file, print output or log an event`
 
 - **A function gets a docstring when the function's contract is complex**, meaning the function
   takes more than three parameters, or exceeds 20 lines. Below both, the contract goes in `#`
@@ -713,8 +717,8 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   sentence already implies. (Q05)
 
 - **A docstring is about its file alone.** Do not assert what another module does, do not claim to
-  be the only place something happens, and do not count callers. `nothing outside this module
-  imports sqlite3` and `this is the one place that builds it` are claims that no tool checks and
+  be the only place something happens, and do not count callers. `only this module imports
+  sqlite3` and `this is the one place that builds it` are claims that no tool checks and
   that the next commit can make false. Name another module only where a reader of *this* file needs
   the name in order to use this file. (R9-02)
 
@@ -772,7 +776,7 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 ### Depth
 
 ```python
-# The vendor API returns at most 100 rows per page and no total count.
+# The vendor API returns at most 100 rows per page, and doesn't return a total count.
 # Keep requesting until a page comes back short.
 while len(page := fetchPage(cursor)) == PAGE_SIZE:
 ```
@@ -879,9 +883,9 @@ With such a loop, a missing binary or config produces empty output, and empty ou
 
 `verify.py` runs these tools, in the order that converges: `checks.py --rewrap`,
 `ruff check --fix`, `ruff format`, `pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`.
-A run with exit 0 or 1 writes three lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+A run with exit 0 or 1 writes four lists to `.narrative_cache/review-lists.txt`, the input to **Prose
 review**: every sentence of every comment, docstring and named page, every verb whose subject cannot
-act, and every sentence with a pronoun. The file and the number of entries in each list are
+act, every sentence with a pronoun, and every sentence with a free modifier. The file and the number of entries in each list are
 on the last line of the output. With `--since`, the lists cover only the changed lines of the code and the
 pages. Without `--since`, each list stops after 1000 entries, with the command for the next 1000.
 `verify.py` keeps the spaCy results of each comment in `.narrative_cache/` in the current

@@ -187,7 +187,22 @@ existing comment, written by a model without the skill, as needing action. These
    are the material the rules were written from, so the numbers are agreement on that material, not
    on new code.
 
-## 8. For the user
+## 8. Keep units for the rules of round 12
+
+The batch test of 2026-11-21 gives a sensitivity for each rule and no specificity. The results are in
+`benchmark/round12/batch_results.md`. After the relabels of 2026-11-21, one full keep unit is left among the probes. Two ways to a
+specificity:
+
+- Without labels: run both arms on about 40 human comments from before 2021. The comments come from Python 3.10 and
+  the repositories of Peter Åstrand. Count the extra edits of the test arm, and the rules that the agents cite for them. About 5 minutes
+  and $4.
+- With labels: a fresh sample of about 30 such comments, each with the whole file as context, that the user labels G
+  or B. The comments labelled G are the keep set. The comments of `benchmark/round12/label_open_questions.md` don't qualify:
+  rule 14 quotes two of them, and the rules were drafted from the rest.
+
+The arms, the units and the scoring scripts are in `~/.local/share/narrative/eval-private/runs/claudish-rules/batch/`.
+
+## 9. For the user
 
 - Commit the branch, after review.
 - Archive the narrative-java repository, with a README line pointing to `nar@narrative`.

@@ -3,8 +3,9 @@
 Each rule is one check. NAR001 and NAR006 cover module state. NAR002 covers class attributes. NAR003 covers layout.
 NAR004, NAR009 and NAR011 cover documentation. NAR005 covers annotation complexity. NAR007 covers boolean grouping.
 NAR010 covers FIXME reachability. NAR012 to NAR016 and NAR018 cover the wording of comments and docstrings. NAR019
-covers a return contract written as a comment. NAR125 covers a paragraph of a comment or docstring that is not filled up
-to column 120.
+covers a return contract written as a comment. NAR023 covers a docstring on a function of one line. NAR027 covers the
+value of a constant in a comment. NAR125 covers a paragraph of a comment or docstring that is not filled up to column
+120.
 
 With --rewrap, checks.py checks nothing. Each paragraph of the comments and docstrings is filled again up to column 120
 in place, by rewrap.py, and under --since only a paragraph with a changed line.
@@ -82,6 +83,8 @@ RULES = {
     'NAR010': 'FIXME in reachable code. A merge blocker, not a danger sign',
     'NAR011': 'docstring body is entirely indented. `ruff format` will flatten the sample',
     'NAR019': 'return contract as a comment at the top of a function body. Move it to the docstring, or cut it',
+    'NAR023': 'docstring on a function of one line. Cut the docstring',
+    'NAR027': 'value of a constant in a comment. Write what the value means, or nothing',
     'NAR125': rewrap.DETAIL,
     **WORDING_RULES,
 }
@@ -437,6 +440,9 @@ def checkDocstringThreshold(tree: ast.Module, checked_file: Path) -> list[Findin
         if docstring is not None:
             findings.extend(missingSections(node, docstring, checked_file))
             continue
+        # a function of one line gets no docstring, by NAR023, whatever the number of parameters
+        if oneLineBody(node):
+            continue
 
         body_start = node.body[0].lineno
         body_end = max((getattr(n, 'end_lineno', None) or 0) for n in ast.walk(node))
@@ -745,6 +751,78 @@ def proseWording(prose_lines: list[tuple[int, str]], checked_file: Path) -> list
     return wordingFindings(prose_lines, list_items, checked_file)
 
 
+def checkOneLineDocstring(tree: ast.Module, checked_file: Path) -> list[Finding]:
+    """Flag a docstring on a function whose body, below the docstring, is one statement on one line.
+
+    A stub is exempt: a body of `...`, `pass` or `raise NotImplementedError`, and a function under `@abstractmethod` or
+    `@overload`. A stub has no implementation to read, and the docstring of a stub is the contract of an interface.
+
+    Returns:
+        One finding per function, at the `def` line.
+    """
+    STUB_DECORATORS = {'abstractmethod', 'overload'}
+    findings: list[Finding] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or ast.get_docstring(node) is None:
+            continue
+        decorators = {ast.unparse(decorator).rsplit('.', 1)[-1] for decorator in node.decorator_list}
+        if oneLineBody(node) and not isStub(node.body[1]) and not decorators & STUB_DECORATORS:
+            findings.append(Finding(checked_file, node.lineno, 'NAR023', node.name))
+    return findings
+
+
+def oneLineBody(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    body = node.body[1:] if ast.get_docstring(node) is not None else node.body
+    return len(body) == 1 and body[0].lineno == body[0].end_lineno
+
+
+def isStub(statement: ast.stmt) -> bool:
+    if isinstance(statement, ast.Pass):
+        return True
+    if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Constant):
+        return statement.value.value is Ellipsis
+    if isinstance(statement, ast.Raise) and statement.exc is not None:
+        raised = statement.exc.func if isinstance(statement.exc, ast.Call) else statement.exc
+        return isinstance(raised, ast.Name) and raised.id == 'NotImplementedError'
+    return False
+
+
+def checkConstantValues(tree: ast.Module, source: str, checked_file: Path) -> list[Finding]:
+    """Flag a number in a comment that is the value of a constant the comment names, or of a constant just below.
+
+    A constant is an assignment of a number literal to an UPPER_CASE name, at any level. Just below is on the line of
+    the comment or on the 3 lines after the comment. 0 and 1 are left out, and so is a number in backticks.
+
+    Returns:
+        One finding per comment line and constant.
+    """
+    # matches:
+    # `10` and `0.25`
+    # rejects:
+    # `v2` and `1.2.0`
+    NUMBER = re.compile(r'(?<![\w.])\d+(?:\.\d+)?(?![\w.])')
+    CONSTANT_NAME = re.compile(r'[A-Z][A-Z0-9_]*')
+    constants = [
+        (node.lineno, node.targets[0].id, float(node.value.value))
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and len(node.targets) == 1
+        and isinstance(node.targets[0], ast.Name)
+        and CONSTANT_NAME.fullmatch(node.targets[0].id)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, (int, float))
+        and not isinstance(node.value.value, bool)
+        and node.value.value not in {0, 1}
+    ]
+    findings: list[Finding] = []
+    for number, text in commentLines(source):
+        values = {float(value) for value in NUMBER.findall(re.sub(r'`[^`]*`', '', text))}
+        for declared, name, value in constants:
+            if value in values and (number <= declared <= number + 3 or re.search(rf'\b{name}\b', text)):
+                findings.append(Finding(checked_file, number, 'NAR027', name))
+    return findings
+
+
 def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> list[Finding]:
     """Flag a function whose body opens with a comment about what the function returns.
 
@@ -894,6 +972,8 @@ def checkFile(checked_file: Path) -> list[Finding]:
         *checkDocstringSample(tree, checked_file),
         *checkProseWording(tree, source, checked_file),
         *checkReturnContract(tree, source, checked_file),
+        *checkOneLineDocstring(tree, checked_file),
+        *checkConstantValues(tree, source, checked_file),
     ]
     blocks = codeprose.commentBlocks(source)
     unfilled = rewrap.unfilledLines(source, blocks, None)

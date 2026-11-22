@@ -20,3 +20,7 @@
   Where a single file is required, put the tests behind `### tests` before the
   `### vocabulary` divider and import hypothesis lazily.
 
+- **No test only because a bug was fixed.** Write a regression test when the code under test is
+  likely to break the same way again, or when the test checks an invariant of the program. Write the
+  case and the expected result in the name and the docstring of the test. Use the present tense.
+  (R12-no-changelog-tests)

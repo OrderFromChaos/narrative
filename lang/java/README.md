@@ -31,7 +31,7 @@ shortened):
 ```
 $ python3 ~/.claude/skills/narrative-gtnh/verify.py --since origin/dev
 gradle         spotless, compileJava, narrativeCheckstyle and narrativePmd ran
-./src/main/java/com/sbancuz/plannh/Planted.java:3: NAR118 Planted has no javadoc. A top-level type has one of at least one sentence
+./src/main/java/com/sbancuz/plannh/Planted.java:3: NAR118 Planted doesn't have a javadoc. A top-level type has one of at least one sentence
 ./src/main/java/com/sbancuz/plannh/Planted.java:5: NAR124-gtnh package-private member. Make it private or public
 ./src/main/java/com/sbancuz/plannh/data/MachineProfile.java:125: NAR017 'profile knows'
 ./src/main/java/com/sbancuz/plannh/data/MachineProfile.java:126: NAR104 fully-qualified name in code. Import the type

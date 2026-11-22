@@ -24,7 +24,7 @@ A fact about a value from vanilla Minecraft, Forge, another mod or an old save, 
 field or a missing NBT tag, goes above the code for the value (J1-F12):
 
 ```java
-// worlds saved before 1.2.0 have no "tier" tag
+// worlds saved before 1.2.0 don't have a "tier" tag
 final int tier = tag.hasKey("tier") ? tag.getInteger("tier") : 1;
 ```
 
@@ -59,7 +59,7 @@ final int tier = tag.hasKey("tier") ? tag.getInteger("tier") : 1;
 ### Depth
 
 ```java
-// The vendor API returns at most 100 rows per page and no total count.
+// The vendor API returns at most 100 rows per page, and doesn't return a total count.
 // Keep requesting until a page comes back short.
 while ((page = fetchPage(cursor)).size() == PAGE_SIZE) {
 ```

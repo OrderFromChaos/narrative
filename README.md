@@ -212,6 +212,11 @@ Values indicate rate per 100 comment blocks, with 95% CIs.
 | `NAR020` | a clause with its subject cut before `, so`: `Named, so a recreated container gets it back` |
 | `NAR021` | a clause joined by `as` or `, where`: `a float, as in the parser` |
 | `NAR022` | `it` or `its` after two or more singular nouns in one sentence: `QuotaLedger extends Store, and it caches every read` |
+| `NAR023` | a docstring or a javadoc on a function of one line |
+| `NAR024` | a contrast with `, not` or `not merely`: `amounts are in cents, not dollars` |
+| `NAR025` | `no`, `nothing` or `none` on a subject or an object: `writes nothing`, `no invoice is sent twice` |
+| `NAR026` | a condition as a phrase before a comma: `With a full disk, export() deletes the partial file` |
+| `NAR027` | the value of a constant in a comment: `# retry every 30 s` above `RETRY_DELAY_SECONDS = 30` |
 
 `NAR000` is code for a file that could not be read or parsed.
 

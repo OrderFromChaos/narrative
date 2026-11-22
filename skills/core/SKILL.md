@@ -13,7 +13,7 @@ every language of Narrative. Load this skill together with the skill of the lang
 (R11-steps-summary)
 1. Load this skill and `nar:<language>` before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
-3. Read the findings and the three review lists of that run. Do not filter the output with `grep`, `head` or
+3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head` or
    `tail`.
 4. Fix every finding and answer every list entry from that one run, then run `verify.py` once more.
 5. In the report, say how many entries of each list you read, such as `read 212 of 212 sentences`.
@@ -93,8 +93,8 @@ callers do becomes false when they change. When the reader needs the reason for 
 a fact about what the function returns or changes. Not `Return a frozen mapping. The pricing
 functions call this on each request`, but `Return a frozen mapping: the rates don't change while the
 process runs`. That docstring is on a method that subclasses override, and the developer of each
-override reads the docstring to learn what to return. Don't write a docstring for a function that
-only returns a constant. A requirement on the callers is part of the function's contract, such as
+override reads the docstring to learn what to return. Don't write a docstring for a function of
+one line. `NAR023` flags a docstring or a javadoc on a function of one line (R12-one-line-function). A requirement on the callers is part of the function's contract, such as
 `Call only from the main thread`. A fact about a function that this function calls is allowed. That
 call should be in the code below the comment.
 
@@ -146,7 +146,7 @@ changes. (J1-pr-base-comments)
     `verify.py` for a `FIXME:` is under **FIXME** in **Comments in <language>**, in the skill
     `nar:<language>`.
   - `TODO:` tech debt, future improvement
-  - a stated assumption: `vendor documents no encoding, UTF-8 assumed`
+  - a stated assumption: `vendor doesn't document an encoding, UTF-8 assumed`
   - a label on a block of at least 4 lines, ideally 6 or more: `parse data` (R10-block-label-size)
   - a rule a developer must enforce, with capitals scaled to the cost of breaking the rule:
     `read-only: NEVER write to the audited readings`
@@ -156,8 +156,23 @@ changes. (J1-pr-base-comments)
 - standard library or language behaviour the reader knows: `<=`, case sensitivity, the null value (R10-Q19, R10-Q21, R10-Q26, R10-Q49)
 - why the file follows this style guide: `so this is a class and not a module` (R9-02, R10-Q01)
 - decision ids such as `(Q08)` (R7-D04-comments, `NAR012`)
-- changelog: an earlier state of the code, or a fixed bug with nothing left of the bug (R10-Q04,
-  R10-Q08, R10-Q52, `NAR015`)
+- changelog: an earlier state of the code, the story of a bug, or a report from a user. Cut the
+  sentence:
+  - `a cache of 64 entries once evicted the hot keys under load` → no comment
+  A story of a bug in the present tense is still a changelog. Look for the past tense and for
+  `once` in a sentence about the code or the users. When the code depends on a fact behind the
+  bug, write the fact as a Fence. The form of a Fence is in **Sentence form**. Keep a Source fact
+  about old data: `databases written before 2025/04/03 lack the account_id column`. (R10-Q04,
+  R10-Q08, R10-Q52, R12-no-changelog, `NAR015`)
+- the value of a constant. The value is in the declaration of the constant, and a comment with the
+  value is wrong once the constant changes. Write what the value means, or nothing:
+  - `# retry every 30 s` above `RETRY_DELAY_SECONDS = 30` → no comment
+  - `# the vendor accepts 1 to 100` beside `MIN_PAGE_SIZE` and `MAX_PAGE_SIZE` → `# page sizes the
+    vendor API accepts`
+  The item is about config comments too, because a config comment is code text. Help text for
+  players in the lang file is outside the item. A tooltip may have `Range 8-64 blocks`. `NAR027` flags a
+  number in a comment that is the value of a constant the comment names, or of a constant just below
+  (R12-no-constant-values)
 - alternatives never in the code (`rather than`, `instead of`), except in architecture discussion (R10-Q07, R10-rather-than)
 - risks far outside the task's scale, and decisions too inconsequential for a later reader to reconsider (R10-Q13, R10-rating)
 - future needs nobody has documented or planned (R10-Q15)
@@ -189,6 +204,15 @@ R10-depth-example, R10-period-join)
   `as` to other code states no fact: `a float, as in the parser` → `the parser computes in float
   too`. `NAR021` flags `as in`, a sentence that opens with `As` and has no verb, `as the X verbs
   it`, and `, where` (R10-period-join, R11-connective-as-where)
+- no free modifier. A free modifier is a phrase without a verb that follows a comma: `, in one
+  list for each tenant`, `, measured,` or `, with the row number in the error`. The reader can
+  attach a free modifier to the wrong noun. Write the phrase as a clause with a
+  subject and a verb, or as a separate sentence, or cut the phrase:
+  - `The retry jobs, in one list for each tenant of the scheduler` → `` `RetryQueue` has one list
+    of jobs per tenant ``
+  - `export() stops at the first bad row, with the row number in the error` → `export() stops at
+    the first bad row. The row number is in the error message`
+  The fourth review list of `verify.py` has every sentence with a free modifier (R12-no-free-modifier)
 - terse. Drop articles where nothing is lost, never the subject or the verb (R10-seed-10, R10-terse-narrow)
 - every clause has a subject and a verb. A label for the thing is fine: `least recently used
   first`, `Exact, case-sensitive comparison.` A predicate with the subject cut is not:
@@ -230,7 +254,7 @@ R10-depth-example, R10-period-join)
   temporary file and rename the temporary file over the original`. Without the marker, the second
   sentence reads as more about the first approach (R10-alternative-marker)
 - possessives and noun compounds over relative clauses: `the archive's collections`, `in read order` (R10-seed-1, R10-seed-9, R10-Q32)
-- trade terms over paraphrase: `has no side effects`. Modifiers before the noun: `JSONL logs`. (R10-seed-3, R10-seed-4)
+- trade terms over paraphrase: `doesn't have side effects`. Modifiers before the noun: `JSONL logs`. (R10-seed-3, R10-seed-4)
 - the conclusion, not the derivation. State what the code means, not how the code gets there.
   `empty when malformed`, not `empty when a malformed line names no customer as a string`. Cut a
   clause about an internal check, structure or attribute unless the reader needs the clause to act.
@@ -240,6 +264,37 @@ R10-depth-example, R10-period-join)
   places`. (R10-intensifiers)
 - the full term when a short form is ambiguous: `timezone`, not `zone` (R10-clipped-terms)
 - contractions and the imperative (R10-Q28, R10-Q29, R10-we)
+- a negation is on the verb: `doesn't`, `isn't`, `can't`. Don't put `no`, `nothing` or `none` on
+  the subject or the object of a verb, or after `is`:
+  - `exportMonth() writes nothing for an empty month` → `exportMonth() doesn't write a file for an
+    empty month`
+  - `a draft invoice is no proof of payment` → `a draft invoice isn't proof of payment`
+  - `no invoice is sent twice` → `an invoice isn't sent twice`
+  - `the fields that no parser reads` → `the fields that parseInvoice() doesn't read`
+  `NAR025` flags this form (R12-negate-verb)
+- a condition as a clause after `when` or `if`. The clause has a subject and a verb. Don't write
+  the condition as a phrase after `at`, `with`, `beside`, `against`, `on` or `for` at the start of
+  a sentence:
+  - `with a full disk, export() deletes the partial file` → `when the disk is full, export()
+    deletes the partial file`
+  - `with an expired token, the retry fails` → `when the token has expired, the retry fails`
+  Keep an opener with a platform or a version, such as `On Windows,` or `In Python 3.11,`. `NAR026` flags an opener
+  after any of these words but `for`, because an opener with `for` is usually a purpose (R12-no-prep-opener)
+- no contrast with `X, not Y` or `not merely`. State X. When the reader needs a fact about Y, write
+  the fact in a separate sentence:
+  - `amounts are in cents, not dollars` → `amounts are in cents`
+  - `Inclusive, not exclusive: the end date is billed` → `end date is billed`
+  - `retry on a timeout, not on a refusal` → `retry on a timeout. Raise ConnectionError when the
+    server refuses the connection`
+  `NAR024` flags `, not` and `not merely` (R12-not-contrast)
+- don't make the first sentence of a docstring a noun phrase for the identifier. Write a sentence
+  with a verb about what the reader can't get from the name, or cut the docstring:
+  - `The size of this stratum (number of lines)` on the field `size` → no javadoc, and the name
+    `lineCount`
+  - `A GL display list of the mob spawn overlay.` on the class `MobOverlayDisplayList` →
+    `` `MobOverlayDisplayList` compiles the overlay quads of each chunk column into one GL display
+    list. ``
+  (R12-no-name-phrase)
 - callables as `name()`, and no article before an identifier (R10-Q30, R10-Q35)
 - only names the reader can resolve from the comment's position (R10-Q22, R10-Q21)
 - with code or an abstract noun as the subject, only verbs for what code literally does: `returns`,
@@ -290,6 +345,16 @@ below shows the totals`.
 It comes from `agentverbs.py`, which `verify.py` runs. The check parses each sentence, and
 some noun compounds and participles are flagged by mistake. (R10-agentverb-check,
 R10-agentverb-agency)
+
+To fix a `NAR017` finding, make the subject the person or the program that does the act, and keep
+the verb: `the invoice tells the customer the due date` → `billing service prints the due date on
+the invoice`. Don't turn the verb into a noun, such as `the payment's arrival` or `first
+receipt`. Don't swap in a verb of little content, such as `gets`, `is`, `becomes`, `stays` or
+`fills`, and don't give a time as `X is the moment of Y` or `X is when Y`:
+- `the due date is the moment of the invoice's issue` → `issueInvoice() sets the due date to the
+  issue date plus 30 days`
+- `the late fee stays on the invoice` → `applyLateFee() adds the late fee to the invoice`
+(R12-name-the-actor)
 
 `NAR020`, from the same check, is a clause with no subject before `, so`: `Named, so a recreated
 container gets it back`, or a subordinate clause before `, so`: `Whether some terms differ by
@@ -344,26 +409,28 @@ Take these steps in order before writing or rewording a comment. The kinds, the 
 
 ### Prose review
 
-**Fix every finding of `verify.py` first. Then read the three lists in the file named on the last
+**Fix every finding of `verify.py` first. Then read the review lists in the file named on the last
 line of the output, plus every error message and `--help` string.** You rewrite sentences when you
 fix findings, so read the lists from the run after the fixes. The first list has every sentence of every comment and
 docstring in the code, and every sentence of each named page. The second has each subject that
 cannot act, paired with the subject's verb, for every verb that is neither a `NAR017` finding nor
 an operation of code. A verb such as `reads` or `runs` is an operation of code only with a direct
 object and code as the verb's subject: `PlanLoader reads the plan file`, not `the spec reads`. The
-third has every sentence with `it`, `its` or a standalone `that`, each after the sentence before.
-Take these steps for each sentence. (R10-prose-inventory, R10-closing-review, R11-pronoun-list,
+third has every sentence with `it`, `its` or a standalone `that`, each after the sentence before. The fourth has every
+sentence with a free modifier: write the phrase as a clause or a separate sentence, or cut the phrase
+(R12-no-free-modifier). In Java, a fifth list has each method over 20 body lines (`NAR116`). Take these steps for each
+sentence. (R10-prose-inventory, R10-closing-review, R11-pronoun-list,
 R11-literal-review)
 
 1. Name the subject and the verb. Can that subject perform that verb? Most pairs are in the second
-   list. A subject that is misread in the parse is not in the list.
+   list. A subject that is misread in the parse is not in the list. If the subject can't perform the verb, name the person or the program that does the act. The details are in the `NAR017` rule of **Comments**.
 2. For each noun phrase, name the variable, function, file or value that the phrase refers to. If
    none fits, or two do, rewrite. Check each descriptive word of the phrase by **A descriptive word
    in a term is a claim**. For each pronoun in the third list, name the noun the pronoun stands for.
    If that noun is in another sentence, repeat the noun. (R10-stand-in)
 3. List the code paths that reach the line: each branch, each caller, each failure. Check the claim
    on every path. A missing log entry is not proof that the event never happened. Before you write a
-   claim such as `the log has no stop event, so the server never stopped`, check that the code logs a
+   claim such as `the log doesn't have a stop event, so the server didn't stop`, check that the code logs a
    stop event on every path where the server can stop. (R11-absence-proof)
 4. Test the sentence against **Sentence form**, and the comment against the restatement gate.
 
@@ -398,7 +465,7 @@ or `was changed to`. Changelog wording belongs only in a changelog file that alr
 repository, such as `CHANGELOG.md`. Do not create a changelog file unless the user asks for one.
 (R11-page-changelog)
 
-Only the wording checks and `agentverbs.py` run on a page. `verify.py` writes the three lists of
+Only the wording checks and `agentverbs.py` run on a page. `verify.py` writes the lists of
 **Prose review** for each named page too. With `--since`, only the passages of a page with a changed
 line are checked and listed. Take the steps of **Prose review** for each sentence you wrote, and
 handle each finding by the rule **A finding is information**. (R10-published-prose,
