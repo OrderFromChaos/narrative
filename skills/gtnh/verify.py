@@ -5,8 +5,8 @@ Use this instead of calling the tools by hand. A missing tool, report or JDK is 
 The project is the current directory, a Gradle build with GTNHGradle. The Java level of the project comes from
 enableModernJavaSyntax in gradle.properties: Java 25 for jvmDowngrader or modern, Java 17 syntax with the Java 8 library
 for jabel or true, and Java 8 for false or no value. First, javachecks.py --rewrap fills each paragraph of the javadoc
-and the whole-line // comments again up to column 120, unless --no-fix is given. Under --since, only a paragraph with a
-changed line is re-wrapped. Then, in one Gradle run, the code is formatted (spotlessApply, or spotlessCheck with
+and the whole-line // comments again up to column 120, unless --no-fix is given. --since limits the re-wrap to
+paragraphs with a changed line. Then, in one Gradle run, the code is formatted (spotlessApply, or spotlessCheck with
 --no-fix), compiled with the raw-type and unchecked warnings of javac, and checked with Checkstyle and PMD and the
 configs beside this script. javac comes from the JDK of the project's toolchain, and Checkstyle and PMD run on a JDK 25
 at every level. Those tasks come from the init script narrative.init.gradle, so verify.py doesn't change a project file.
@@ -18,25 +18,24 @@ named, verify.py doesn't check a Java source. In a Gradle project, verify.py the
 page read from stdin, Markdown, or the suffix given with --stdin-suffix. The page is saved in the cache directory as
 `stdin` with that suffix, and each finding is reported at the path of the saved page.
 
-With --prose-only, Gradle does not run: no spotless, javac, Checkstyle or PMD. After a re-wrap, javachecks.py checks the
-comments and the pages, and verify.py writes the review lists. A run after an edit of comments only takes seconds
-instead of a Gradle run. The checks of Gradle still have to pass in a run without --prose-only before the change is
-done.
+--prose-only skips the Gradle run, so spotless, javac, Checkstyle and PMD don't run. After a re-wrap, javachecks.py
+checks the comments and the pages, and verify.py writes the review lists. A run after an edit of comments only takes
+seconds instead of a Gradle run. The checks of Gradle still have to pass in a run without --prose-only before the change
+is done.
 
-With --project DIR, DIR is the project in place of the current directory. Each named path is read from the current
-directory.
+--project DIR is the project directory. Each named path is read from the current directory.
 
 After the checks, verify.py writes five review lists over the Java sources and the pages to review-lists.txt in the
 cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every subject that cannot act
 paired with the subject's verb, every sentence with a pronoun, every sentence with a free modifier, and every method
 over 20 body lines (NAR116). The list of methods is from the PMD report, so a run with --prose-only or with pages only
 doesn't list methods. The path of the file and the number of entries in each list are on the last line of the output, so
-`tail -1` shows them. verify.py doesn't write the lists on exit 2, or after a Gradle failure. Without --since, each list
-stops after 1000 entries, with the command for the next 1000. Under --since, a passage of a source file or a page is
-checked and listed when a line of the passage changed.
+`tail -1` shows them. verify.py doesn't write the lists on exit 2, or after a Gradle failure. Each list stops after 1000
+entries, and the last line of the list is the command for the next 1000. --since removes the limit. --since also limits
+the checks and the lists to passages with a changed line.
 
-With --keep FILE:LINE:CODE, nothing is checked. The finding is added to the keep-list, and is not printed in later runs.
-The keep-list is described in the docstring of javachecks.py.
+--keep FILE:LINE:CODE adds the finding to the keep-list and doesn't run a check. A kept finding isn't printed in later
+runs. The keep-list is described in the docstring of javachecks.py.
 
 Usage:
     $ python3 verify.py                          # every src/*/java of the mod in the current directory
@@ -53,8 +52,8 @@ Exit codes:
     0  every check passed. Warnings may be printed
     1  at least one finding, or the code does not compile or is not formatted
     2  the toolchain, gradle.properties, gradlew or a report is missing, enableModernJavaSyntax or
-       forceToolchainVersion has a value with no level in Scope of SKILL.md, nothing was checked, javachecks.py
-       stopped before its count line, or javachecks.py --prose failed and wrote no review list
+       forceToolchainVersion has a value without a level in Scope of SKILL.md, verify.py didn't check a file,
+       javachecks.py stopped before its count line, or javachecks.py --prose failed and didn't write a review list
 """
 
 from __future__ import annotations
@@ -298,7 +297,7 @@ def reportFindings(
     lists_path = cache_dir / LISTS_NAME
     counts = writeReviewLists(venv_python, list_arguments, lists_path, all_sentences=all_sentences)
     if counts is None:
-        print('verify.py: javachecks.py --prose failed, so no review list was written', file=sys.stderr)
+        print("verify.py: javachecks.py --prose failed, so verify.py didn't write the review lists", file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
     methods = methods_path.read_text(encoding='utf-8').splitlines() if methods_path.is_file() else []
@@ -416,7 +415,7 @@ def readGradleProperties(properties_path: Path) -> GradleSettings:
 
     Raises:
         PrerequisiteError: the file does not exist, enableModernJavaSyntax has an unknown value, or
-            forceToolchainVersion names a JDK other than the toolchain of the level.
+            forceToolchainVersion is a JDK other than the toolchain of the level.
     """
     if not properties_path.is_file():
         raise PrerequisiteError(f'no {properties_path}. Run verify.py from the root of a GTNHGradle project')
@@ -449,8 +448,8 @@ def readGradleProperties(properties_path: Path) -> GradleSettings:
 def findGradlew(project_dir: Path) -> list[str]:
     """Return the command that runs the Gradle wrapper of the project.
 
-    A wrapper with no executable bit, as in a checkout of a repository that stores gradlew with mode 644, runs through
-    sh on Linux and macOS.
+    A wrapper without an executable bit runs through sh on Linux and macOS. A repository that stores gradlew with mode
+    644 has such a wrapper in each checkout.
 
     Raises:
         PrerequisiteError: the project doesn't have a Gradle wrapper.
@@ -545,7 +544,7 @@ def runGradle(
 
     The reports and caches of earlier runs stay, so a task whose inputs did not change is up to date. Incremental
     compilation is off in the init script, so compileJava compiles every file or is up to date. Its output is written to
-    javac.log only in a run where compileJava compiled. Under --since, Checkstyle and PMD read only the files of
+    javac.log only in a run where compileJava compiled. `changed_files` limits Checkstyle and PMD to the files of
     changed-files.txt.
     """
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -614,7 +613,7 @@ class PrerequisiteError(RuntimeError):
 
 
 class JavaLevel(Enum):
-    """A Java level of GTNHGradle: the enableModernJavaSyntax values, the toolchain, and the level's NAR107 message.
+    """A Java level of GTNHGradle: the values of enableModernJavaSyntax, the toolchain, and the level's NAR107 message.
 
     The values and toolchains are those of ToolchainModule.computeToolchainVersion in GTNHGradle 2.0.34. A jabel build
     compiles with --release 8, so the library is that of Java 8.

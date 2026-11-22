@@ -682,7 +682,7 @@ not earn its place.** (R9-09)
 - **where the leftover, default and failure cases go**
 - a **sample** of concrete text the class reads or writes
 - a **constraint from outside the program**: `Forge drops a tile entity whose readFromNBT() throws`
-- a **guarantee a caller needs**: `The call doesn't write a file, send a packet or change a world`
+- a **guarantee a caller needs**: `` `preview()` doesn't write a file, send a packet or change a world ``
 
 - **A method gets a javadoc when a reader can't learn from the name of the method and the comments
   of the body what the method does.** Answer one question for each method in the `NAR116` review

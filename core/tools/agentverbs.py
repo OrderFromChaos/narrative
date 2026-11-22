@@ -89,21 +89,21 @@ preposition, a past participle or a number, such as `, in one list for each tena
 clause or a separate sentence, or cuts the phrase. A phrase after `and`, `or`, `but`, `so` or `then`, and a list of
 numbers, are left out. The list isn't a finding, and the exit code is 0.
 
-Without --since, each of the three lists stops after 1000 entries, with the command for the next 1000: --from-pair N
-with --review, --from-pronoun N with --pronouns, and --from-modifier N with --free-modifiers. With --all-sentences,
-every entry is listed.
+Each of the three lists stops after 1000 entries, and the last line of the list is the command for the next 1000:
+--from-pair N with --review, --from-pronoun N with --pronouns, and --from-modifier N with --free-modifiers. --since and
+--all-sentences remove the limit.
 
-With --since REF, only the comment, docstring and page passages with a line that the diff against merge-base(HEAD, REF)
-adds or changes are checked and listed.
+--since REF limits the checks and the lists to passages with a line that the diff against merge-base(HEAD, REF) adds or
+changes.
 
-With --cache PATH, the spaCy results of each passage are kept in PATH between runs, keyed by the text of the passage.
-The cache is discarded when agentverbs.py, words.json, spaCy or the spaCy model changes, and spaCy is loaded only when a
-passage is not in the cache.
+--cache PATH stores spaCy results in PATH between runs. Each entry is keyed by passage text. The cache is discarded when
+agentverbs.py, words.json, spaCy or the spaCy model changes, and spaCy is loaded only when a passage is not in the
+cache.
 
 Exit codes:
     0  nothing flagged, or a review or pronoun list printed
     1  at least one line flagged
-    2  git failed for --since, or REF names no commit
+    2  git failed for --since, or REF isn't a commit
 """
 
 from __future__ import annotations
@@ -413,8 +413,8 @@ def checkFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] 
 
     A passage is checked as one text, so a sentence wrapped over several lines is parsed whole. In a source file, a noqa
     on any line of a passage silences that code for the whole passage. A paragraph of a page can run to many sentences,
-    so in a page a noqa silences only the findings on the line of the noqa. With `changed_lines`, only the passages with
-    a changed line are checked.
+    so in a page a noqa silences only the findings on the line of the noqa. `changed_lines` limits the check to passages
+    with a changed line.
 
     Returns:
         One finding per agent verb and per clause with no subject, on the line of the finding's last word.
@@ -471,7 +471,7 @@ def reviewFile(
 ) -> list[tuple[int, str]]:
     """List the subject and verb pairs of one file for review, leaving out what a NAR017 noqa silences.
 
-    With `changed_lines`, only the passages with a changed line are listed.
+    `changed_lines` limits the list to passages with a changed line.
 
     Returns:
         The line and the `subject verb` of each pair, in passage order.
@@ -501,7 +501,7 @@ def reviewFile(
 def pronounFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] | None = None) -> list[PronounLine]:
     """List each sentence of one file with a pronoun, for the review.
 
-    With `changed_lines`, only the passages with a changed line are listed.
+    `changed_lines` limits the list to passages with a changed line.
 
     Returns:
         One entry per sentence, in passage order.

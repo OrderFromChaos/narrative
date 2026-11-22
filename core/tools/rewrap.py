@@ -62,7 +62,7 @@ DETAIL = f'paragraph not filled up to column {WIDTH}. verify.py re-wraps the par
 
 
 def rewrapSource(source: str, blocks: list[list[Line]], changed_lines: set[int] | None) -> str:
-    """Fill each paragraph of the blocks again. Under --since, only a paragraph with a changed line.
+    """Fill each paragraph of the blocks again. `changed_lines` limits the fill to paragraphs with a changed line.
 
     Returns:
         The source, with only the line breaks of the filled paragraphs changed.
@@ -94,7 +94,7 @@ def unfilledLines(source: str, blocks: list[list[Line]], changed_lines: set[int]
 
 
 def paragraphsOf(blocks: list[list[Line]], changed_lines: set[int] | None) -> list[Paragraph]:
-    """Split every block into paragraphs. Under --since, keep only the paragraphs with a changed line."""
+    """Split every block into paragraphs. `changed_lines` limits the result to paragraphs with a changed line."""
     found = [paragraph for block in blocks for paragraph in splitBlock(block)]
     if changed_lines is None:
         return found
@@ -186,8 +186,8 @@ def refill(lines: list[str], paragraph: Paragraph) -> Replacement | None:
 class Line:
     """One line of a comment: the line number, the margin up to the text, and the text.
 
-    With `fixed`, the line stays as written and ends the paragraph, for a pragma or a line of a sample. With a `hang`,
-    the line opens a paragraph, and the next lines of the paragraph are indented past the margin by `hang` columns.
+    `fixed` is set on a pragma and on a line of a sample. A fixed line stays as written and ends the paragraph. A line
+    with a `hang` opens a paragraph, and the next lines of the paragraph are indented `hang` columns past the margin.
     splitBlock() sets the hang of a list item to the width of the list marker. A `continuation` is the margin of every
     next line of a paragraph that the line opens, such as the indent under the description of a javadoc block tag.
     """

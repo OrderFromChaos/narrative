@@ -7,19 +7,19 @@ covers a return contract written as a comment. NAR023 covers a docstring on a fu
 value of a constant in a comment. NAR125 covers a paragraph of a comment or docstring that is not filled up to column
 120.
 
-With --rewrap, checks.py checks nothing. Each paragraph of the comments and docstrings is filled again up to column 120
-in place, by rewrap.py, and under --since only a paragraph with a changed line.
+--rewrap runs rewrap.py and doesn't run a check. rewrap.py fills each paragraph of comments and docstrings again up to
+column 120, and rewrites the file. --since limits the re-wrap to paragraphs with a changed line.
 
 A Markdown, HTML or plain text file named on the command line gets the wording checks only, on the passages that
 prose.py reads from the file. A directory expands to its Python files.
 
-With --since REF, only the Python files that the diff against merge-base(HEAD, REF) adds or changes are checked, and a
-finding is reported only when the finding's lines overlap the changed lines. The lines of a finding in a comment,
-docstring or page are the lines of the passage, and the lines of a finding on a `def` or `class` line are the lines of
-the definition. A named page without a changed line doesn't have a finding or a sentence in the list.
+--since REF reports only findings on lines that the diff against merge-base(HEAD, REF) adds or changes. The lines of a
+finding in a comment, docstring or page are the lines of the passage, and the lines of a finding on a `def` or `class`
+line are the lines of the definition. A named page without a changed line doesn't have a finding or a sentence in the
+list.
 
---prose lists every sentence of every comment, docstring and page. Without --since, the list stops after 1000 sentences,
-with the command for the next 1000.
+--prose lists every sentence of every comment, docstring and page. The list stops after 1000 sentences, and the last
+line is the command for the next 1000. --since removes the limit.
 
 See tooling.md for what the other tools own.
 
@@ -35,7 +35,7 @@ Usage:
 Exit codes:
     0  nothing found
     1  at least one finding
-    2  git failed for --since, or REF names no commit
+    2  git failed for --since, or REF isn't a commit
 """
 
 from __future__ import annotations
@@ -237,7 +237,7 @@ def mutatedModuleNames(func: ast.FunctionDef | ast.AsyncFunctionDef, module_vars
     """Find module-level names this function changes in place.
 
     Detects mutating method calls, augmented assignment, `del`, and assignment through a subscript or attribute. A plain
-    `NAME = x` rebind is not counted. When the function doesn't declare `global`, the rebind binds a local, and NAR006
+    `NAME = x` rebind is not counted. A rebind in a function without a `global` declaration binds a local, and NAR006
     reports that case.
 
     Args:
@@ -863,7 +863,7 @@ def proseInventory(checked_file: Path, changed_lines: set[int] | None = None) ->
 
     A Markdown, HTML or plain text page is prose throughout, so every sentence of the page is listed. The lines of a
     comment, a docstring or a paragraph are joined first, so a sentence wrapped over several lines is listed whole, on
-    the line where the sentence starts. With `changed_lines`, only the passages with a changed line are listed.
+    the line where the sentence starts. `changed_lines` limits the list to passages with a changed line.
 
     Returns:
         Line number and sentence, or nothing for a file that cannot be read or parsed.

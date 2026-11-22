@@ -522,7 +522,7 @@ asyncio is the default for I/O-bound work. (R2-04)
   gap. When the transport is fake, tests pass while production fails. (R2-02, Q16)
 
 - **Property-based tests (hypothesis) wherever there is an invariant**: round-trips, ordering,
-  conservation, numeric range. Example-based tests cover specific regressions on top. A very slow
+  conservation, numeric range. A very slow
   stateful property test may be opt-in rather than run in CI. (R2-12)
 
 - **Test functions are `testSomethingDescriptive`**, in camelCase with a `test` prefix. The
@@ -674,7 +674,7 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 - **In the summary line, use the real name of what the code produces.** `Read the quota file, and
   construct a QuotaPolicy accordingly` beats `Read the quota file, and answer what it states about a
   team and about a path`, a paraphrase of a type that already has a name.
-- **Stop at the fact.** `The first malformed field stops the read.` is the rule. A following
+- **Stop at the fact.** `` `readPolicy()` stops at the first malformed field. `` is the rule. A following
   sentence on why stopping is right is not functionality. This is `R9-02` one step further in. The
   ban is not only on style-guide justification but on justifying the design at all. Where a reason
   has to survive, it is a `#` comment at the line the reason concerns.
@@ -688,7 +688,7 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   they circle an unstated default.
 - a **sample** of concrete text the module reads or writes
 - a **constraint from outside the program** — `the standard formatter of logging discards extra`
-- a **guarantee a caller needs** — `The call doesn't write a file, print output or log an event`
+- a **guarantee a caller needs** — `` `dryRun()` doesn't write a file, print output or log an event ``
 
 - **A function gets a docstring when the function's contract is complex**, meaning the function
   takes more than three parameters, or exceeds 20 lines. Below both, the contract goes in `#`

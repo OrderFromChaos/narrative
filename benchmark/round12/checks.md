@@ -39,11 +39,17 @@ starts. Python `NAR019` and Java `NAR120` read every line of the comment. `NAR02
 whole comment block. In Java, an inline tag such as `{@link X#y(A,` / `B)}` over two lines of a javadoc is code on both
 lines.
 
+## A known false positive
+
+`NAR026` flags an opener of time with `over` or `at`, such as `Over a few weekends,` and `At C1 the guided agent`, in
+the README. The README is out of the de-poisoning pass, so the form is only noted here.
+
 ## The skill's own text
 
 In the tools of the repository, the new checks have about 120 findings in text that was there before round 12, such as
 `With --since REF,` (`NAR026`) and `The list is no finding` (`NAR025`). 9 functions of the tools have a docstring on a
-body of one line (`NAR023`). These findings are for the de-poisoning pass, with the conflicts in `depoison_list.md`.
+body of one line (`NAR023`). The de-poisoning pass rewrote these findings, and your choices for the conflicts are in `depoison_questions.md`. The
+scripts of `eval/` aren't part of a skill, and keep about 30 findings.
 
 ## Open
 

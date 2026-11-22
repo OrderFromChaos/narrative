@@ -6,9 +6,9 @@ NAR018, NAR024) and the agent-verb checks of agentverbs.py (NAR017, NAR020, NAR0
 of a constant in a comment is a NAR027 finding. The structural checks are PMD XPath rules in pmd-ruleset.xml. Every tool
 finding is mapped to a NAR code here.
 
-With --rewrap, javachecks.py checks nothing. Each paragraph of the javadoc and the whole-line // comments is filled
-again up to column 120 in place, by rewrap.py, and under --since only a paragraph with a changed line. Without --rewrap,
-NAR125 flags each paragraph that the re-wrap would change.
+--rewrap runs rewrap.py and doesn't run a check. rewrap.py fills each paragraph of javadoc and whole-line // comments
+again up to column 120, and rewrites the file. --since limits the re-wrap to paragraphs with a changed line. A run
+without --rewrap reports NAR125 for each paragraph that the re-wrap would change.
 
 Usage:
     $ python3 javachecks.py src/main/java/com/example/PlanReader.java
@@ -29,39 +29,39 @@ One line per finding, and a warning has the word `warning` before the warning's 
     src/main/java/com/example/PlanReader.java:42: NAR017 'report names'
     src/main/java/com/example/PlanReader.java:57: warning NAR119 FIXME in a comment
 
-With --since REF, a finding is reported only when its lines overlap the lines that the diff against merge-base(HEAD,
-REF) adds or changes. The lines of a prose finding are the lines of the finding's passage. For a finding on a method,
-they are the lines of the method, and for a finding on a type, the line of the type's declaration.
+--since REF reports only findings on lines that the diff against merge-base(HEAD, REF) adds or changes. The lines of a
+prose finding are the lines of the finding's passage. For a finding on a method, they are the lines of the method, and
+for a finding on a type, the line of the type's declaration.
 
-With --cache PATH, the spaCy results of each passage are kept in PATH between runs, keyed by the text of the passage.
-The cache is discarded when agentverbs.py, words.json, spaCy or the spaCy model changes, and spaCy is loaded only when a
-passage is not in the cache.
+--cache PATH stores spaCy results in PATH between runs. Each entry is keyed by passage text. The cache is discarded when
+agentverbs.py, words.json, spaCy or the spaCy model changes, and spaCy is loaded only when a passage is not in the
+cache.
 
-A Markdown, HTML or plain text page named on the command line gets the prose checks, and with --prose, the lists cover
-the page too. Under --since, a page passage is checked and listed when a line of the passage changed.
+A Markdown, HTML or plain text page named on the command line gets the prose checks, and --prose adds the page to the
+lists. --since limits the checks and the lists of a page to passages with a changed line.
 
-With --prose and without --since, each of the four lists stops after 1000 entries, with the command for the next 1000
-entries of that list: the sentences, the subject-verb pairs, the pronoun sentences and the free modifiers.
---from-sentence, --from-pair, --from-pronoun and --from-modifier print only the list they name, from the given entry.
-With --all-sentences, every entry is listed.
+--prose prints four lists: the sentences, the subject-verb pairs, the pronoun sentences and the free modifiers. Each
+list stops after 1000 entries, and the last line of the list is the command for the next 1000. --from-sentence,
+--from-pair, --from-pronoun and --from-modifier print only the list they name, from the given entry. --since and
+--all-sentences remove the limit.
 
 NAR116 isn't a finding. When --method-list PATH is given, javachecks.py writes each hit of the NAR116 rule of
 pmd-ruleset.xml, a method over 20 body lines, to PATH, with or without a javadoc. verify.py adds the file to the review
 lists. For a method with a javadoc, each `throw new X` without a `@throws X` line is a NAR117 finding.
 
-With --keep FILE:LINE:CODE, a finding that the user approved is added to the keep-list. A finding in a Java source isn't
-silenced with `// noqa`, because the maintainer of an upstream project must delete each `// noqa` from a PR. The
-keep-list is .git/info/narrative-keep, or the file given with --keep-list. The file is the same in every worktree of the
-repository, and is not part of any commit. Each line has three tab-separated fields, the path from the top of the
-working tree, the code and the text of the line. The reason is on a `#` line above the entry. An entry is matched by the
-text of the line, so the entry still matches after an edit moves the line. A kept finding is not printed, and is counted
-as kept in the count line. A finding on a line under a `// noqa` comment is not printed either.
+--keep FILE:LINE:CODE adds a finding that the user approved to the keep-list. A finding in a Java source isn't silenced
+with `// noqa`, because the maintainer of an upstream project must delete each `// noqa` from a PR. The keep-list is
+.git/info/narrative-keep, or the file given with --keep-list. The file is the same in every worktree of the repository,
+and is not part of any commit. Each line has three tab-separated fields, the path from the top of the working tree, the
+code and the text of the line. The reason is on a `#` line above the entry. An entry is matched by the text of the line,
+so the entry still matches after an edit moves the line. A kept finding is not printed, and is counted as kept in the
+count line. A finding on a line under a `// noqa` comment is not printed either.
 
 Exit codes:
     0  no finding. Warnings may be printed
     1  at least one finding
-    2  a file, a report or the keep-list could not be read, --since names no commit, the diff changes no line, or a
-       --keep names no line of a file
+    2  a file, a report or the keep-list could not be read, the REF of --since isn't a commit, the diff doesn't change
+       a line, or the line of a --keep doesn't exist
 """
 
 from __future__ import annotations
@@ -236,8 +236,8 @@ def addKeptFindings(keeps: list[str], reason: str | None, keep_list_path: Path |
     """Append one keep-list entry for each FILE:LINE:CODE, with the reason as a # line above the entry.
 
     Returns:
-        0 when every entry was added or was in the keep-list already. 2 when a --keep doesn't name a line of a file or a
-        code, or when the file isn't in a git repository and --keep-list isn't given.
+        0 when every entry was added or was in the keep-list already. 2 when the line or the code of a --keep doesn't
+        exist, or when the file isn't in a git repository and --keep-list isn't given.
     """
     # matches:
     # `src/main/java/com/example/Scan.java:57:NAR142`
@@ -399,8 +399,8 @@ def proseInventory(
     """List every sentence of every comment and page, the review pairs that aren't a NAR017 finding, the pronouns and
     the free modifiers.
 
-    With a ListPage, each list printed stops after wording.LIST_PAGE entries, with the command for the next entries of
-    that list. Under --since, a passage of a source file or a page is listed when a line of the passage changed.
+    `list_page` stops each list after wording.LIST_PAGE entries, and the last line of the list is the command for the
+    next entries. `changed` limits the lists to passages with a changed line.
     """
     sentences: list[str] = []
     pairs: list[str] = []
@@ -476,7 +476,7 @@ def sentenceLine(passage: Passage, sentence: str) -> int:
 def checkPage(reader: agentverbs.CachedReader, page_path: Path, changed: ChangedLines | None) -> list[JavaFinding]:
     """Run the wording checks of wording.py and the agent-verb checks of agentverbs.py on one page.
 
-    Under --since, a finding is kept when a line of the finding's passage changed.
+    `changed` limits the findings to passages with a changed line.
 
     Returns:
         The findings, sorted by line, or only the NAR000 finding of wording.py for a page that cannot be read.

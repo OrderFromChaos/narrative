@@ -79,3 +79,14 @@ Rule 2b says: no test only because a bug was fixed.
   `checks.md` as a known false positive.
 - The list of GTNH habits: `no allocation in a draw method, no ordinal() saved to NBT, a switch over an enum with no
   default`. Each item is a label. Proposed: keep, by the label exception of **Sentence form**.
+
+## Answers of 2026-11-21
+
+1. B, with a pass for extra articles. `--since` limits any file of a git diff, so the rewrites don't name Python files.
+2. Neither. The flag was on `, not per invoice`, so the example is now `the vendor rounds tax per line. Round each line
+   before the sum`.
+3. As proposed.
+4. A.
+5. B. The sentence is cut.
+6. The README is half your own writing, so the prose checks don't apply to the README. The README rewrites of this pass
+   stay, and so does the list of GTNH habits.

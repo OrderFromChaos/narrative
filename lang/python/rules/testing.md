@@ -5,7 +5,7 @@
   gap. When the transport is fake, tests pass while production fails. (R2-02, Q16)
 
 - **Property-based tests (hypothesis) wherever there is an invariant**: round-trips, ordering,
-  conservation, numeric range. Example-based tests cover specific regressions on top. A very slow
+  conservation, numeric range. A very slow
   stateful property test may be opt-in rather than run in CI. (R2-12)
 
 - **Test functions are `testSomethingDescriptive`**, in camelCase with a `test` prefix. The

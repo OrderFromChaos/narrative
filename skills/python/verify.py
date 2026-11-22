@@ -15,20 +15,20 @@ When a file or a page was checked, verify.py writes four review lists, over the 
 review-lists.txt in the cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every
 subject that cannot act paired with the subject's verb, every sentence with a pronoun, and every sentence with a free
 modifier. The path of the file and the number of entries in each list are on the last line of the output, so `tail -1`
-shows them. Without --since, each list stops after 1000 entries, with the command for the next 1000.
+shows them. Each list stops after 1000 entries, and the last line of the list is the command for the next 1000. --since
+removes the limit.
 
-With --since REF, only the Python files and pages that the diff against merge-base(HEAD, REF) adds or changes are
-checked, and only the findings and list entries on changed lines are reported. A finding on a `def` or `class` line
-counts for every line of the definition, and a finding in a comment, docstring or page counts for every line of the
-passage. Under --since, a fix of `ruff check` is applied only when the fix edits a changed line, and `ruff format`
-formats only the changed lines.
+--since REF limits the findings and the list entries to lines that the diff against merge-base(HEAD, REF) adds or
+changes. A finding on a `def` or `class` line counts for every line of the definition, and a finding in a comment,
+docstring or page counts for every line of the passage. --since also limits the fixes of `ruff check` to fixes that edit
+a changed line, and `ruff format` to changed lines.
 
 The spaCy results of each passage are kept in the cache directory, so a run after a small change parses only the changed
 passages.
 
-Unless --no-fix is given, checks.py --rewrap first fills each paragraph of the comments and docstrings again up to
-column 120, and under --since only a paragraph with a changed line. With --no-fix, each such paragraph is a NAR125
-finding of checks.py.
+First, checks.py --rewrap fills each paragraph of comments and docstrings again up to column 120. --since limits the
+re-wrap to paragraphs with a changed line. --no-fix skips the re-wrap, and each paragraph that the re-wrap would change
+is a NAR125 finding of checks.py.
 
 Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other.
 
@@ -86,7 +86,7 @@ CACHE_DIR = Path('.narrative_cache')
 LISTS_NAME = 'review-lists.txt'
 # the command-line path of a page read from stdin
 STDIN_PATH = Path('-')
-# under --since, the most times that fixes are applied to one file. A fix that overlaps another is applied the next time
+# the most rounds of fixes on one file under --since. A fix that overlaps another fix is applied in the next round
 FIX_ROUNDS = 10
 EXIT_SUCCESS = 0
 EXIT_FINDINGS = 1
@@ -190,7 +190,7 @@ def main() -> int:
     review_arguments = [*prose_targets, *since]
     counts = writeReviewLists(toolchain.python, review_arguments, cache, lists_path, all_sentences=args.all_sentences)
     if counts is None:
-        print('verify.py: a review list command failed, so no review list was written', file=sys.stderr)
+        print("verify.py: a review list command failed, so verify.py didn't write the review lists", file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
     if failed:
         # the lists are the same with or without findings. After the fix of a finding, the sentences and the lists
@@ -299,9 +299,9 @@ def runCodeTools(
 ) -> list[Result]:
     """Fix and format the Python files unless told not to, then run ruff, pylint and mypy.
 
-    Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other. Under --since, a fix
-    is applied only when the fix edits a changed line, only the changed lines are formatted and checked for format, and
-    the findings of ruff check, pylint and mypy are cut to the changed lines.
+    Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other. `since` limits the
+    fixes to fixes that edit a changed line, and limits formatting, the format check and the findings of ruff check,
+    pylint and mypy to changed lines.
 
     Returns:
         One result per tool, in the order they ran.

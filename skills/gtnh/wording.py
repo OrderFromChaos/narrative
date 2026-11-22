@@ -190,7 +190,7 @@ def readChangedLines(since: str, any_repo_path: Path, pattern: str) -> ChangedLi
     reported under --since. Every line of an untracked file is listed.
 
     Raises:
-        GitError: git fails, or `since` names no commit.
+        GitError: git fails, or `since` isn't a commit.
     """
     # matches:
     # `@@ -10,2 +12,3 @@ def readPlan(path):`
@@ -274,10 +274,7 @@ def inChange(changed_lines: set[int], spans: Spans, line: int) -> bool:
 
 
 def changedLinesOf(changed: ChangedLines | None, checked_file: Path) -> set[int] | None:
-    """Return the changed lines of a source file or a page under --since, or None when every line is checked.
-
-    With no --since, every line is checked.
-    """
+    """Return the changed lines of a source file or a page under --since, or None without --since."""
     if changed is None:
         return None
     return changed.get(checked_file.resolve(), set())

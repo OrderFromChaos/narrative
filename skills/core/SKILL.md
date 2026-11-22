@@ -150,7 +150,7 @@ changes. (J1-pr-base-comments)
   - a stated assumption: `vendor doesn't document an encoding, UTF-8 assumed`
   - a label on a block of at least 4 lines, ideally 6 or more: `parse data` (R10-block-label-size)
   - a rule a developer must enforce, with capitals scaled to the cost of breaking the rule:
-    `read-only: NEVER write to the audited readings`
+    `NEVER write to the audited readings`
 
 **Never, even when a kind's test passes:**
 - what the next line or a single call does (R10-Q01, R10-Q06, R10-Q39, R10-Q47, R10-Q54)
@@ -218,7 +218,7 @@ R10-depth-example, R10-period-join)
   R10-terse-narrow)
 - every clause has a subject and a verb. A label for the thing is fine: `least recently used
   first`, `Exact, case-sensitive comparison.` A predicate with the subject cut is not:
-  `Bound to one machine` → `The modifier is bound to one machine`, and
+  `Bound to one machine` → `` `LicenseKey` is bound to one machine ``, and
   `named, so a recreated container gets it back` → `named volumes persist when a container is
   recreated (e.g. docker compose down && docker compose up)`. (R10-subject-verb, `NAR020`)
 - every noun phrase refers to one real thing, at the moment the sentence is about. Name the object in
@@ -316,7 +316,7 @@ R10-depth-example, R10-period-join)
   and the strings under `matches:` stay as written. When `--no-fix` is given, `NAR125` flags
   each paragraph that the re-wrap would change. The re-wrap moves line breaks only, never words (R11-rewrap-fill)
 - a Fence is the fact the code depends on, then the step the code takes because of that fact:
-  `the vendor rounds tax per line, not per invoice. Round each line before the sum`. Write `X would`
+  `the vendor rounds tax per line. Round each line before the sum`. Write `X would`
   only when X is an alternative the code does not use, such as a read of the whole file into
   memory, when the code below the comment streams the file line by line. When the code under the
   comment does X, state the problem X is there for: `without the retry, the first request after

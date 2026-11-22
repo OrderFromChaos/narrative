@@ -8,8 +8,8 @@ skill with `combines`, such as `code`, has the frontmatter and one line. When th
 assemble.py and puts the output, the skills to load, in place of that line. When the frontmatter has `allowed-tools`,
 the line runs without a permission prompt.
 
-With --check, nothing is written, and a file of skills/ that differs from the build, is missing, or is not part of the
-build is an error. verify_docs.py runs the check.
+--check doesn't write a file. A file of skills/ that differs from the build, is missing, or isn't part of the build is
+an error. verify_docs.py runs the check.
 
 Usage:
     $ python3 build_skills.py
