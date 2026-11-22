@@ -18,7 +18,7 @@
   an array component:** `equals()` and `hashCode()` of a record compare arrays by identity, so two
   equal plans compare unequal. `NAR108` flags an array component. (J1-P22)
 
-- **Genuinely schemaless input**: promote the fields the program computes on to typed components,
+- **Genuinely schemaless input.** Promote the fields the program computes on to typed components,
   and put the remainder in one `JsonObject` or `Map<String, JsonElement>` component. **Never merge
   the remainder into an output object.** An untrusted key with the name of an output field would
   replace that field. Nest the remainder instead. (R4-04)

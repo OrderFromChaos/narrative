@@ -1,7 +1,7 @@
 ### Javadoc rules
 
 **Most members don't get a javadoc.** Write one for a top-level type (`NAR118`), and for a method by the `NAR116` review list. Any other field, constant or method gets a javadoc only for a fact
-that the name, type, value and signature do not show. A javadoc whose facts are already in the
+that the name, type, value, and signature do not show. A javadoc whose facts are already in the
 declaration only costs the reader time. Cut such a javadoc whole. Don't cut the javadoc sentence by sentence. The Java
 habit of a javadoc on every public member does not apply here. (J1-F07)
 
@@ -51,17 +51,17 @@ not earn its place.** (R9-09)
 
 - an **ordering or tie-break**, invisible without reading a comparator
 - a **unit, a nullability or a provenance** absent from the signature: `Amounts are in litres`
-- **where the leftover, default and failure cases go**
+- **where the leftover, default, and failure cases go**
 - a **sample** of concrete text the class reads or writes
 - a **constraint from outside the program**: `Forge drops a tile entity whose readFromNBT() throws`
-- a **guarantee a caller needs**: `` `preview()` doesn't write a file, send a packet or change a world ``
+- a **guarantee a caller needs**: `` `preview()` doesn't write a file, send a packet, or change a world ``
 
 - **A method gets a javadoc when a reader can't learn from the name of the method and the comments
   of the body what the method does.** Answer one question for each entry of the `NAR116` review
   list of `verify.py`:
   - a method without a javadoc: can a reader learn from the name of the method and the comments of the
     body what the method does? If not, write a javadoc.
-  - a javadoc or a comment on a type, a field, an enum constant or a method: what does a reader learn
+  - a javadoc or a comment on a type, a field, an enum constant, or a method: what does a reader learn
     from the javadoc or the comment, and not from the name and the code? If the reader doesn't learn
     more, cut the javadoc or the comment. Keep one sentence on a top-level type (`NAR118`).
   (J1-P34, Q05, R8-D18-resolved, R12-nar116-review)

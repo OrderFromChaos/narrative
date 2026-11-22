@@ -36,7 +36,7 @@
 - LBYL over EAFP. You know your invariants, you do not know every exception an implementation
   can raise. (Q22)
 
-- Degrade and report: process the whole batch, collect failures, log a summary, exit nonzero. Never
+- Degrade and report. Process the whole batch, collect failures, log a summary, and exit nonzero. Never
   abort on the first bad item. (Q24)
 
 - **The config gate is the exception.** (R8-D25-resolved) `Q24` is about the batch a program

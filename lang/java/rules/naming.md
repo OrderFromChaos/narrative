@@ -1,7 +1,11 @@
 ## Naming
 
-- Standard Java: camelCase methods, fields, locals and parameters. PascalCase types. UPPER_SNAKE
-  constants. A local compile-time constant may be UPPER_SNAKE too (see **Constants**). `NAR130`
+- Use the standard Java case:
+  - camelCase for methods, fields, locals, and parameters
+  - PascalCase for types
+  - UPPER_SNAKE for constants
+
+  A local compile-time constant may be UPPER_SNAKE too (under **Constants**). `NAR130`
   enforces it with Checkstyle, and allows the SRG and MCP names of Minecraft (`func_…`, `field_…`,
   `p_…`) of an override. (J1-P01)
 
@@ -17,15 +21,15 @@
 
   **Length is not the defect.** Where the clear name is the longer one, write the longer one.
 
-- **Predicates take `is`, `has` or `can`:** `isReady()`, `hasPower()`, `canExtract()`. Forge,
-  Minecraft, GT and Lombok `@Getter` use these names, so a call site reads the same as the library
+- **Predicates take `is`, `has`, or `can`:** `isReady()`, `hasPower()`, `canExtract()`. Forge,
+  Minecraft, GT, and Lombok `@Getter` use these names, so a call site reads the same as the library
   calls beside the call site. (J1-F1)
 
 - **Do not restate a domain type in a parameter name:** `RebinConfig rebinConfig` →
   `RebinConfig config`. (Q11)
 
 - **When the type is generic, the parameter name is the only place the thing is named.** `Path`,
-  `String`, `int` and `Object` constrain only a value's shape. `Path path` → `Path policyJsonPath`,
+  `String`, `int`, and `Object` constrain only a value's shape. `Path path` → `Path policyJsonPath`,
   and `String text` → `String manifestText`.
 
 - **Raw and parsed forms get different names.** Prefix the raw form with `raw`: `String rawAt` from

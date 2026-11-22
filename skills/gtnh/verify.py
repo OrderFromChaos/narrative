@@ -1,6 +1,7 @@
 """Run the narrative-gtnh toolchain over a GTNH mod, or the prose checks over pages.
 
-Use this instead of calling the tools by hand. A missing tool, report or JDK is exit 2, so a pass means every check ran.
+Use this instead of calling the tools by hand. A missing tool, report, or JDK is exit 2, so a pass means every check
+ran.
 
 The project is the current directory, a Gradle build with GTNHGradle. The Java level of the project comes from
 enableModernJavaSyntax in gradle.properties: Java 25 for jvmDowngrader or modern, Java 17 syntax with the Java 8 library
@@ -18,7 +19,7 @@ named, verify.py doesn't check a Java source. In a Gradle project, verify.py the
 page read from stdin, Markdown, or the suffix given with --stdin-suffix. The page is saved in the cache directory as
 `stdin` with that suffix, and each finding is reported at the path of the saved page.
 
---prose-only skips the Gradle run, so spotless, javac, Checkstyle and PMD don't run. After a re-wrap, javachecks.py
+--prose-only skips the Gradle run, so spotless, javac, Checkstyle, and PMD don't run. After a re-wrap, javachecks.py
 checks the comments and the pages, and verify.py writes the review lists. A run after an edit of comments only takes
 seconds instead of a Gradle run. The checks of Gradle still have to pass in a run without --prose-only before the change
 is done.
@@ -26,8 +27,8 @@ is done.
 --project DIR is the project directory. Each named path is read from the current directory.
 
 After the checks, verify.py writes five review lists over the Java sources and the pages to review-lists.txt in the
-cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every subject that cannot act
-paired with the subject's verb, every sentence with a pronoun, every sentence with a free modifier, and every
+cache directory, .narrative_cache, or the directory given with --cache-dir: every sentence, every subject that cannot
+act paired with the subject's verb, every sentence with a pronoun, every sentence with a free modifier, and every
 declaration with a javadoc or a comment and every method over 20 body lines (NAR116). The list of declarations is from
 the PMD report, so a run with --prose-only or with pages only doesn't have the list. The path of the file and the number
 of entries in each list are on the last line of the output, so `tail -1` shows them. verify.py doesn't write the lists
@@ -199,7 +200,7 @@ def main() -> int:
         print(f'verify.py: no line changed since {args.since}', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
-    # before Gradle, because splitting a // comment moves every later line of the file, and Gradle must see the final
+    # before Gradle, because splitting a // comment moves every later line of the file, and Gradle must read the final
     # lines
     if not args.no_fix:
         print(f'rewrap         {rewrapComments(venv_python, sources, args.since)}', flush=True)
@@ -467,7 +468,7 @@ def findGradlew(project_dir: Path) -> list[str]:
 def writeRuleset(source_paths: list[Path], report_dir: Path, level: JavaLevel) -> Path:
     """Write the PMD ruleset for NAR107: one typeIs test per sealed type of the project, and the message of the level.
 
-    A typeIs() test is by qualified name. The name of a nested sealed type is taken as the name of the file, a dot and
+    A typeIs() test is by qualified name. The name of a nested sealed type is taken as the name of the file, a dot, and
     the simple name of the type, so a sealed type nested two levels deep is not tested.
     """
     # matches:
@@ -542,7 +543,7 @@ def runGradle(
     fix: bool,
     max_workers: int,
 ) -> GradleRun:
-    """Run spotless, compileJava and narrativeCheck in one Gradle invocation, and keep the invocation's output.
+    """Run spotless, compileJava, and narrativeCheck in one Gradle invocation, and keep the invocation's output.
 
     The reports and caches of earlier runs stay, so a task whose inputs did not change is up to date. Incremental
     compilation is off in the init script, so compileJava compiles every file or is up to date. Its output is written to

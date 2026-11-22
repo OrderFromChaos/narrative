@@ -1,11 +1,11 @@
-"""Report Narrative style violations that ruff, pylint and mypy do not implement.
+"""Report Narrative style violations that ruff, pylint, and mypy do not implement.
 
 Each rule is one check. NAR001 and NAR006 cover module state. NAR002 covers class attributes. NAR003 covers layout.
-NAR004, NAR009 and NAR011 cover documentation. NAR005 covers annotation complexity. NAR007 covers boolean grouping.
-NAR010 covers FIXME reachability. NAR012 to NAR016 and NAR018 cover the wording of comments and docstrings. NAR019
-covers a return contract written as a comment. NAR023 covers a docstring on a function of one line. NAR027 covers the
-value of a constant in a comment. NAR125 covers a paragraph of a comment or docstring that is not filled up to column
-120.
+NAR004, NAR009, and NAR011 cover documentation, and --declarations lists the NAR116 review list. NAR005 covers
+annotation complexity. NAR007 covers boolean grouping. NAR010 covers FIXME reachability. NAR012 to NAR016 and NAR018
+cover the wording of comments and docstrings. NAR019 covers a return contract written as a comment. NAR023 covers a
+docstring on a function of one line. NAR027 covers the value of a constant in a comment. NAR125 covers a paragraph of a
+comment or docstring that is not filled up to column 120.
 
 --rewrap runs rewrap.py and doesn't run a check. rewrap.py fills each paragraph of comments and docstrings again up to
 column 120, and rewrites the file. --since limits the re-wrap to paragraphs with a changed line.
@@ -18,10 +18,10 @@ finding in a comment, docstring or page are the lines of the passage, and the li
 line are the lines of the definition. A named page without a changed line doesn't have a finding or a sentence in the
 list.
 
---prose lists every sentence of every comment, docstring and page. The list stops after 1000 sentences, and the last
+--prose lists every sentence of every comment, docstring, and page. The list stops after 1000 sentences, and the last
 line is the command for the next 1000. --since removes the limit.
 
-See tooling.md for what the other tools own.
+tooling.md has the job of each other tool.
 
 Usage:
     $ python3 checks.py src/
@@ -67,7 +67,8 @@ from wording import (
 
 ### standard library only. checks.py runs wherever python3 does
 
-MAX_BODY_LINES_WITHOUT_DOCSTRING = 20
+# a function without a docstring is on the NAR116 review list when the function has more body lines than this
+LONG_FUNCTION_LINES = 20
 MAX_ARGS_ON_ONE_LINE = 3
 MAX_ANNOTATION_THINGS = 4
 
@@ -76,7 +77,7 @@ RULES = {
     'NAR006': 'assignment shadows a module-level name. Add `global`, or rename the local',
     'NAR002': 'hasattr(self, ...). Attributes must not be conditionally defined',
     'NAR003': f'def signature with more than {MAX_ARGS_ON_ONE_LINE} POSITIONAL args on one line',
-    'NAR004': 'docstring missing or without Raises: on a function that takes >3 parameters or runs long',
+    'NAR004': 'docstring without Raises: on a function that raises',
     'NAR005': f'annotation naming more than {MAX_ANNOTATION_THINGS} things: give it a name',
     'NAR007': '`and` inside `or` without parentheses. Do not make the reader apply precedence',
     'NAR009': 'module docstring missing, or runnable module without a usage example',
@@ -116,6 +117,11 @@ def main() -> int:
     parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every sentence')
     parser.add_argument('--since', help='report only lines changed since merge-base(HEAD, SINCE)')
     parser.add_argument('--rewrap', action='store_true', help='fill the comments and docstrings again, in place')
+    parser.add_argument(
+        '--declarations',
+        action='store_true',
+        help='list each declaration with a docstring or a comment, and each function over 20 body lines (NAR116)',
+    )
     args = parser.parse_args()
 
     targets: list[Path] = []
@@ -140,6 +146,13 @@ def main() -> int:
             if rewrapped != source:
                 checked_file.write_text(rewrapped, encoding='utf-8')
                 print(f'{checked_file}: re-wrapped')
+        return 0
+
+    if args.declarations:
+        for checked_file in targets:
+            shown = checked_file.relative_to(Path.cwd()) if checked_file.is_relative_to(Path.cwd()) else checked_file
+            for number, declaration, detail in declarationList(checked_file, changedLinesOf(changed, checked_file)):
+                print(f'{shown}:{number}: {declaration} ({detail})')
         return 0
 
     if args.prose:
@@ -398,70 +411,20 @@ def checkArgsPerLine(tree: ast.Module, checked_file: Path) -> list[Finding]:
     return findings
 
 
-def missingSections(node: ast.FunctionDef | ast.AsyncFunctionDef, docstring: str, checked_file: Path) -> list[Finding]:
-    """Report a function that the docstring trigger caught and whose docstring doesn't have a `Raises:` section.
+def checkRaisesSection(tree: ast.Module, checked_file: Path) -> list[Finding]:
+    """Flag a function whose docstring doesn't have a `Raises:` section, when a `raise` is in the function.
 
-    A docstring can exist without stating the contract, so the trigger and the section check are two separate tests over
-    the same function.
-    """
-    args = node.args
-    every_arg = args.posonlyargs + args.args + args.kwonlyargs
-    arity = len(every_arg) - (1 if args.args and args.args[0].arg in ('self', 'cls') else 0)
-    body_end = max((getattr(n, 'end_lineno', None) or 0) for n in ast.walk(node))
-    body_lines = body_end - node.body[0].lineno + 1
-
-    if arity <= MAX_ARGS_ON_ONE_LINE and body_lines <= MAX_BODY_LINES_WITHOUT_DOCSTRING:
-        return []
-
-    if not any(isinstance(n, ast.Raise) for n in ast.walk(node)) or 'Raises:' in docstring:
-        return []
-
-    return [Finding(checked_file, node.lineno, 'NAR004', f'{node.name}: docstring omits Raises:')]
-
-
-def checkDocstringThreshold(tree: ast.Module, checked_file: Path) -> list[Finding]:
-    """Require a docstring wherever the contract is likely to be complex.
-
-    Two triggers: the function takes more than three parameters, or its body exceeds the line threshold. A `raise` is
-    not a trigger, because the style routes raise sites through a reject*() helper and every two-line guard that calls
-    one contains a `raise`.
-
-    Keyword-only parameters count here, unlike NAR003, because every parameter is part of the contract even when the
-    caller may omit the parameter.
-
-    A pure line threshold would be gameable in the wrong direction: splitting a 21-line function into two 12-line ones
-    deletes the obligation without simplifying either contract.
+    The docstring of a function is a decision of the NAR116 review list of `--declarations`, and isn't a finding.
     """
     findings: list[Finding] = []
-
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         docstring = ast.get_docstring(node)
-        if docstring is not None:
-            findings.extend(missingSections(node, docstring, checked_file))
+        if docstring is None or 'Raises:' in docstring:
             continue
-        # a function of one line doesn't get a docstring, by NAR023, whatever the number of parameters
-        if oneLineBody(node):
-            continue
-
-        body_start = node.body[0].lineno
-        body_end = max((getattr(n, 'end_lineno', None) or 0) for n in ast.walk(node))
-        body_lines = body_end - body_start + 1
-
-        args = node.args
-        every_arg = args.posonlyargs + args.args + args.kwonlyargs
-        arity = len(every_arg) - (1 if args.args and args.args[0].arg in ('self', 'cls') else 0)
-
-        reasons = []
-        if body_lines > MAX_BODY_LINES_WITHOUT_DOCSTRING:
-            reasons.append(f'{body_lines} body lines')
-        if arity > MAX_ARGS_ON_ONE_LINE:
-            reasons.append(f'{arity} parameters')
-
-        if reasons:
-            findings.append(Finding(checked_file, node.lineno, 'NAR004', f'{node.name}: {", ".join(reasons)}'))
-
+        if any(isinstance(child, ast.Raise) for child in ast.walk(node)):
+            findings.append(Finding(checked_file, node.lineno, 'NAR004', node.name))
     return findings
 
 
@@ -831,7 +794,7 @@ def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> li
 
     The contract belongs in the docstring, and only when the return type leaves the contract unclear. The comment is the
     block of full-line comments directly above the first statement after the docstring. The comment counts when it opens
-    with `returns`, `None when`, `None unless` or `the result`.
+    with `returns`, `None when`, `None unless`, or `the result`.
 
     Returns:
         One finding per function, at the first line of the comment.
@@ -862,7 +825,7 @@ def proseInventory(checked_file: Path, changed_lines: set[int] | None = None) ->
     """List every sentence of every comment and docstring in one file, or of one page, in line order.
 
     A Markdown, HTML or plain text page is prose throughout, so every sentence of the page is listed. The lines of a
-    comment, a docstring or a paragraph are joined first, so a sentence wrapped over several lines is listed whole, on
+    comment, a docstring, or a paragraph are joined first, so a sentence wrapped over several lines is listed whole, on
     the line where the sentence starts. `changed_lines` limits the list to passages with a changed line.
 
     Returns:
@@ -881,6 +844,78 @@ def proseInventory(checked_file: Path, changed_lines: set[int] | None = None) ->
     sentences = [pair for passage in kept for pair in passage.sentences()]
     # sorted() is stable, so with the line as the key, two sentences on one line are listed in reading order
     return sorted((pair for pair in sentences if not DIVIDER.search(pair[1])), key=lambda pair: pair[0])
+
+
+def declarationList(checked_file: Path, changed_lines: set[int] | None = None) -> list[tuple[int, str, str]]:
+    """List the NAR116 review list of one Python file, in line order.
+
+    The list has each function, class, module constant and class field with a docstring or a comment, and each function
+    over LONG_FUNCTION_LINES body lines without a docstring. A function with a body of one line is NAR023. A comment is
+    a block of whole-line comments that ends on the line above the declaration and the decorators, or a comment on the
+    line of the declaration. `changed_lines` limits the list to declarations with a changed line in the first line, the
+    docstring, or the comment.
+
+    Returns:
+        Line number, the first line of the declaration and the detail of each entry, or nothing for a file that cannot
+        be read or parsed.
+    """
+    try:
+        source = checked_file.read_text(encoding='utf-8')
+        tree = ast.parse(source)
+    except (OSError, UnicodeDecodeError, SyntaxError):
+        return []
+
+    lines = source.splitlines()
+    whole_line = {token.start[0] for token in codeprose.commentTokens(source) if token.line.strip().startswith('#')}
+    beside = {token.start[0] for token in codeprose.commentTokens(source) if not token.line.strip().startswith('#')}
+    entries: list[tuple[int, str, str]] = []
+    for node in declarationNodes(tree):
+        first = min([node.lineno, *(decorator.lineno for decorator in getattr(node, 'decorator_list', []))])
+        comment = set()
+        above = first - 1
+        while above in whole_line:
+            comment.add(above)
+            above -= 1
+        if node.lineno in beside:
+            comment.add(node.lineno)
+        docstring_lines: set[int] = set()
+        detail = ''
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and ast.get_docstring(node):
+            docstring = node.body[0]
+            docstring_lines = set(range(docstring.lineno, (docstring.end_lineno or docstring.lineno) + 1))
+            detail = 'with a docstring'
+        elif comment:
+            detail = 'with a comment'
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if oneLineBody(node):
+                continue
+            body = node.body[1:] if docstring_lines and len(node.body) > 1 else node.body
+            body_end = max((getattr(child, 'end_lineno', None) or 0) for child in ast.walk(node))
+            if not detail and body_end - body[0].lineno + 1 > LONG_FUNCTION_LINES:
+                detail = 'without a docstring'
+        if not detail:
+            continue
+        if changed_lines is not None and not changed_lines & ({node.lineno} | comment | docstring_lines):
+            continue
+        entries.append((node.lineno, lines[node.lineno - 1].strip(), detail))
+    return sorted(entries)
+
+
+def declarationNodes(tree: ast.Module) -> list[ast.stmt]:
+    """List each function and class at any depth, and each assignment in the body of the module or of a class."""
+    found: list[ast.stmt] = []
+    pending: list[ast.AST] = [tree]
+    while pending:
+        parent = pending.pop()
+        for child in ast.iter_child_nodes(parent):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                found.append(child)
+                pending.append(child)
+            elif isinstance(child, (ast.Assign, ast.AnnAssign)) and isinstance(parent, (ast.Module, ast.ClassDef)):
+                found.append(child)
+            elif not isinstance(child, ast.expr):
+                pending.append(child)
+    return found
 
 
 def commentLines(source: str) -> list[tuple[int, str]]:
@@ -968,7 +1003,7 @@ def checkFile(checked_file: Path) -> list[Finding]:
         *checkGlobalDeclarations(tree, checked_file),
         *checkHasattrSelf(tree, checked_file),
         *checkArgsPerLine(tree, checked_file),
-        *checkDocstringThreshold(tree, checked_file),
+        *checkRaisesSection(tree, checked_file),
         *checkAnnotationComplexity(tree, checked_file),
         *checkBoolOpParens(tree, source, checked_file),
         *checkModuleDocstring(tree, checked_file),

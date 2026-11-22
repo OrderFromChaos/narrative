@@ -1,4 +1,4 @@
-"""Check Java sources for the rules of the Java skill, and merge the PMD, Checkstyle and javac reports.
+"""Check Java sources for the rules of the Java skill, and merge the PMD, Checkstyle, and javac reports.
 
 Comments and javadoc are read with a lexer, so the comments of a file are read even when the file uses syntax newer than
 a Java grammar. The prose checks are the ones of every language: the wording checks of wording.py (NAR012 to NAR016,
@@ -34,18 +34,18 @@ prose finding are the lines of the finding's passage. For a finding on a method,
 for a finding on a type, the line of the type's declaration.
 
 --cache PATH stores spaCy results in PATH between runs. Each entry is keyed by passage text. The cache is discarded when
-agentverbs.py, words.json, spaCy or the spaCy model changes, and spaCy is loaded only when a passage is not in the
+agentverbs.py, words.json, spaCy, or the spaCy model changes, and spaCy is loaded only when a passage is not in the
 cache.
 
 A Markdown, HTML or plain text page named on the command line gets the prose checks, and --prose adds the page to the
 lists. --since limits the checks and the lists of a page to passages with a changed line.
 
---prose prints four lists: the sentences, the subject-verb pairs, the pronoun sentences and the free modifiers. Each
+--prose prints four lists: the sentences, the subject-verb pairs, the pronoun sentences, and the free modifiers. Each
 list stops after 1000 entries, and the last line of the list is the command for the next 1000. --from-sentence,
---from-pair, --from-pronoun and --from-modifier print only the list they name, from the given entry. --since and
+--from-pair, --from-pronoun, and --from-modifier print only the list they name, from the given entry. --since and
 --all-sentences remove the limit.
 
-NAR116 isn't a finding. --method-list PATH writes the NAR116 review list to PATH: each type, field, enum constant and
+NAR116 isn't a finding. --method-list PATH writes the NAR116 review list to PATH: each type, field, enum constant, and
 method with a javadoc or a comment, and each method over 20 body lines without a javadoc. A method with a body of one
 line is NAR023. verify.py adds the file to the review lists. For a method on the list with a javadoc, each `throw new X`
 without a `@throws X` line is a NAR117 finding.
@@ -54,9 +54,9 @@ without a `@throws X` line is a NAR117 finding.
 with `// noqa`, because the maintainer of an upstream project must delete each `// noqa` from a PR. The keep-list is
 .git/info/narrative-keep, or the file given with --keep-list. The file is the same in every worktree of the repository,
 and is not part of any commit. Each line has three tab-separated fields, the path from the top of the working tree, the
-code and the text of the line. The reason is on a `#` line above the entry. An entry is matched by the text of the line,
-so the entry still matches after an edit moves the line. A kept finding is not printed, and is counted as kept in the
-count line. A finding on a line under a `// noqa` comment is not printed either.
+code, and the text of the line. The reason is on a `#` line above the entry. An entry is matched by the text of the
+line, so the entry still matches after an edit moves the line. A kept finding is not printed, and is counted as kept in
+the count line. A finding on a line under a `// noqa` comment is not printed either.
 
 Exit codes:
     0  no finding. Warnings may be printed
@@ -406,7 +406,7 @@ def proseInventory(
     changed: ChangedLines | None,
     list_page: ListPage | None,
 ) -> list[str]:
-    """List every sentence of every comment and page, the review pairs that aren't a NAR017 finding, the pronouns and
+    """List every sentence of every comment and page, the review pairs that aren't a NAR017 finding, the pronouns, and
     the free modifiers.
 
     `list_page` stops each list after wording.LIST_PAGE entries, and the last line of the list is the command for the
@@ -654,7 +654,7 @@ def methodBraceLines(masked: str, first_line: int) -> tuple[int, int]:
 
 
 def readComments(source: str) -> CommentReading:
-    """Lex the comments of a Java source and turn them into prose lines, passages and noqa scopes."""
+    """Lex the comments of a Java source and turn them into prose lines, passages, and noqa scopes."""
     comments = lexComments(source)
     blocks = groupBlocks(comments)
     prose_lines: list[tuple[int, str]] = []
@@ -793,12 +793,12 @@ def annotationStart(lines: list[str], last_line: int) -> int | None:
 
 
 def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: CommentReading) -> list[JavaFinding]:
-    """Turn a tool finding into JavaFindings, with a look at the comments of the file for some codes.
+    """Turn a tool finding into JavaFindings, and read the comments of the file for some codes.
 
     - NAR110: a mutable static field. The finding is dropped when a comment for the reason is above the field, or after
       the field on the same line
     - NAR023: a method of one line. When a javadoc is above the method, the finding is reported
-    - NAR116-member: a type, a field, an enum constant or a method without a body. The declaration is an entry of the
+    - NAR116-member: a type, a field, an enum constant, or a method without a body. The declaration is an entry of the
       NAR116 review list when a javadoc or a comment is above the declaration, or a comment is beside the declaration
     - NAR116: a method with a javadoc or over LONG_METHOD_LINES body lines, an entry of the NAR116 review list. When a
       javadoc is above the method, NAR117 is reported for each `throw new X` in the method where X is absent from the
@@ -840,7 +840,7 @@ def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: Com
 
 
 def methodEntry(method: JavaFinding) -> str:
-    """Format a method of the NAR116 review list: the path, the line, the declaration and whether a javadoc is above."""
+    """Format an entry of the NAR116 review list: the path, the line, the declaration, and the detail."""
     lines = method.java_path.read_text(encoding='utf-8', errors='replace').splitlines()
     declaration = lines[method.line - 1].strip() if method.line <= len(lines) else ''
     return f'{method.java_path}:{method.line}: {declaration} ({method.detail})'

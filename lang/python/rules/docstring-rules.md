@@ -36,24 +36,23 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 - an **ordering or tie-break**, invisible without reading a sort key
 - a **unit, a nullability or a provenance** absent from the annotation — `Sizes are plain byte
   counts`, `host is null when the entry's report doesn't have a host`
-- **where the leftover, default and failure cases go**. Most awkward docstrings are awkward because
+- **where the leftover, default, and failure cases go**. Most awkward docstrings are awkward because
   they circle an unstated default.
 - a **sample** of concrete text the module reads or writes
 - a **constraint from outside the program** — `the standard formatter of logging discards extra`
 - a **guarantee a caller needs** — `` `dryRun()` doesn't write a file, print output or log an event ``
 
-- **A function gets a docstring when the function's contract is complex**, meaning the function
-  takes more than three parameters, or exceeds 20 lines. Below both, the contract goes in `#`
-  comments. Raising is not a trigger, because the style routes raise sites through a `reject*()`
-  helper and every two-line guard that calls one contains a `raise`. (Q05, R2-03, R2-05, R5-05,
-  R8-D18-resolved)
+- **A function gets a docstring when a reader can't learn from the name of the function and the comments of the body
+  what the function does.** Answer one question for each entry of the `NAR116` review list of `verify.py`:
+  - a function without a docstring: can a reader learn from the name of the function and the comments of the body what
+    the function does? If not, write a docstring.
+  - a docstring or a comment on a class, a function, a module constant, or a class field: what does a reader learn from
+    the docstring or the comment, and not from the name and the code? If the reader doesn't learn more, cut the
+    docstring or the comment.
+  (Q05, R8-D18-resolved, R12-python-review-list)
 
-  The trigger is contract complexity, and length is only part of the trigger, so the parameter count
-  sits beside the line count. A bare line threshold is easy to get around by fragmentation. Splitting a 21-line
-  function into two 12-line ones deletes the obligation without simplifying either contract.
-
-- **The docstring has a summary and a `Raises:` section. It has `Args:` and `Returns:` only where
-  they give a fact absent from the signature.** `NAR004` enforces `Raises:`, because an exception is
+- **The docstring has a summary, and a `Raises:` section when the function raises. It has `Args:` and
+  `Returns:` only where they give a fact absent from the signature.** `NAR004` enforces `Raises:`, because an exception is
   the one part of a contract absent from every annotation. (R8-D28-resolved)
 
   Write `Returns:` for an ordering, a nullability, a unit, or a count whose meaning is not obvious:

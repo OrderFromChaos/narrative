@@ -57,7 +57,8 @@ I wanted a code skill that would make LLMs write Python like me. Tricks this ski
 
 1. Over a few weekends, I rated hundreds of A/B examples of Python function design and architecture. This led to specific enough rules to lint and fix most code bugbears. (These are tracked in `benchmark/`.)
 2. LLMs tend to go wild with anthropomorphizing inanimate things, saying things like "*the manifest knows errors*". What does it mean to "know" an error? For this I use NLP (natural-language processing) to lint for inanimate subject + agency verb. Although this technique sounds less impressive than point (1), **I cannot overstate** how much this deslops LLM comments.
-3. Clear good comment metric: facts outside the code, simplification fences, decoding aids, and meta-level markers such as `TODO:`.
+3. I also ban "free modifiers" with NLP, which are commas phrase with no verb + opening with a preposition, a participle or a number. LLMs love do these and they are quite unnatural.
+3. Code comments must pass technical inclusion criteria to exist.
 4. An explicit double checking step. (There are enough rules here that even frontier models miss a few things on the first pass...)
 
 Some examples of (2):

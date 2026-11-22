@@ -13,7 +13,7 @@ Three kinds of line end a paragraph:
   ``` fence, a table row, a line of one code span and the label `matches:` or `rejects:` are fixed, and so is each line
   after such a label at the label's margin, up to a blank line
 - a line indented past the margin of the paragraph, such as a sample in a `#` comment. Such a line is fixed too
-- a line that opens a list item, a block tag or an entry of a docstring section. That line starts the next paragraph
+- a line that opens a list item, a block tag, or an entry of a docstring section. That line starts the next paragraph
 
 Usage, from a script in this directory:
     import codeprose

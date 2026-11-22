@@ -1,4 +1,4 @@
-### Show the thing, do not describe it
+### Samples of output
 
 **Where a module reads or writes concrete text, paste a real sample of that text.** A rendered
 table, a log line, a report, a converted value, an input format. **Delete the prose the sample

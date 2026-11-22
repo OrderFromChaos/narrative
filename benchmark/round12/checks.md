@@ -24,9 +24,10 @@ the rules too.
 - **Rule 10.** `NAR027` flags a number in a comment when the number is the value of a constant that the comment names, or
   of a constant on the 3 lines below the comment. The 2 rule units are config comment strings with the constants in
   another class, so `NAR027` doesn't reach them.
-- **Rule 11.** The `NAR116` list has each type, field, enum constant and method with a javadoc or a comment, and
-  each method over 20 body lines without a javadoc. A javadoc on a body of one line is `NAR023`. Of the 25 comments
-  that you flagged on NEI PR 1146 on 2026-11-22, 22 are on a declaration and on the list. The other 3 are in a method
+- **Rule 11.** In Java, the `NAR116` list has each type, field, enum constant and method with a javadoc or a comment,
+  and each method over 20 body lines without a javadoc. In Python, the list has each class, function, module constant
+  and class field with a docstring or a comment, and each function over 20 body lines without a docstring. A javadoc
+  on a body of one line is `NAR023`. Of the 25 comments that you flagged on NEI PR 1146 on 2026-11-22, 22 are on a declaration and on the list. The other 3 are in a method
   body, and are only on the sentence list. A list of methods over 20 body lines only had 1 of the 25.
 - **Rule 12.** A label is fine on a constant, an enum constant or a field when the label has a fact that isn't in the
   name (`R12-label-constant`). No check.
@@ -59,5 +60,4 @@ scripts of `eval/` aren't part of a skill, and keep about 30 findings.
 
 ## Open
 
-- Python `NAR004` is still a finding for a function with more than 3 parameters and no docstring. Rule 11 changed `NAR116` for Java
-  only.
+- Python has the `NAR116` list since `R12-python-review-list`. The list of Python hasn't been measured on human code.

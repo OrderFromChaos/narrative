@@ -188,7 +188,7 @@ the module list. Every other module docstring is about what that module does, an
 position, callees follow in first-call order, types last under the divider. It does not replace the
 module docstring.
 
-## What earns a class, a Protocol, a bundle
+## Classes, Protocols, and bundles
 
 **Values that could differ between instances earn a class.** (`R7-C01-C02-revised`) Two
 connections can coexist, so a store is a class (`R7-C02`). A frame format is the same everywhere, so
@@ -216,14 +216,14 @@ it.**
 (`R7-B07-preemption`) Moving a type later is a mechanical edit that a type checker verifies.
 Removing a wrongly general dispatch is not. This is a deliberate asymmetry.
 
-## Resources, state and config
+## Resources, state, and config
 
 **A resource is opened at the scope whose lifetime the resource matches**, and the reader finds the
 open at the top of that scope. (`R7-A03`)
 
 **Idle time is not the variable. What the handle costs on the far side is.** (`R7-A03-idle`) A local
 file handle is free to hold open. A network connection, a device socket or a licensed SDK seat has a
-timeout, a limit or a seat count, and an idle hold can fail with no sign in the program.
+timeout, a limit, or a seat count, and an idle hold can fail with no sign in the program.
 
 **A module-level singleton is fine for anything never closed.** (`R7-E01`) A logger is a
 global. A connection is not. An operator-tunable default is not either. It belongs in the config
@@ -256,7 +256,7 @@ loop. Then justify it.
 Two steps, often mistaken for one.
 
 **Take the dependency when it is simpler at the call site.** (`R7-D02`) **The dependency must be
-simpler there.** `json`, `struct`, `sqlite3`, `pathlib` and `dataclasses` already read well, and a
+simpler there.** `json`, `struct`, `sqlite3`, `pathlib`, and `dataclasses` already read well, and a
 package doesn't improve on them. When the ergonomics are equal, use the standard library, because the
 standard library is free to install. (`R7-D02-stdlib`)
 
@@ -265,7 +265,7 @@ a domain type.
 
 **Contain handles, and let values cross.** (`R7-D01-D03-containment`) **A handle is a thing that must be
 closed:** a connection, a client, a socket, an open file. (`R7-D01-D03-handle`) `datetime`,
-`Decimal` and an array cross freely, because a wrapper adds a conversion at every boundary
+`Decimal`, and an array cross freely, because a wrapper adds a conversion at every boundary
 and doesn't add anything else.
 
 **Depend rather than vendor or reimplement**, weighted by adoption: downloads, age, dependents.
@@ -277,17 +277,17 @@ measures that.*
 floor. The repository pins the exact set in one lock file. A library that pins exact makes its
 constraint everyone's.
 
-## Service, library, monorepo
+## Services, libraries, and monorepos
 
 **One shared logger from one logs module.** (`R7-E02`) A shared logger makes `record.name` constant,
-so the formatter emits `module`, `lineno` and `funcName` to locate the record instead.
+so the formatter emits `module`, `lineno`, and `funcName` to locate the record instead.
 (`R7-E02-fields`)
 
 **Shared code goes in the shared library**, even when one program used the code first. (`R7-E06`)
 
 **The source pushes and the service follows**, when the source can push. (`R7-E07`) A poll loop
 is the fallback. This was decided for instruments on a socket, and it extends to any
-source with notifications, such as a queue, a filesystem watch or a webhook. It does **not** reach a
+source with notifications, such as a queue, a filesystem watch, or a webhook. It does **not** reach a
 source that can only be asked, such as an HTTP endpoint you do not control. There, polling is the
 shape and not a defeat.
 
@@ -306,11 +306,11 @@ rule. Real dependencies in tests (`R2-02`, `R7-C08`) don't need an adjustment at
 The comment rules are in `SKILL.md`, **Comments**, including the ban on decision citations
 (`NAR012`).
 
-Exception: a program may contain the name of a rule the program **implements**. `checks.py` has the
+A program may contain the name of a rule that the program **implements**. `checks.py` has the
 comment `names bound in the function are locals, covered by NAR006`, where `NAR006` is an identifier
 of `checks.py` itself. A name from the same program is not a citation.
 
-## Not architecture, learned alongside
+## Other lessons
 
 **Name the value of the last return.** (`R7-return-naming`) At the end of a long function, the name of
 the returned value is enough, and the reader does not scroll to the signature. Early returns and
@@ -325,7 +325,7 @@ constant joins the block rather than leading the block. Do not contort around it
 hanging double indent, and the indent reads better. `ruff format` rewrites the indent, and doesn't have a
 setting to turn the rewrite off. Accept the constraint rather than work around it.
 
-## What the tools can't check
+## Rules without a check
 
 Stated plainly, as `SKILL.md` does for constant placement.
 

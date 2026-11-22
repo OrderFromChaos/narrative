@@ -1,4 +1,4 @@
-### Show the thing, do not describe it
+### Samples of output
 
 **Where a class reads or writes concrete text, paste a real sample of that text** in a `<pre>`
 block: a tooltip, a chat line, a lang entry, an NEI line, a converted value. **Delete the prose the

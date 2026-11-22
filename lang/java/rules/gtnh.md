@@ -1,19 +1,29 @@
 ## GTNH
 
 - **Every user-facing string is a key in the lang file** (`assets/<modid>/lang/en_US.lang`), read
-  through a localization call: `StatCollector.translateToLocal(key)`,
-  `StatCollector.translateToLocalFormatted(key, values)`, `ChatComponentTranslation`, MUI2
-  `IKey.lang(key)`, or a wrapper of the mod around one of these, such as `NEIClientUtils.translate`.
-  A text call takes the text itself, such as `IKey.str`, `new ChatComponentText` or `drawString`. Don't
+  through a localization call:
+  - `StatCollector.translateToLocal(key)`
+  - `StatCollector.translateToLocalFormatted(key, values)`
+  - `ChatComponentTranslation`
+  - MUI2 `IKey.lang(key)`
+  - a wrapper of the mod around one of these calls, such as `NEIClientUtils.translate`
+
+  A text call takes the text itself, such as `IKey.str`, `new ChatComponentText`, or `drawString`. Don't
   pass literal user-facing text to a text call. `IKey.str("Machines")`,
-  `new ChatComponentText("Done")` and `drawString("Done", x, y, color)` break the rule. `NAR113-gtnh` flags
-  literal text in `IKey.str`, `ChatComponentText`, `drawString` and a tooltip line of
+  `new ChatComponentText("Done")`, and `drawString("Done", x, y, color)` break the rule. `NAR113-gtnh` flags
+  literal text in `IKey.str`, `ChatComponentText`, `drawString`, and a tooltip line of
   `addInformation`. (J1-S15, J1-P04-keys)
 
 - **In user-facing text, never `+`.** Put `%s` placeholders in the lang entry, `%s%s` where two values
   are joined, and pass the values to the localization call. `NAR112-gtnh` flags a `+` in a text call,
   in a localization call, and after a localization call. A wrapper is found by the method name:
-  `translate*`, `localize*`, `trans`, `tr` or `i18n`. (J1-P04, J1-P04-keys)
+  - `translate*`
+  - `localize*`
+  - `trans`
+  - `tr`
+  - `i18n`
+
+  (J1-P04, J1-P04-keys)
 
   ```
   plan.machines=%s machines at %s
@@ -43,7 +53,7 @@
 - **Optional instrumentation is called through an interface.** The implementation for "off" is a
   no-op that doesn't allocate. (J1-S04)
 
-- **A point query is answered without a scan of the whole collection.** First look for an invariant
+- **A point query is answered without a scan of the whole collection.** First search for an invariant
   that removes the query, and add an index only if the query is still needed. (J1-S05)
 
 - **A simple behaviour plus an invariant**, in place of a clever prioritisation policy. (J1-S06)

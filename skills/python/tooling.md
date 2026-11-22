@@ -1,4 +1,4 @@
-# Tooling: what enforces what
+# Tooling
 
 Every claim here was tested by running the tool against a fixture that breaks the rule. **Enabling a
 rule does not make it fire. Test it.**
@@ -7,8 +7,8 @@ Tested with ruff 0.16.3, pylint 4.0.7, mypy 2.3.1 and vermin 1.8.0, against the 
 
 ## Environments
 
-Use **uv** for environments and packages: `uv venv`, `uv add`, `uv run`. Not pip or virtualenv
-directly. (R10-uv)
+Use **uv** for environments and packages, such as `uv venv`, `uv add`, and `uv run`. Don't use pip or
+virtualenv directly. (R10-uv)
 
 `requirements-lock.txt` pins the tools below, plus `hypothesis` and `pendulum`, which the style
 requires, and spaCy with spaCy's `en_core_web_md` model for `agentverbs.py`.
@@ -23,7 +23,7 @@ requires, and spaCy with spaCy's `en_core_web_md` model for `agentverbs.py`.
 | `mypy --strict` | type correctness |
 | `checks.py` | the residual rules no tool implements. It uses only the standard library, so it runs alone with any `python3` at 3.11 or later: `python3 checks.py src/ --select NAR001` |
 | `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, `NAR020`, a clause with no subject before `, so`, `NAR021`, a clause joined by `as` or `, where`, and `NAR022`, `it` or `its` after two or more singular nouns in one sentence, from a spaCy parse. `agentverbs.py --review` and `--pronouns` print a review list instead |
-| `prose.py` | the passages of a Markdown, HTML or plain text file, for `checks.py` and `agentverbs.py` |
+| `prose.py` | the passages of a Markdown, HTML, or plain text file, for `checks.py` and `agentverbs.py` |
 | `rewrap.py` | the re-wrap of every language: the paragraphs of a comment or docstring, filled up to column 120. `checks.py --rewrap` runs it, and `NAR125` flags a paragraph that the re-wrap would change |
 | `verify.py` | running all of the above correctly, with the toolchain and config guards |
 
@@ -49,7 +49,7 @@ mutation and W0603 *complains* about every `global`, so conformant code could ne
 and the gate would be unusable. If you want an inventory of module-state touch points,
 `grep -rn '^\s*global '` gives that inventory without breaking the gate.
 
-## The one fault outside every tool's checks
+## Mutation without `global`
 
 The `global` rule (R2b-G1) is about **mutation**, and a read of the name doesn't count. `global XYZ` at the top of a
 function is a warning sign. The function has side effects on module state. Read-only access is
@@ -158,7 +158,7 @@ variable-rgx = '^([a-z_][a-z0-9_]*|[A-Z][A-Z0-9_]*)$'
 ```
 
 Use `variable-rgx`, and leave `good-names-rgxs` unset. `variable-rgx` relaxes only *locals*, so a mixedCase local, a
-mixedCase argument and a mixedCase attribute still fail pylint.
+mixedCase argument, and a mixedCase attribute still fail pylint.
 
 When `N806` is ignored, mixedCase locals pass ruff but still fail pylint, so coverage survives
 (R3a-13).

@@ -12,10 +12,10 @@ In a program, configure logging once, in `main()`, and don't add a NullHandler. 
 **JSONL output is for machine reading. For terminal output, don't use JSONL.** (R5-03,
 R8-D23-resolved)
 
-- **A service, or any program whose logs are collected**: JSONL. Always import JSONL logging from a
-  shared module. Don't vendor it.
+- **A service, or any program whose logs are collected, logs JSONL.** Always import JSONL logging from a
+  shared module. Don't vendor the JSONL logging.
 
-- **A single-file tool run by hand**: the short field formatter below.
+- **A single-file tool run by hand uses the short field formatter below.**
 
 **Do not use `basicConfig(format='%(levelname)s %(message)s')`.** The standard formatter discards
 everything in `extra`. `LOG.warning('merge.rejected', extra={'rejected': 4812, 'total': 10000})`

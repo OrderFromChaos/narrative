@@ -7,10 +7,24 @@ rest unasked. A page that a person wrote and you did not change is left as it is
 asks for it to be checked. Name each page to the `verify.py` of the language skill. The command is
 under **Pages** in **Comments in <language>**, in the skill `nar:<language>`.
 
-Write a page about the current code and data, with no changelog wording such as `now`, `no longer`
+Write a page about the current code and data, with no changelog wording such as `now`, `no longer`,
 or `was changed to`. Changelog wording belongs only in a changelog file that already exists in the
 repository, such as `CHANGELOG.md`. Do not create a changelog file unless the user asks for one.
 (R11-page-changelog)
+
+State the current fact and the condition of the fact. Don't write the history of the page, such
+as an earlier figure or a change of mind: `far smaller than it first looked` → `9% less code on a
+spec with fixed outputs`. (R12-page-history)
+
+A heading is the name of the topic: `What goes in a body, and what does not` → `Docstring body`.
+(R12-topic-heading)
+
+Open a README with the benefit to the reader. Give a number for the benefit when you have one.
+Then put a cost of adoption in a short caveat, and then an example. Put evidence and process in
+other documents, and link to those documents from the README. (R12-readme-order)
+
+In instructions for an agent, such as a skill or a prompt, don't use a verb of perception such as
+`see`, `look`, or `notice`. Name the act: `see the list` → `read the list`. (R12-no-perception-verb)
 
 Only the wording checks and `agentverbs.py` run on a page. `verify.py` writes the lists of
 **Prose review** for each named page too. When `--since` is given, only the passages of a page with a

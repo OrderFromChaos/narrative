@@ -9,7 +9,7 @@ python3 "${CLAUDE_SKILL_DIR}/verify.py" . --since origin/main
 
 Pass `verify.py` any path. Every Python file below that path is checked. Run `verify.py` from the
 project root, because the default `--config` is `./pyproject.toml`. `verify.py` rewrites files with
-`checks.py --rewrap`, `ruff check --fix` and `ruff format`, unless you pass `--no-fix`. For each
+`checks.py --rewrap`, `ruff check --fix`, and `ruff format`, unless you pass `--no-fix`. For each
 tool that fails, `verify.py` prints that tool's output. `--cache-dir DIR` puts
 `.narrative_cache` in DIR, such as a directory outside a checkout that the agent may not write. A path of `-` is a
 page read from stdin, such as a draft that is not in a file yet.
@@ -34,12 +34,27 @@ whether to fix those findings. (R11-upstream-ask) (R11-since, R11-same-workflow)
 `pyproject.toml` is absent. **Do not replace it with a loop that greps tool output for findings.**
 When a missing binary or config produces empty output, such a loop reads the empty output as a pass.
 
-`verify.py` runs these tools, in the order that converges: `checks.py --rewrap`,
-`ruff check --fix`, `ruff format`, `pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`.
-A run with exit 0 or 1 writes four lists to `.narrative_cache/review-lists.txt`, the input to **Prose
-review**: every sentence of every comment, docstring and named page, every verb whose subject cannot
-act, every sentence with a pronoun, and every sentence with a free modifier. The file and the number of entries in each list are
-on the last line of the output. When `--since` is given, the lists cover only the changed lines of the code
+`verify.py` runs these tools, in the order that converges:
+
+1. `checks.py --rewrap`
+2. `ruff check --fix`
+3. `ruff format`
+4. `pylint`
+5. `mypy --strict`
+6. `checks.py`
+7. `vermin`
+8. `agentverbs.py`
+
+A run with exit 0 or 1 writes five lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+review**:
+
+- every sentence of every comment, docstring, and named page
+- every verb whose subject cannot act
+- every sentence with a pronoun
+- every sentence with a free modifier
+- each docstring and member comment, and each function over 20 body lines (`NAR116`)
+
+The file and the number of entries in each list are on the last line of the output. When `--since` is given, the lists cover only the changed lines of the code
 and the pages. Otherwise each list stops after 1000 entries, with the command for the next 1000.
 `verify.py` keeps the spaCy results of each comment in `.narrative_cache/` in the current
 directory, so a run after a small change parses only the changed comments. (R11-lists-on-failure,

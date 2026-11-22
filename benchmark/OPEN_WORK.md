@@ -63,12 +63,11 @@ In the same pass, `self-consistency-narrative` scores `benchmark/round10/agentve
 `agentverbs.py --score`, and that check allows no drop. Replace it with the deterministic predictor
 of `eval/run.py` on the full gold set.
 
-## 3. The colon rule and the Fence examples, through new-narrative-rule
+## 3. The Fence examples, through new-narrative-rule
 
-From the user's notes on the gold labels, in `eval/units/labels.jsonl`:
+From the user's notes on the gold labels, in `eval/units/labels.jsonl`. The colon rule of the same notes is
+`R12-colon` in `core/rules/comments.md`.
 
-- **A new rule:** no clause joined by a colon, and no stylised `X: Y` opening, such as
-  `pinned serialisation: …`. The reason is the same as for the semicolon of `NAR013`.
 - **Fence examples in `lang/python/rules/comments-python.md`:**
   - `# bool subclasses Python int. Reject it too` against the gold `need to guard against bools as
     well (bools are ints in Python)`

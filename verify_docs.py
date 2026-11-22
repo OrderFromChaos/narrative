@@ -123,7 +123,7 @@ def schemaProblems(decisions: list[dict[str, object]]) -> list[str]:
 def supersededBy(record: dict[str, object]) -> list[str]:
     """Return the ids a decision replaces.
 
-    The record type is dict[str, object] because schema values are strings, lists and nulls, so the optional field must
+    The record type is dict[str, object] because schema values are strings, lists, and nulls, so the optional field must
     be narrowed before the field can be walked.
 
     Returns:
@@ -151,8 +151,7 @@ def supersessions(decisions: list[dict[str, object]]) -> dict[str, str]:
 
 
 def statesCurrentRules(relative: Path) -> bool:
-    # A round writeup records what was decided in the round, so a decision that a later round replaced is correct in the
-    # writeup.
+    # a round writeup is a record of the round, so a decision that a later round replaced is correct in the writeup
     return relative.parts[0] in SKILL_SOURCE_DIRECTORIES or str(relative) == 'README.md'
 
 
@@ -223,7 +222,7 @@ def inOtherCheckout(doc: Path) -> bool:
 
 
 def main() -> int:
-    """Report any citation, code block or count in the docs that doesn't match the source of truth."""
+    """Report any citation, code block, or count in the docs that doesn't match the source of truth."""
     problems: list[str] = []
 
     decisions = [json.loads(line) for line in (ROOT / 'benchmark/decisions.jsonl').open()]

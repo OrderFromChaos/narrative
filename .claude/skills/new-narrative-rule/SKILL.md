@@ -12,13 +12,20 @@ description: Add or change a rule in the Narrative skill, tested on fresh agents
    the user's rewrite as `cut`, as rewritten by one rule, or as `keep`. Label every unit before any
    agent runs, and never change a label after you have seen an output.
 2. **Confirm the current behaviour.** Run fresh agents with the current `skill/SKILL.md` on the
-   dataset: one on the text before narrative, one on the narrative output. Give no gold rewrite and
-   no hypothesis in the prompt. Record what each agent changed and the rule each agent cited. Score
+   dataset: one on the text before narrative, one on the narrative output. Leave the gold rewrite and any hypothesis
+   out of the prompt. Record what each agent changed and the rule each agent cited. Score
    each output (**Scoring**). These scores are the baseline.
 3. **Design the rule, and get the user's acceptance.** Show the rule text and the before and after
-   for the dataset, then ask. The rule fixes narrative output, not the text before narrative.
-4. **Generalize the rule.** Rewrite each example in another domain, so no example is taken from the
-   dataset.
+   for the dataset, then ask. The rule fixes narrative output. The text before narrative is only
+   the baseline.
+   De-poison each draft by step 5 before you show the draft.
+4. **Generalize the rule.** Rewrite each example in another domain, so the examples aren't from the
+   dataset. An agent copies the example of a rule word for word. Make the fix of each example the
+   fix you want most often, such as a cut before a rewrite, and make the text after the arrow pass
+   the skill. Put the text after the arrow of each example through the review lists too, and rewrite
+   the text until the lists are empty. An imperative in a rule is a command that an agent follows in
+   every case. Write `may` for a permission: `Write a list of two items inline` → `A list of two
+   items may be inline`.
 5. **De-poison the rule text.** Run the checks of `.claude/skills/self-consistency-narrative/`
    (sections 2 and 3) on the rule text, and check each comment example as a comment. Read the
    rule text against the user's Claudish patterns and against the new rule itself. Fix each finding,
@@ -44,6 +51,5 @@ Score each rule separately, over the units of every input. For one rule:
 - false negative: the agent left a unit with that rule's label unchanged, or took another action
 
 Precision is TP / (TP + FP), and recall is TP / (TP + FN). Report the counts as well as the ratios,
-for each input and for all inputs together. With fewer than ten labelled units for a rule, recall
-changes by more than ten points for each unit, so run each input on three agents and add up the
+for each input and for all inputs together. When a rule has fewer than ten labelled units, recall changes by more than ten points for each unit, so run each input on three agents and add up the
 counts.

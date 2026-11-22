@@ -127,7 +127,7 @@ def docstringPassages(tree: ast.Module) -> list[Passage]:
 
 
 def docstringLiterals(tree: ast.Module) -> list[ast.Constant]:
-    """Find the string literal of the docstring of each module, class and function."""
+    """Find the string literal of the docstring of each module, class, and function."""
     literals: list[ast.Constant] = []
     for node in ast.walk(tree):
         if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
@@ -209,7 +209,7 @@ def commentBlocks(source: str) -> list[list[Line]]:
 def hashBlocks(lines: list[str], tokens: list[tokenize.TokenInfo]) -> list[list[Line]]:
     """Group the whole-line `#` comments on consecutive lines at one column into blocks.
 
-    A divider such as `### vocabulary ###`, a shebang, a pragma and a line with `# noqa` are fixed.
+    A divider such as `### vocabulary ###`, a shebang, a pragma, and a line with `# noqa` are fixed.
     """
     # matches:
     # `### vocabulary ####`

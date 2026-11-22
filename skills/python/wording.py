@@ -1,6 +1,6 @@
 """The wording checks and the --since helpers, shared by the checkers of every language of Narrative.
 
-NAR012 to NAR016, NAR018 and NAR024 flag wording that a comment, docstring or published page doesn't need. The checks
+NAR012 to NAR016, NAR018, and NAR024 flag wording that a comment, docstring or published page doesn't need. The checks
 read lines of prose. A language's checker passes in the lines of the language's comments and doc comments, and
 checkPage() reads a Markdown, HTML or plain text page through prose.py.
 
@@ -73,7 +73,7 @@ def checkPage(checked_file: Path) -> list[Finding]:
 
 
 def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], checked_file: Path) -> list[Finding]:
-    """Flag seven kinds of wording that no comment, docstring or published page needs.
+    """Flag seven kinds of wording that no comment, docstring, or published page needs.
 
     - NAR012: a decision id, unresolvable outside the repository where the id was recorded
     - NAR013: a dash or a semicolon joining clauses, outside backticked code
@@ -86,7 +86,7 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
 
     `used to` counts as changelog only after a pronoun subject. In `the key used to sort`, it means employed for. A bare
     `now` is not flagged. `now that X` and `until now` are common in correct prose. A dash after a list-item term is a
-    separator, and doesn't join clauses. Pragmas, section dividers and pasted usage lines (`$`, `>>>`) are skipped.
+    separator, and doesn't join clauses. Pragmas, section dividers, and pasted usage lines (`$`, `>>>`) are skipped.
 
     Args:
         prose_lines: line number and text of each line of prose

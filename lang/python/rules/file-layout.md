@@ -39,7 +39,7 @@ class ScanHeader: ...
   `main()`. (Q10)
 
 - Caller before callee throughout. Code at module level must not *call or subclass* anything
-  defined further down. Watch for a constant whose **value** references an Enum member or class. Annotations
+  defined further down. Check for a constant whose **value** references an Enum member or class. Annotations
   are safe, because the future import makes them lazy. (R2-10, R3a-03)
 
 - That is an **ordering** rule. A constant whose value is an Enum member is
@@ -50,7 +50,7 @@ class ScanHeader: ...
   durations adjacent, then non-duration limits, then hosts, then wire literals. Type usually
   correlates, and concern decides. No blank lines inside the block. (R3a-16, R3a-15)
 
-- 120 columns. Absolute imports only. Single quotes (docstrings and multiline: double).
+- 120 columns. Absolute imports only. Single quotes, and double quotes for docstrings and multiline strings.
 
 - Separate logically self-contained blocks inside a function with **one blank line**. That is its
   only meaning here. Short guards written as a group stay grouped, and two adjacent two-line
@@ -78,10 +78,8 @@ class ScanHeader: ...
   everywhere, so the same rule applied to calls costs lines without buying clarity. (R2b-B1)
 
 - **Keyword-only parameters do not count**, so a function may take any number of them. That is also
-  the escape hatch at exactly four. Put `*` before the optional ones and they stop counting, and
-  they read as optional in the signature anyway. Note `NAR004` counts *every* parameter, because
-  each one is part of the contract even when the caller may omit the parameter. (R5-06)
+  the escape hatch at exactly four. Put `*` before the optional ones and they stop counting, and they read as optional in the signature anyway. (R5-06)
 
-- Long strings: implicit concatenation in parens. Never `"""` for data, because its whitespace
+- Write a long string as implicit concatenation in parens. Never `"""` for data, because its whitespace
   becomes part of the value. (Q03)
 

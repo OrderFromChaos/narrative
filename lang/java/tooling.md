@@ -1,9 +1,9 @@
-# Tooling: what enforces what
+# Tooling
 
 Every check here was tested against two fixtures, one that breaks the rule and one that does not, in
 `lang/java/tests/fixtures/` of the narrative repository:
 `python3 lang/java/tests/run_fixtures.py --gradle <gradle>`. The fixture project of each level is a
-separate Gradle build: `tests/` for Java 25, `tests/java8/` and `tests/jabel/`. The projects of Java 8
+separate Gradle build: `tests/` for Java 25, `tests/java8/`, and `tests/jabel/`. The projects of Java 8
 and jabel have separate fixtures for the rules that differ by level. The sources of each also include the
 files of `tests/fixtures/` named in the project's `shared-fixtures.txt`.
 **Enabling a rule does not make it fire. Test it.**
@@ -17,7 +17,7 @@ config, and the shared lint venv (Python 3.11, spaCy 3.8.16 with `en_core_web_md
 Use **uv** for the lint venv. Every language skill has the same `requirements-lock.txt`, so the Java
 and Python skills run in one venv. (R10-uv)
 
-`wording.py`, `agentverbs.py`, `prose.py`, `words.json` and `requirements-lock.txt` are in `core/tools/`
+`wording.py`, `agentverbs.py`, `prose.py`, `words.json`, and `requirements-lock.txt` are in `core/tools/`
 of the narrative repository, and `build_skills.py` copies them into `skills/gtnh/`. Change them in
 `core/tools/`, then run `python3 build_skills.py`. `build_skills.py --check` exits 1 when a file in
 `skills/` differs from the source.
@@ -30,14 +30,14 @@ of the narrative repository, and `build_skills.py` copies them into `skills/gtnh
 | javac `-Xlint:rawtypes,unchecked` | raw types and unchecked operations (`NAR121`) |
 | Checkstyle | naming (`NAR130`) and the parameter limit (`NAR131`), with `checkstyle.xml` |
 | PMD | the structural checks, as XPath rules in `pmd-ruleset.xml`, plus four built-in rules |
-| `javachecks.py` | comments and javadoc with a lexer, the prose checks, the checks on comments (`NAR118` to `NAR120`, `NAR125`), the comment and javadoc lookups of `NAR110`, `NAR116` and `NAR117`, then noqa, the keep-list and `--since` over every finding. When `--rewrap` is given, `javachecks.py` re-wraps comments in place instead. `verify.py` runs the re-wrap before Gradle unless `--no-fix` is given |
+| `javachecks.py` | comments and javadoc with a lexer, the prose checks, the checks on comments (`NAR118` to `NAR120`, `NAR125`), the comment and javadoc lookups of `NAR110`, `NAR116`, and `NAR117`, then noqa, the keep-list, and `--since` over every finding. When `--rewrap` is given, `javachecks.py` re-wraps comments in place instead. `verify.py` runs the re-wrap before Gradle unless `--no-fix` is given |
 | `codeprose.py` | the lexer that reads Java comments and javadoc into passages for the prose checks, and into blocks of lines for the re-wrap |
 | `rewrap.py` | the re-wrap of every language: the paragraphs of a block of comment lines, filled up to column 120 |
 | `wording.py`, `agentverbs.py`, `prose.py` | the prose checks of every language: `NAR012` to `NAR018`, and `NAR020` to `NAR022` |
 | `narrative.init.gradle` | the Checkstyle and PMD tasks and the javac flags, added to the build with no project file change |
 | `verify.py` | the gate, one Gradle run, then `javachecks.py`, with the toolchain guards |
 
-Run order: spotless, then compileJava, then Checkstyle and PMD, then `javachecks.py`. `verify.py`
+The run order is spotless, then compileJava, then Checkstyle and PMD, then `javachecks.py`. `verify.py`
 runs them in that order, so use `verify.py` rather than reproducing the sequence.
 
 A Markdown, HTML or plain text file named to `verify.py` gets the prose checks only, also when
@@ -49,12 +49,12 @@ silences a code on the same line.
 | Code | Rule | Check |
 |---|---|---|
 | `NAR012` to `NAR016`, `NAR018` | wording in comments and javadoc | `checks.py` |
-| `NAR017`, `NAR020`, `NAR021`, `NAR022` | an agent verb on a subject that cannot act, a clause with no subject before `, so`, a clause joined by `as` or `, where`, `it` or `its` after two or more singular nouns in one sentence | `agentverbs.py` |
+| `NAR017`, `NAR020`, `NAR021`, `NAR022` | an agent verb on a subject that cannot act, a clause with no subject before `, so`, a clause joined by `as` or `, where`, and `it` or `its` after two or more singular nouns in one sentence | `agentverbs.py` |
 | `NAR101` | a method above its first caller in the class (J1-P02) | PMD |
 | `NAR102` | two or more `null` arguments (J1-P03) | PMD |
 | `NAR103` | a stream inside a stream lambda (J1-P06) | PMD |
 | `NAR104` | a fully-qualified name outside the imports (J1-P08) | PMD |
-| `NAR105` | `ordinal()` in NBT, packet or Gson code (J1-P17) | PMD |
+| `NAR105` | `ordinal()` in NBT, packet, or Gson code (J1-P17) | PMD |
 | `NAR106` | an abstract class that is not sealed (J1-P18, J1-F05) | PMD |
 | `NAR107` | a `default` arm in a switch over an enum or a sealed type of the project (J1-P19) | PMD |
 | `NAR108` | an array component in a record (J1-P22) | PMD |
@@ -65,7 +65,7 @@ silences a code on the same line.
 | `NAR113-gtnh` | literal user-facing text in a text call (J1-S15) | PMD |
 | `NAR114-gtnh` | `new` or `.stream()` in a `draw*` or `render*` method (J1-S03) | PMD |
 | `NAR115` | a `java.io.File` operation (J1-P14) | PMD |
-| `NAR116` | a review list of each type, field, enum constant and method with a javadoc or a comment, and each method over 20 body lines. A method with a body of one line is `NAR023` (J1-P34, R12-nar116-review) | PMD, then `javachecks.py` |
+| `NAR116` | a review list of each type, field, enum constant, and method with a javadoc or a comment, and each method over 20 body lines. A method with a body of one line is `NAR023` (J1-P34, R12-nar116-review) | PMD, then `javachecks.py` |
 | `NAR117` | a `throw new X` without a `@throws X` line in the javadoc of a method on the `NAR116` list (J1-P34) | `javachecks.py` |
 | `NAR118` | a top-level type with no javadoc (J1-F3) | `javachecks.py` |
 | `NAR119` | a FIXME, as a warning (J1-F4) | `javachecks.py` |
@@ -79,7 +79,7 @@ silences a code on the same line.
 | `NAR131` | more than 3 parameters (J1-P03) | Checkstyle |
 | `NAR140` | a concrete collection type in a signature, a field or a local, except `EnumMap` and `EnumSet` (J1-P11, J1-F03) | PMD LooseCoupling, `allowedTypes` |
 | `NAR141` | a field that could be `final` (J1-P21) | PMD ImmutableField |
-| `NAR142` | a catch of `Exception`, `RuntimeException`, `NullPointerException`, `Throwable` or `Error` (J1-P24, J1-F04) | PMD AvoidCatchingGenericException |
+| `NAR142` | a catch of `Exception`, `RuntimeException`, `NullPointerException`, `Throwable`, or `Error` (J1-P24, J1-F04) | PMD AvoidCatchingGenericException |
 | `NAR144` | a rethrow that drops the cause (Q21) | PMD PreserveStackTrace |
 
 A code with `-gtnh` is a rule of the GTNH environment, such as the lang file or the draw loop. A new
@@ -96,7 +96,7 @@ A PMD rule or a Checkstyle check with no entry in `PMD_CODES` or `CHECKSTYLE_COD
 Below is *why* each non-obvious setting is there.
 
 - **SRG and MCP names.** An override of a Minecraft method has names such as `func_145825_b`,
-  `field_70170_p` and `p_145827_0_`. They are allowed in the Checkstyle patterns, and ParameterName
+  `field_70170_p`, and `p_145827_0_`. They are allowed in the Checkstyle patterns, and ParameterName
   has `ignoreOverridden`.
 - **ParameterNumber** has `max = 3` and `ignoreOverriddenMethods`, because the signature of an
   override comes from the platform.
@@ -104,12 +104,12 @@ Below is *why* each non-obvious setting is there.
   **Constants** in `SKILL.md`.
 - **NAR107** has the XPath comment `(: SEALED_TYPES :)`. `verify.py` replaces it with one
   `pmd-java:typeIs()` test per sealed type found in the sources, because XPath doesn't have a test for a
-  sealed type. The name of a nested sealed type is the file name, a dot and the type name, so a
+  sealed type. The name of a nested sealed type is the file name, a dot, and the type name, so a
   sealed type nested two levels deep is not tested.
 - **NAR112** doesn't test the type of a wrapper. NAR112 tests the method names `translate*`, `localize*`,
-  `trans`, `tr` and `i18n`. A method of another kind with one of those names and a `+` in a `String`
-  argument is a finding too. Ask the user whether to keep that finding (see **noqa** in
-  `SKILL.md`). The key-prefix exception is for the first argument of a localization call only, and
+  `trans`, `tr`, and `i18n`. A method of another kind with one of those names and a `+` in a `String`
+  argument is a finding too. Ask the user whether to keep that finding (the rule is under **noqa**
+  in `SKILL.md`). The key-prefix exception is for the first argument of a localization call only, and
   not for a text call such as `drawString`.
 - **NAR110** has exemptions for `@Mod.Instance`, `@SidedProxy`, loggers, and the fields of a class that is
   annotated `@Config` or whose name ends in `Config` or `Configuration`.
@@ -121,7 +121,7 @@ Below is *why* each non-obvious setting is there.
 Everything below is in `build/narrative/` of the project, and a repeat run skips the covered work.
 
 - `prose-cache.json`: the spaCy results of each comment passage, keyed by the passage text. It is
-  discarded when `agentverbs.py`, `words.json`, spaCy or the spaCy model changes. spaCy is loaded
+  discarded when `agentverbs.py`, `words.json`, spaCy, or the spaCy model changes. spaCy is loaded
   only for a passage that is not in `prose-cache.json`.
 - `checkstyle.cache`, and the incremental cache of the PMD task: the files with no change since the
   last run are not analysed again.
@@ -186,7 +186,7 @@ and the code line after a whole-line block. The same syntax applies to a finding
 
 **The keep-list is `.git/info/narrative-keep`.** The file is the same in every worktree of the
 repository, and is not part of any commit. Each line has three tab-separated fields, the path from
-the top of the working tree, the code and the text of the line. The reason is on a `#` line above
+the top of the working tree, the code, and the text of the line. The reason is on a `#` line above
 the entry. To add an entry, run `verify.py --keep FILE:LINE:CODE --reason TEXT`. An entry is matched
 by the text of the line, so an entry matches the finding at any line number. Kept findings are counted in the last line of the output, for example
 `4 findings, 0 warnings, 1 kept over 226 files`.

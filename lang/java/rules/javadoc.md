@@ -6,8 +6,8 @@ code. The javadoc of a
 class with `main`, such as a dev tool, also has a usage example and the exit codes. `NAR118` flags a
 top-level type without a javadoc. (J1-F3, R5-02)
 
-**Write for a professional developer who has the file open.** That reader knows Java, Forge and the
-vocabulary of the trade, so `API`, `idempotent` and `NBT` are the right words. One idea per
+**Write for a professional developer who has the file open.** That reader knows Java, Forge, and the
+vocabulary of the trade, so `API`, `idempotent`, and `NBT` are the right words. One idea per
 sentence. **One word for one thing, and the word is the identifier the code uses.** (R9-09)
 
 The prose rules for comments and javadoc are in **Comments**.

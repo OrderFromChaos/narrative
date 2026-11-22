@@ -1,6 +1,7 @@
 ## Testing
 
-- **Real dependencies**: a real socket on loopback, a real temp SQLite file, a real temp directory.
+- **Real dependencies.** Use a real socket on loopback, a real temp SQLite file, and a real temp
+  directory.
   A test double is a last resort for something you cannot run. Flag each one as a known
   gap. When the transport is fake, tests pass while production fails. (R2-02, Q16)
 

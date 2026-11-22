@@ -28,12 +28,12 @@
   `NAR109` enforces both. (J1-P23)
 
 - **Handle each failure mode narrowly and separately.** No `catch (Exception)`,
-  `catch (RuntimeException)`, `catch (NullPointerException)`, `catch (Throwable)` or `catch (Error)`.
+  `catch (RuntimeException)`, `catch (NullPointerException)`, `catch (Throwable)`, or `catch (Error)`.
   `NAR142` flags them. There are two exceptions. One is `catch (NoClassDefFoundError)` at the
   optional-mod boundary, described in `architecture.md`. The other is `catch (RuntimeException)` in
   a degrade-and-report loop over code from another mod, whose exceptions you cannot list. Write the
-  reason in a comment in the catch block, and ask the user whether to keep the finding (see
-  **noqa**):
+  reason in a comment in the catch block, and ask the user whether to keep the finding (the rule
+  is under **noqa**):
 
   ```java
   for (MTEMultiBlockBase machine : machines) {

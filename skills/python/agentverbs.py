@@ -9,11 +9,12 @@ NAR021 is a clause that `as` or `, where` joins to a sentence: `a float, as in t
 `as the recipe works it out`, and in a comment `the values it takes, where the spec has no range`. To fix a NAR021
 finding, cut the clause, or make the clause's fact a new sentence.
 
-NAR025 is `no`, `nothing`, `none` or `nobody` on a subject or an object, or after `is`: `writes nothing`, `is no proof`,
-`no invoice is sent twice`. To fix a NAR025 finding, put the negation on the verb: `doesn't write a file`. A negation in
-a phrase after a preposition, such as `a time with no offset`, is left out, and so is the Python value `None`.
+NAR025 is `no`, `nothing`, `none`, or `nobody` on a subject or an object, or after `is`: `writes nothing`,
+`is no proof`, `no invoice is sent twice`. To fix a NAR025 finding, put the negation on the verb:
+`doesn't write a file`. A negation in a phrase after a preposition, such as `a time with no offset`, is left out, and so
+is the Python value `None`.
 
-NAR026 is a condition as a phrase after `at`, `with`, `without`, `beside`, `against`, `on`, `under` or `over` and a
+NAR026 is a condition as a phrase after `at`, `with`, `without`, `beside`, `against`, `on`, `under`, or `over` and a
 comma, at the start of a sentence: `With a full disk, export() deletes the partial file`. To fix a NAR026 finding, write
 the condition as a clause after `when` or `if`. An opener with a platform, such as `On Windows,`, is left out.
 
@@ -26,7 +27,7 @@ for, or split the sentence.
 `a period ranks by its newest snapshot` makes a period rank, and `the report names it` makes a report speak. A subject
 acts when it is a person, an animal, a role such as `caller`, or a pronoun for one. A noun made from a verb with no
 person sense in common use, such as `solver`, is the name of a program and cannot act. A verb counts as mental when its
-most frequent WordNet sense is cognition, communication or perception, or when the verb is on MIND_EXTRA. A verb counts
+most frequent WordNet sense is cognition, communication, or perception, or when the verb is on MIND_EXTRA. A verb counts
 as an agent verb when VerbNet puts the verb's most frequent sense in a class in which each frame has an animate subject:
 `the default config sends the job`, `the fallback places the file`. Verbs on LITERAL never count, and `show` is fine
 after a noun on PAGE_PARTS: `the table below shows the totals`. A British spelling is read as the American one that the
@@ -49,7 +50,7 @@ agent verbs such as `bill` and `rule` are also nouns. A passive verb with `by` a
 It imports spaCy and loads its `en_core_web_md` model, both pinned in requirements-lock.txt. verify.py runs it with the
 interpreter of the lint venv.
 
-A directory expands to the source files of the language that codeprose.py reads. A Markdown, HTML or plain text file is
+A directory expands to the source files of the language that codeprose.py reads. A Markdown, HTML, or plain text file is
 checked when the file is named, through prose.py.
 
 Usage, with the shared lint venv of SKILL.md (Scripts\python.exe in place of bin/python on Windows):
@@ -72,7 +73,7 @@ Usage, with the shared lint venv of SKILL.md (Scripts\python.exe in place of bin
     precision 1.00, recall 0.91 (29 of 32 found, 0 false)
 
 A line with `# noqa: NAR017`, `# noqa: NAR020`, `# noqa: NAR021`, `# noqa: NAR022`, `# noqa: NAR025`,
-`# noqa: NAR026` or a bare `# noqa` is skipped for that code. In a page, the comment is `<!-- noqa: NAR017 -->`.
+`# noqa: NAR026`, or a bare `# noqa` is skipped for that code. In a page, the comment is `<!-- noqa: NAR017 -->`.
 
 `--review` lists every other subject that cannot act, with its verb, for the manual prose review: a verb that is not
 stative, such as `breaks` or `stays`, and a verb on LITERAL unless the verb has a direct object and code as the subject:
@@ -81,12 +82,13 @@ never listed. An `-s` word after another noun is on the list too when only a ver
 `the path breaks`. A reader decides whether the subject can perform the verb. The list isn't a finding, and the exit
 code is 0.
 
-`--pronouns` lists every sentence with `it`, `its` or a standalone `that`, each after the sentence before. spaCy doesn't
-resolve coreference, so a reader names the noun for each pronoun. The list isn't a finding, and the exit code is 0.
+`--pronouns` lists every sentence with `it`, `its`, or a standalone `that`, each after the sentence before. spaCy
+doesn't resolve coreference, so a reader names the noun for each pronoun. The list isn't a finding, and the exit code is
+0.
 
 `--free-modifiers` lists every sentence with a free modifier: a phrase without a verb after a comma, that opens with a
 preposition, a past participle or a number, such as `, in one list for each tenant`. A reader writes the phrase as a
-clause or a separate sentence, or cuts the phrase. A phrase after `and`, `or`, `but`, `so` or `then`, a list of numbers
+clause or a separate sentence, or cuts the phrase. A phrase after `and`, `or`, `but`, `so`, or `then`, a list of numbers
 and a list of prepositions are left out. The list isn't a finding, and the exit code is 0.
 
 Each of the three lists stops after 1000 entries, and the last line of the list is the command for the next 1000:
@@ -97,7 +99,7 @@ Each of the three lists stops after 1000 entries, and the last line of the list 
 changes.
 
 --cache PATH stores spaCy results in PATH between runs. Each entry is keyed by passage text. The cache is discarded when
-agentverbs.py, words.json, spaCy or the spaCy model changes, and spaCy is loaded only when a passage is not in the
+agentverbs.py, words.json, spaCy, or the spaCy model changes, and spaCy is loaded only when a passage is not in the
 cache.
 
 Exit codes:
@@ -371,7 +373,7 @@ def scoreLabels(reader: CachedReader, labels_path: Path) -> int:
     """Compare the check with hand labels: `agent` or `ok`, a tab, then the line.
 
     Returns:
-        0, after printing precision, recall and every disagreement.
+        0, after printing precision, recall, and every disagreement.
     """
     found = false = missed = labelled = 0
     for row in labels_path.read_text(encoding='utf-8').splitlines():
@@ -860,7 +862,7 @@ class SentenceReader:
         return hits
 
     def negations(self, text: str) -> list[str]:
-        """Find each `no`, `nothing`, `none` or `nobody` on a subject or an object, or after `is`.
+        """Find each `no`, `nothing`, `none`, or `nobody` on a subject or an object, or after `is`.
 
         A noun or a pronoun joined by `and` or `or` takes the role of the first noun of the join. A negation in a phrase
         after a preposition, such as `with no offset`, has another role and is left out. `None` is read as the Python
@@ -927,7 +929,7 @@ class SentenceReader:
         standalone pronoun: `return that` is listed, and `that file` and `the file that` aren't.
 
         Returns:
-            The pronouns, the sentence and the previous sentence (empty for the first), in order.
+            The pronouns, the sentence, and the previous sentence (empty for the first), in order.
         """
         # the text is split before masking, so the code spans in the list are as written
         sentences = [sentence for sentence in re.split(r'(?<=[.!?])\s+', text.strip()) if sentence]
@@ -1101,7 +1103,7 @@ class SentenceReader:
         """Read a noun and a following `-s` word as subject and verb where grammar allows only that.
 
         After a singular determiner, `a plan marks` cannot be a plural noun phrase. After an identifier or `the` that
-        opens a relative clause, `the month raw_month names` and `every file the audit needs` cannot either.
+        opens a relative clause, `the month raw_month names`, and `every file the audit needs` cannot either.
 
         Returns:
             Verb index to `subject verb`.
@@ -1179,7 +1181,7 @@ class CachedReader:
 
     @classmethod
     def open(cls, cache_path: Path | None) -> CachedReader:
-        """Read the cache, or start an empty one when the cache is absent, unreadable or of another version."""
+        """Read the cache, or start an empty one when the cache is absent, unreadable, or of another version."""
         versions = [
             hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             hashlib.sha256(WORDS_PATH.read_bytes()).hexdigest(),

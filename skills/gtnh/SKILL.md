@@ -3,7 +3,7 @@ name: gtnh
 description: Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods, on Java 25 with jvmDowngrader, on jabel and on Java 8. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, when planning a change, and when reviewing a Java diff against this style. For Python files in the same repository, load nar:python too, or load nar:code in place of both. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages.
 ---
 **Before you write or review anything, load the skill `nar:core` with the Skill tool**, unless
-`nar:core` is loaded already. `nar:core` has the rules for comments, javadoc, error messages and
+`nar:core` is loaded already. `nar:core` has the rules for comments, javadoc, error messages, and
 published pages, and the steps of **Writing a comment** and **Prose review** that **Procedures**
 names.
 
@@ -25,7 +25,7 @@ even when a looser form is more flexible. The type checker here is javac. (R3-P2
 **The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
 1. Load `nar:core` and this skill before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
-3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head` or
+3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head`, or
    `tail`.
 4. Fix every finding and answer every list entry from that one run, then run `verify.py` once more.
 5. In the report, say how many entries of each list you read, such as `read 212 of 212 sentences`.
@@ -64,16 +64,16 @@ Checkstyle and PMD run on a JDK 25 at every level.
 ### Rules by level
 
 Every rule and every check applies at every level, except these. Where a rule below has a record,
-`List.copyOf` or a `switch` expression, use the form of the level.
+`List.copyOf`, or a `switch` expression, use the form of the level.
 
-- **A record.** Java 25: a record. jabel: a record with `@Desugar`
+- **A record.** In a Java 25 build, write a record. In a jabel build, write a record with `@Desugar`
   (`com.github.bsideup.jabel.Desugar`). The Jabel of GTNH compiles that record for Java 8, and a record
-  with no `@Desugar` does not compile. Java 8: a final class with private final fields, one constructor
+  with no `@Desugar` does not compile. In a Java 8 build, write a final class with private final fields, one constructor
   and `getName()` getters, with `equals()` and `hashCode()` when code compares two instances. `NAR108`
   can fire only on a record. (J1-P21-levels)
-- **`List.copyOf`.** jabel and Java 8: Guava `ImmutableList.copyOf`, and `ImmutableSet.copyOf` or
+- **`List.copyOf`.** In a jabel or Java 8 build, write Guava `ImmutableList.copyOf`, and `ImmutableSet.copyOf` or
   `ImmutableMap.copyOf` for the other collections. (J1-P21-levels)
-- **A `switch` over an enum.** Java 25 and jabel: a `switch` expression without a `default` arm. javac
+- **A `switch` over an enum.** In a Java 25 or jabel build, write a `switch` expression without a `default` arm. javac
   rejects a missing constant at both levels. Java 8 doesn't have a `switch` expression. Put the behaviour on
   the constant, where javac checks every constant. Where only one caller needs a mapping, write a
   `switch` statement with a case for every constant, no `default` arm, and a throw after the switch.
@@ -188,8 +188,12 @@ public final class PlanFiles {
 
 ## Naming
 
-- Standard Java: camelCase methods, fields, locals and parameters. PascalCase types. UPPER_SNAKE
-  constants. A local compile-time constant may be UPPER_SNAKE too (see **Constants**). `NAR130`
+- Use the standard Java case:
+  - camelCase for methods, fields, locals, and parameters
+  - PascalCase for types
+  - UPPER_SNAKE for constants
+
+  A local compile-time constant may be UPPER_SNAKE too (under **Constants**). `NAR130`
   enforces it with Checkstyle, and allows the SRG and MCP names of Minecraft (`func_…`, `field_…`,
   `p_…`) of an override. (J1-P01)
 
@@ -205,15 +209,15 @@ public final class PlanFiles {
 
   **Length is not the defect.** Where the clear name is the longer one, write the longer one.
 
-- **Predicates take `is`, `has` or `can`:** `isReady()`, `hasPower()`, `canExtract()`. Forge,
-  Minecraft, GT and Lombok `@Getter` use these names, so a call site reads the same as the library
+- **Predicates take `is`, `has`, or `can`:** `isReady()`, `hasPower()`, `canExtract()`. Forge,
+  Minecraft, GT, and Lombok `@Getter` use these names, so a call site reads the same as the library
   calls beside the call site. (J1-F1)
 
 - **Do not restate a domain type in a parameter name:** `RebinConfig rebinConfig` →
   `RebinConfig config`. (Q11)
 
 - **When the type is generic, the parameter name is the only place the thing is named.** `Path`,
-  `String`, `int` and `Object` constrain only a value's shape. `Path path` → `Path policyJsonPath`,
+  `String`, `int`, and `Object` constrain only a value's shape. `Path path` → `Path policyJsonPath`,
   and `String text` → `String manifestText`.
 
 - **Raw and parsed forms get different names.** Prefix the raw form with `raw`: `String rawAt` from
@@ -237,7 +241,7 @@ Name every magic number. (Q09) Then place it by this test:
   `final`, in UPPER_SNAKE. It is a compile-time constant, so javac inlines the value at each use. An object
   constant, such as a `Pattern`, is `private static final`, directly above the constant's only
   method. (J1-P09, R3a-12)
-- **A value that players or pack makers tune is a field of the Config class** (see
+- **A value that players or pack makers tune is a field of the Config class** (under
   **Configuration**). (J1-P09)
 - Constants that a developer changes, and that are not implementation details, stay at the top of
   the class.
@@ -252,9 +256,14 @@ Name every magic number. (Q09) Then place it by this test:
   javac. (J1-P10, R2-11)
 
 - **Annotate the true requirement.** A parameter has the narrowest interface the method uses:
-  `Iterable`, `Collection`, `List`, `Map`. Never `ArrayList` or `HashMap` in a signature. `SortedMap`
-  where the order matters (see **GTNH**). `NAR140` flags a concrete collection type in a signature,
-  a field or a local. `EnumMap` and `EnumSet` keep their types: `new EnumMap<>(map)` and
+  - `Iterable`
+  - `Collection`
+  - `List`
+  - `Map`
+
+  Never `ArrayList` or `HashMap` in a signature. `SortedMap`
+  where the order matters (under **GTNH**). `NAR140` flags a concrete collection type in a signature,
+  a field, or a local. `EnumMap` and `EnumSet` keep their types: `new EnumMap<>(map)` and
   `EnumSet.copyOf(set)` throw on an empty argument of another type. (J1-P11, Q13, J1-F03)
 
 - **Domain primitives.** A one-component record, `record ScanId(int value)`, at boundaries and in
@@ -268,12 +277,12 @@ Name every magic number. (Q09) Then place it by this test:
 - **A path is a `java.nio.file.Path` object**, never a `String` built with `+` or `/`. Forge returns
   `java.io.File`, as from `FMLPreInitializationEvent.getModConfigurationDirectory()`, so call
   `toPath()` on the `File` as soon as Forge returns the `File`. Use `Files` methods for file
-  operations. `File.delete()`, `renameTo()` and `mkdirs()` return `false` on
-  failure, and `File.listFiles()` returns `null`. `Files.delete()`, `Files.move()` and
+  operations. `File.delete()`, `renameTo()`, and `mkdirs()` return `false` on
+  failure, and `File.listFiles()` returns `null`. `Files.delete()`, `Files.move()`, and
   `Files.createDirectories()` throw an `IOException` with the cause. `NAR115` flags a `File`
   operation. (J1-P14, R3a-10)
 
-- **Amounts are exact.** `long` for item, fluid and EU counts, never `float` or `double`.
+- **Amounts are exact.** `long` for item, fluid, and EU counts, never `float` or `double`.
   `Math.addExact` and `Math.multiplyExact` where overflow is reachable. A rate may be a `double`.
   (J1-P15)
 
@@ -282,7 +291,7 @@ Name every magic number. (Q09) Then place it by this test:
 
 - **`enum` for closed sets.** Never write `ordinal()` to NBT, a packet or JSON: reordering the
   constants changes every saved world. Serialise `name()`, or an explicit code field. `NAR105` flags
-  `ordinal()` in NBT, packet or Gson code. (J1-P17, R2-08)
+  `ordinal()` in NBT, packet, or Gson code. (J1-P17, R2-08)
 
 - **Composition over inheritance.** An `interface` for a seam with two real implementations. No
   `abstract class` in project code. `extends` only for a class the platform requires: Forge `Block`,
@@ -347,7 +356,7 @@ in **Scope**. (J1-P19-java8)
   an array component:** `equals()` and `hashCode()` of a record compare arrays by identity, so two
   equal plans compare unequal. `NAR108` flags an array component. (J1-P22)
 
-- **Genuinely schemaless input**: promote the fields the program computes on to typed components,
+- **Genuinely schemaless input.** Promote the fields the program computes on to typed components,
   and put the remainder in one `JsonObject` or `Map<String, JsonElement>` component. **Never merge
   the remainder into an output object.** An untrusted key with the name of an output field would
   replace that field. Nest the remainder instead. (R4-04)
@@ -382,12 +391,12 @@ in **Scope**. (J1-P19-java8)
   `NAR109` enforces both. (J1-P23)
 
 - **Handle each failure mode narrowly and separately.** No `catch (Exception)`,
-  `catch (RuntimeException)`, `catch (NullPointerException)`, `catch (Throwable)` or `catch (Error)`.
+  `catch (RuntimeException)`, `catch (NullPointerException)`, `catch (Throwable)`, or `catch (Error)`.
   `NAR142` flags them. There are two exceptions. One is `catch (NoClassDefFoundError)` at the
   optional-mod boundary, described in `architecture.md`. The other is `catch (RuntimeException)` in
   a degrade-and-report loop over code from another mod, whose exceptions you cannot list. Write the
-  reason in a comment in the catch block, and ask the user whether to keep the finding (see
-  **noqa**):
+  reason in a comment in the catch block, and ask the user whether to keep the finding (the rule
+  is under **noqa**):
 
   ```java
   for (MTEMultiBlockBase machine : machines) {
@@ -437,7 +446,7 @@ in **Scope**. (J1-P19-java8)
 - **A mutable static field has a comment with the reason**, on the line above or after the field on
   the same line, **or the field is an instance field of the object with the same lifetime.** A
   mutable static field is non-`final`, or a `static final` mutable collection. Fields that Forge
-  requires (`@Mod.Instance`, `@SidedProxy`, config fields) and loggers are exempt. `NAR110` flags
+  requires (`@Mod.Instance`, `@SidedProxy`, and config fields) and loggers are exempt. `NAR110` flags
   the rest. (J1-P27, R2b-G1)
 
 ## Logging
@@ -456,7 +465,7 @@ in **Scope**. (J1-P19-java8)
   `Configuration` or GTNHLib `@Config`. Don't write the value as a literal, or as a field of another class. (J1-P30)
 - **Where several implementations of a feature trade time for quality, all of them read one
   setting.** For example, the budget of each solver is multiplied by one `solverEffort` setting, with
-  the levels High, Medium and Low. Don't add a `greedyStepBudget` setting beside an
+  the levels High, Medium, and Low. Don't add a `greedyStepBudget` setting beside an
   `lpIterationBudget` setting. (J1-P30)
 - Third-party log noise is off globally, with a debug setting to turn the noise on. Don't save and
   restore the log level around each call. (J1-P30)
@@ -477,7 +486,7 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
 
 ## Testing
 
-- **Real dependencies**: a real temp directory with `@TempDir`, a real file. No Mockito. A test
+- **Real dependencies.** Use a real temp directory with `@TempDir` and a real file. Don't use Mockito. A test
   double is a last resort for something you cannot run. Flag each one as a known gap. Keep logic off
   Minecraft types, so the tests run headless. (R2-02, Q16)
 
@@ -510,19 +519,29 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
 ## GTNH
 
 - **Every user-facing string is a key in the lang file** (`assets/<modid>/lang/en_US.lang`), read
-  through a localization call: `StatCollector.translateToLocal(key)`,
-  `StatCollector.translateToLocalFormatted(key, values)`, `ChatComponentTranslation`, MUI2
-  `IKey.lang(key)`, or a wrapper of the mod around one of these, such as `NEIClientUtils.translate`.
-  A text call takes the text itself, such as `IKey.str`, `new ChatComponentText` or `drawString`. Don't
+  through a localization call:
+  - `StatCollector.translateToLocal(key)`
+  - `StatCollector.translateToLocalFormatted(key, values)`
+  - `ChatComponentTranslation`
+  - MUI2 `IKey.lang(key)`
+  - a wrapper of the mod around one of these calls, such as `NEIClientUtils.translate`
+
+  A text call takes the text itself, such as `IKey.str`, `new ChatComponentText`, or `drawString`. Don't
   pass literal user-facing text to a text call. `IKey.str("Machines")`,
-  `new ChatComponentText("Done")` and `drawString("Done", x, y, color)` break the rule. `NAR113-gtnh` flags
-  literal text in `IKey.str`, `ChatComponentText`, `drawString` and a tooltip line of
+  `new ChatComponentText("Done")`, and `drawString("Done", x, y, color)` break the rule. `NAR113-gtnh` flags
+  literal text in `IKey.str`, `ChatComponentText`, `drawString`, and a tooltip line of
   `addInformation`. (J1-S15, J1-P04-keys)
 
 - **In user-facing text, never `+`.** Put `%s` placeholders in the lang entry, `%s%s` where two values
   are joined, and pass the values to the localization call. `NAR112-gtnh` flags a `+` in a text call,
   in a localization call, and after a localization call. A wrapper is found by the method name:
-  `translate*`, `localize*`, `trans`, `tr` or `i18n`. (J1-P04, J1-P04-keys)
+  - `translate*`
+  - `localize*`
+  - `trans`
+  - `tr`
+  - `i18n`
+
+  (J1-P04, J1-P04-keys)
 
   ```
   plan.machines=%s machines at %s
@@ -552,7 +571,7 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
 - **Optional instrumentation is called through an interface.** The implementation for "off" is a
   no-op that doesn't allocate. (J1-S04)
 
-- **A point query is answered without a scan of the whole collection.** First look for an invariant
+- **A point query is answered without a scan of the whole collection.** First search for an invariant
   that removes the query, and add an index only if the query is still needed. (J1-S05)
 
 - **A simple behaviour plus an invariant**, in place of a clever prioritisation policy. (J1-S06)
@@ -578,13 +597,13 @@ code. The javadoc of a
 class with `main`, such as a dev tool, also has a usage example and the exit codes. `NAR118` flags a
 top-level type without a javadoc. (J1-F3, R5-02)
 
-**Write for a professional developer who has the file open.** That reader knows Java, Forge and the
-vocabulary of the trade, so `API`, `idempotent` and `NBT` are the right words. One idea per
+**Write for a professional developer who has the file open.** That reader knows Java, Forge, and the
+vocabulary of the trade, so `API`, `idempotent`, and `NBT` are the right words. One idea per
 sentence. **One word for one thing, and the word is the identifier the code uses.** (R9-09)
 
 The prose rules for comments and javadoc are in **Comments**.
 
-### Show the thing, do not describe it
+### Samples of output
 
 **Where a class reads or writes concrete text, paste a real sample of that text** in a `<pre>`
 block: a tooltip, a chat line, a lang entry, an NEI line, a converted value. **Delete the prose the
@@ -630,7 +649,7 @@ A conversion takes a table of cases rather than a sentence per case:
 ### Javadoc rules
 
 **Most members don't get a javadoc.** Write one for a top-level type (`NAR118`), and for a method by the `NAR116` review list. Any other field, constant or method gets a javadoc only for a fact
-that the name, type, value and signature do not show. A javadoc whose facts are already in the
+that the name, type, value, and signature do not show. A javadoc whose facts are already in the
 declaration only costs the reader time. Cut such a javadoc whole. Don't cut the javadoc sentence by sentence. The Java
 habit of a javadoc on every public member does not apply here. (J1-F07)
 
@@ -680,17 +699,17 @@ not earn its place.** (R9-09)
 
 - an **ordering or tie-break**, invisible without reading a comparator
 - a **unit, a nullability or a provenance** absent from the signature: `Amounts are in litres`
-- **where the leftover, default and failure cases go**
+- **where the leftover, default, and failure cases go**
 - a **sample** of concrete text the class reads or writes
 - a **constraint from outside the program**: `Forge drops a tile entity whose readFromNBT() throws`
-- a **guarantee a caller needs**: `` `preview()` doesn't write a file, send a packet or change a world ``
+- a **guarantee a caller needs**: `` `preview()` doesn't write a file, send a packet, or change a world ``
 
 - **A method gets a javadoc when a reader can't learn from the name of the method and the comments
   of the body what the method does.** Answer one question for each entry of the `NAR116` review
   list of `verify.py`:
   - a method without a javadoc: can a reader learn from the name of the method and the comments of the
     body what the method does? If not, write a javadoc.
-  - a javadoc or a comment on a type, a field, an enum constant or a method: what does a reader learn
+  - a javadoc or a comment on a type, a field, an enum constant, or a method: what does a reader learn
     from the javadoc or the comment, and not from the name and the code? If the reader doesn't learn
     more, cut the javadoc or the comment. Keep one sentence on a top-level type (`NAR118`).
   (J1-P34, Q05, R8-D18-resolved, R12-nar116-review)
@@ -719,10 +738,10 @@ the mod here.
 
 An identifier in javadoc is a link: `{@link #getMachineModes}` or `{@link ExtendedBlockStorage}`.
 In an IDE, the reader can jump from the link to the target. When someone renames the target in the
-IDE, the link changes with the name. `{@link}` takes a class, a field, a method or a package. Put a
+IDE, the link changes with the name. `{@link}` takes a class, a field, a method, or a package. Put a
 parameter, a local variable or a value such as `null` in `{@code}`. In a `//` comment, put the name
 in backticks. Link to an identifier even when its name is unclear. From the link, the reader can
-jump to the code and see what the name stands for. (R11-pointer-wording, J1-F10)
+jump to the code and read what the name stands for. (R11-pointer-wording, J1-F10)
 
 ### Library facts
 
@@ -801,13 +820,13 @@ These cases are exempt from the checks:
   - `NAR130` on a member with the prefix `modid$`
   - `NAR106` on the abstract Mixin class
   - `NAR131` on an injector method, because the parameter list must match the target method
-  - `NAR140` on a `@Shadow`, `@Accessor` or `@Invoker` member and on an injector signature, because
+  - `NAR140` on a `@Shadow`, `@Accessor`, or `@Invoker` member and on an injector signature, because
     each type must be the type in the target class
 
 Keep these findings only when the user approves:
 - `NAR142` in a degrade-and-report loop
 - `NAR130` on a name in the style of upstream names, such as `TT_parallels`
-- `NAR112-gtnh` on a call to a method named `translate*`, `localize*`, `trans`, `tr` or `i18n` that
+- `NAR112-gtnh` on a call to a method named `translate*`, `localize*`, `trans`, `tr`, or `i18n` that
   does not localize text
 
 Ask the user about each finding. If the user approves, add the finding to the keep-list:
@@ -862,7 +881,7 @@ uv venv --python 3.11 $env:LOCALAPPDATA\narrative\lintenv
 uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -r "${CLAUDE_SKILL_DIR}/requirements-lock.txt"
 ```
 
-The JDK of the level (8, 17 or 25) comes from the Gradle toolchain of the project, and a JDK 25 for
+The JDK of the level (8, 17, or 25) comes from the Gradle toolchain of the project, and a JDK 25 for
 Checkstyle and PMD comes from the Gradle toolchains too. PMD 7.28.0 and Checkstyle 13.5.0 come from
 Maven Central on the first run. No project file changes.
 
@@ -889,17 +908,27 @@ whether to fix those findings. (R11-upstream-ask)
 **Ask the user before you name something by an upstream convention that `NAR130` rejects.** For
 example, GT5's `MultiblockTooltipBuilder` has about 40 `TT_*` fields, such as `TT_machineType`. A new
 `TT_parallels` field beside those fields breaks the Java naming convention. If the user approves, add the finding
-to the keep-list (see **noqa**). (J1-F06, J1-no-noqa)
+to the keep-list (the rule is under **noqa**). (J1-F06, J1-no-noqa)
 
-`verify.py` runs one Gradle invocation with the init script `narrative.init.gradle`: `spotlessApply`
-(or `spotlessCheck` with `--no-fix`), `compileJava` with the raw-type and unchecked warnings of
-javac, then Checkstyle and PMD with the configs beside `verify.py`, at every level of **Scope**.
+`verify.py` runs one Gradle invocation with the init script `narrative.init.gradle`, at every
+level of **Scope**:
+
+1. `spotlessApply` (or `spotlessCheck` under `--no-fix`)
+2. `compileJava` with the raw-type and unchecked warnings of javac
+3. Checkstyle and PMD with the configs beside `verify.py`
+
 `javachecks.py` then reads the comments, runs the prose checks, and merges the three reports into
-one list with NAR codes. A run with exit 0 or 1 writes five lists to `.narrative_cache/review-lists.txt`, the input to **Prose
-review**: every sentence of every comment, javadoc and named page, every verb whose subject cannot
-act, every sentence with a pronoun, every sentence with a free modifier, and every javadoc and member comment and every method over 20 body lines (`NAR116`).
-The list comes from the PMD report, so a run with `--prose-only` doesn't have the list. The file and the number of entries in each list are
-on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` doesn't
+one list with NAR codes. A run with exit 0 or 1 writes five lists to
+`.narrative_cache/review-lists.txt`, the input to **Prose review**:
+
+- every sentence of every comment, javadoc, and named page
+- every verb whose subject cannot act
+- every sentence with a pronoun
+- every sentence with a free modifier
+- each javadoc and member comment, and each method over 20 body lines (`NAR116`)
+
+The `NAR116` list comes from the PMD report, so a run with `--prose-only` doesn't have the `NAR116`
+list. The file and the number of entries in each list are on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` doesn't
 write the lists, because `javachecks.py` has not read the comments yet. When `--since` is given, the
 lists cover only the changed lines of the code and the pages. Otherwise each list stops after 1000
 entries, with the command for the next 1000. (J1-F01, J1-F09, J1-F14, J1-F15, J1-F16, R11-same-workflow)
@@ -908,13 +937,13 @@ entries, with the command for the next 1000. (J1-F01, J1-F09, J1-F14, J1-F15, J1
 |---|---|
 | 0 | every check passed. Warnings may be printed |
 | 1 | at least one finding, or the code does not compile or is not formatted |
-| 2 | the toolchain, `gradle.properties`, `gradlew` or a report is missing, `enableModernJavaSyntax` or `forceToolchainVersion` has a value without a level in **Scope**, `--since` doesn't name a commit, the diff doesn't change a line, `javachecks.py` stopped before the count line of the findings, or the review lists could not be written |
+| 2 | the toolchain, `gradle.properties`, `gradlew`, or a report is missing, `enableModernJavaSyntax` or `forceToolchainVersion` has a value without a level in **Scope**, `--since` doesn't name a commit, the diff doesn't change a line, `javachecks.py` stopped before the count line of the findings, or the review lists could not be written |
 
-Pass `--max-workers 1` on a busy machine. The job of each tool, the code table and the tool defaults
+Pass `--max-workers 1` on a busy machine. The job of each tool, the code table, and the tool defaults
 that break rules of this skill are in `tooling.md`. Read it before you change a config.
 
 **After an edit of comments or pages only, pass `--prose-only`.** Gradle does not run, so the run
-takes seconds: the re-wrap, the prose checks and the review lists. Spotless, javac, Checkstyle and
+takes seconds: the re-wrap, the prose checks and the review lists. Spotless, javac, Checkstyle, and
 PMD run only without `--prose-only`, so the last run before the report is a run without
 `--prose-only`.
 

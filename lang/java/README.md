@@ -7,10 +7,13 @@ for only the lines your PR adds or changes.
 - **Comments a human would write.** The NLP lint of the Python skill also runs on every `//` comment and
   javadoc. `the panel knows`, `the cache keeps`, `deliberately`, and clauses joined by a
   semicolon or a dash are all findings.
-- **The GTNH habits upstream reviewers ask for**: user-facing text through the lang file, no
-  allocation in a draw method, no `ordinal()` saved to NBT, a `switch` over an enum with no
-  `default`, an optional mod behind one guarded class, and checked exceptions at the file and packet
-  boundaries.
+- **The GTNH habits upstream reviewers ask for:**
+  - user-facing text through the lang file
+  - no allocation in a draw method
+  - no `ordinal()` saved to NBT
+  - a `switch` over an enum with no `default`
+  - an optional mod behind one guarded class
+  - checked exceptions at the file and packet boundaries
 - **Quiet on code you did not write.** A full run on PlanNH `origin/dev` has 1,682 findings in
   upstream code. A run with `--since origin/dev` on a planted change reports only the 4 planted
   findings.
@@ -40,7 +43,7 @@ gradle         spotless, compileJava, narrativeCheckstyle and narrativePmd ran
 
 ## Install
 
-### As a plugin (updates itself)
+### As a plugin
 
 In Claude Code:
 

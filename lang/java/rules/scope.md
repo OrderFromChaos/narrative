@@ -22,16 +22,16 @@ Checkstyle and PMD run on a JDK 25 at every level.
 ### Rules by level
 
 Every rule and every check applies at every level, except these. Where a rule below has a record,
-`List.copyOf` or a `switch` expression, use the form of the level.
+`List.copyOf`, or a `switch` expression, use the form of the level.
 
-- **A record.** Java 25: a record. jabel: a record with `@Desugar`
+- **A record.** In a Java 25 build, write a record. In a jabel build, write a record with `@Desugar`
   (`com.github.bsideup.jabel.Desugar`). The Jabel of GTNH compiles that record for Java 8, and a record
-  with no `@Desugar` does not compile. Java 8: a final class with private final fields, one constructor
+  with no `@Desugar` does not compile. In a Java 8 build, write a final class with private final fields, one constructor
   and `getName()` getters, with `equals()` and `hashCode()` when code compares two instances. `NAR108`
   can fire only on a record. (J1-P21-levels)
-- **`List.copyOf`.** jabel and Java 8: Guava `ImmutableList.copyOf`, and `ImmutableSet.copyOf` or
+- **`List.copyOf`.** In a jabel or Java 8 build, write Guava `ImmutableList.copyOf`, and `ImmutableSet.copyOf` or
   `ImmutableMap.copyOf` for the other collections. (J1-P21-levels)
-- **A `switch` over an enum.** Java 25 and jabel: a `switch` expression without a `default` arm. javac
+- **A `switch` over an enum.** In a Java 25 or jabel build, write a `switch` expression without a `default` arm. javac
   rejects a missing constant at both levels. Java 8 doesn't have a `switch` expression. Put the behaviour on
   the constant, where javac checks every constant. Where only one caller needs a mapping, write a
   `switch` statement with a case for every constant, no `default` arm, and a throw after the switch.

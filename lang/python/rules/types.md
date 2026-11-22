@@ -16,13 +16,13 @@
   `Decimal(0.1)` keeps the float's error. Round once, with the mode explicit:
   `cents = int((Decimal(raw) * 100).to_integral_value(ROUND_HALF_UP))`. When the mode isn't explicit,
   `Decimal` rounds half to even. A computation that yields fractions of a cent, such as
-  rate × minutes × multiplier, stays in `Decimal`, integers or `Fraction` until that one rounding.
+  rate × minutes × multiplier, stays in `Decimal`, integers, or `Fraction` until that one rounding.
   Store and serialise integer cents, named `…_cents`. `json` and `sqlite3` reject a `Decimal`.
   (R10-money-cents, R10-money-decimal)
 
 - **Dates and times use `pendulum`**, unless `datetime` is tightly integrated with the repository,
   so that removing `datetime` would be hard. Replace a small `datetime` use with `pendulum`. A
-  library that returns `datetime` values, such as `tomllib`, `sqlite3` or a JSON decoder, is a
+  library that returns `datetime` values, such as `tomllib`, `sqlite3`, or a JSON decoder, is a
   boundary. Convert each value to pendulum where the value enters. (R10-pendulum,
   R10-pendulum-boundary)
 
@@ -79,7 +79,7 @@ def severityFor(outcome: Outcome) -> LogLevel:
 one-liner looks equivalent and is not. It type-checks clean and silently accepts the missing
 case.** No helper, no `assert_never`. (Q18, R3a-07)
 
-Limitation: this works only when the match returns a value. A side-effecting `-> None` dispatch
+The form works only when the match returns a value. A side-effecting `-> None` dispatch
 doesn't get the protection. Restructure it to return something.
 
 **Keep the `match` even when a mapping looks more natural.** Only a `match` fails mypy when a new

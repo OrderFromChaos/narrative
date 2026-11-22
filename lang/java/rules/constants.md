@@ -9,7 +9,7 @@ Name every magic number. (Q09) Then place it by this test:
   `final`, in UPPER_SNAKE. It is a compile-time constant, so javac inlines the value at each use. An object
   constant, such as a `Pattern`, is `private static final`, directly above the constant's only
   method. (J1-P09, R3a-12)
-- **A value that players or pack makers tune is a field of the Config class** (see
+- **A value that players or pack makers tune is a field of the Config class** (under
   **Configuration**). (J1-P09)
 - Constants that a developer changes, and that are not implementation details, stay at the top of
   the class.

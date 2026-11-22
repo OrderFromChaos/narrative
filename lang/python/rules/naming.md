@@ -26,7 +26,7 @@
   `config: RebinConfig`. The prefix duplicates the type. (Q11)
 
 - **When the type is generic, the parameter name is the only place the thing is named.** `Path`, `str`,
-  `int`, `bytes`, `dict` and `object` constrain only a value's shape. Write
+  `int`, `bytes`, `dict`, and `object` constrain only a value's shape. Write
   `path: Path` → `policy_json_path: Path`, and `text: str` → `manifest_text: str`. The rule above
   bans a redundant prefix. An informative prefix stays.
 

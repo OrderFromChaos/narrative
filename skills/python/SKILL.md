@@ -3,7 +3,7 @@ name: python
 description: Write or review Python in the Narrative house style, with mixedCase functions, main() first with types last, parse-at-the-boundary dataclasses, no ORM that re-validates what the database checks, explicit global on mutation, exhaustive match without a fallback arm, and a verified ruff/pylint/mypy toolchain. Covers multi-module architecture too. Which module may import which, when one file becomes several, what goes in a package __init__.py, where a shared type belongs, and when to take or contain a third-party dependency. Use for any Python written in or for this codebase, when planning a change, when laying out modules or packages, and when reviewing a diff against this style. Always load nar:core with this skill: nar:core has the rules for comments, docstrings and error messages.
 ---
 **Before you write or review anything, load the skill `nar:core` with the Skill tool**, unless
-`nar:core` is loaded already. `nar:core` has the rules for comments, docstrings, error messages and
+`nar:core` is loaded already. `nar:core` has the rules for comments, docstrings, error messages, and
 published pages, and the steps of **Writing a comment** and **Prose review** that **Procedures**
 names.
 
@@ -26,12 +26,12 @@ with a `cast()` or a key lookup at every use. Typed attributes pass with neither
 **The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
 1. Load `nar:core` and this skill before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
-3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head` or
+3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head`, or
    `tail`.
 4. Fix every finding and answer every list entry from that one run, then run `verify.py` once more.
 5. In the report, say how many entries of each list you read, such as `read 212 of 212 sentences`.
 
-**This document applies to every file, however many there are.** Naming, layout, types, errors and
+**This document applies to every file, however many there are.** Naming, layout, types, errors, and
 docstrings apply to each module of a package exactly as they apply to a single-file program.
 
 `architecture.md` adds what happens **between** files: which module may import which, where a shared
@@ -85,7 +85,7 @@ class ScanHeader: ...
   `main()`. (Q10)
 
 - Caller before callee throughout. Code at module level must not *call or subclass* anything
-  defined further down. Watch for a constant whose **value** references an Enum member or class. Annotations
+  defined further down. Check for a constant whose **value** references an Enum member or class. Annotations
   are safe, because the future import makes them lazy. (R2-10, R3a-03)
 
 - That is an **ordering** rule. A constant whose value is an Enum member is
@@ -96,7 +96,7 @@ class ScanHeader: ...
   durations adjacent, then non-duration limits, then hosts, then wire literals. Type usually
   correlates, and concern decides. No blank lines inside the block. (R3a-16, R3a-15)
 
-- 120 columns. Absolute imports only. Single quotes (docstrings and multiline: double).
+- 120 columns. Absolute imports only. Single quotes, and double quotes for docstrings and multiline strings.
 
 - Separate logically self-contained blocks inside a function with **one blank line**. That is its
   only meaning here. Short guards written as a group stay grouped, and two adjacent two-line
@@ -124,11 +124,9 @@ class ScanHeader: ...
   everywhere, so the same rule applied to calls costs lines without buying clarity. (R2b-B1)
 
 - **Keyword-only parameters do not count**, so a function may take any number of them. That is also
-  the escape hatch at exactly four. Put `*` before the optional ones and they stop counting, and
-  they read as optional in the signature anyway. Note `NAR004` counts *every* parameter, because
-  each one is part of the contract even when the caller may omit the parameter. (R5-06)
+  the escape hatch at exactly four. Put `*` before the optional ones and they stop counting, and they read as optional in the signature anyway. (R5-06)
 
-- Long strings: implicit concatenation in parens. Never `"""` for data, because its whitespace
+- Write a long string as implicit concatenation in parens. Never `"""` for data, because its whitespace
   becomes part of the value. (Q03)
 
 ## Python 3.11 floor
@@ -213,7 +211,7 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
   `config: RebinConfig`. The prefix duplicates the type. (Q11)
 
 - **When the type is generic, the parameter name is the only place the thing is named.** `Path`, `str`,
-  `int`, `bytes`, `dict` and `object` constrain only a value's shape. Write
+  `int`, `bytes`, `dict`, and `object` constrain only a value's shape. Write
   `path: Path` → `policy_json_path: Path`, and `text: str` → `manifest_text: str`. The rule above
   bans a redundant prefix. An informative prefix stays.
 
@@ -237,7 +235,7 @@ Name every magic number. (Q09) Then place it by this test:
 
 The latter is an implementation detail and belongs **inside** the function, still `ALL_CAPS`. Put
 `MAGIC`, `HEADER_FORMAT`, a padding byte, a derived size, a checksum mask, and the SQL of a single
-function inside. A log path, an archive directory, a glob, exit codes and operator-tunable timeouts
+function inside. A log path, an archive directory, a glob, exit codes, and operator-tunable timeouts
 stay at module level. (R3a-12)
 
 *`verify.py` doesn't check where a constant is. This is review judgement.*
@@ -260,13 +258,13 @@ stay at module level. (R3a-12)
   `Decimal(0.1)` keeps the float's error. Round once, with the mode explicit:
   `cents = int((Decimal(raw) * 100).to_integral_value(ROUND_HALF_UP))`. When the mode isn't explicit,
   `Decimal` rounds half to even. A computation that yields fractions of a cent, such as
-  rate × minutes × multiplier, stays in `Decimal`, integers or `Fraction` until that one rounding.
+  rate × minutes × multiplier, stays in `Decimal`, integers, or `Fraction` until that one rounding.
   Store and serialise integer cents, named `…_cents`. `json` and `sqlite3` reject a `Decimal`.
   (R10-money-cents, R10-money-decimal)
 
 - **Dates and times use `pendulum`**, unless `datetime` is tightly integrated with the repository,
   so that removing `datetime` would be hard. Replace a small `datetime` use with `pendulum`. A
-  library that returns `datetime` values, such as `tomllib`, `sqlite3` or a JSON decoder, is a
+  library that returns `datetime` values, such as `tomllib`, `sqlite3`, or a JSON decoder, is a
   boundary. Convert each value to pendulum where the value enters. (R10-pendulum,
   R10-pendulum-boundary)
 
@@ -323,7 +321,7 @@ def severityFor(outcome: Outcome) -> LogLevel:
 one-liner looks equivalent and is not. It type-checks clean and silently accepts the missing
 case.** No helper, no `assert_never`. (Q18, R3a-07)
 
-Limitation: this works only when the match returns a value. A side-effecting `-> None` dispatch
+The form works only when the match returns a value. A side-effecting `-> None` dispatch
 doesn't get the protection. Restructure it to return something.
 
 **Keep the `match` even when a mapping looks more natural.** Only a `match` fails mypy when a new
@@ -372,7 +370,7 @@ exhaustive `match`. (R4-03, R7-E07-floor)
   quietly and surfaces at run time with nothing to catch the bug. The standing exception is the
   schemaless remainder below, where a `Mapping` field is the prescribed shape.
 
-- **Genuinely schemaless input**: promote the fields the program computes on to typed
+- **Genuinely schemaless input.** Promote the fields the program computes on to typed
   attributes, and put the remainder in one `Mapping[str, object]` field. To flatten it to a JSON
   string costs a second `json.loads` downstream, makes the remainder unaddressable by `jq`, and
   forces the reader back through `Any`. (R4-04)
@@ -390,7 +388,7 @@ exhaustive `match`. (R4-03, R7-E07-floor)
   validation that the database already does.** The cost is per row and per request, and worst on a
   hot path, such as an endpoint that returns database values. SQLAlchemy, peewee, Piccolo and Django
   models don't validate on write or on read. `TID251` bans the ORMs that do: SQLModel, ormar,
-  Tortoise, Pony and SQLObject. A migration, a healing script or a one-off backfill can still use
+  Tortoise, Pony, and SQLObject. A migration, a healing script, or a one-off backfill can still use
   one: declare `# ruff: noqa: TID251` in that module. Don't add a `per-file-ignores` list. An
   exception is a property of the module. A glob drifts from the tree the glob matches.
   Do not explain a suppression that follows this rule. Leave the suppression without a comment.
@@ -434,7 +432,7 @@ exhaustive `match`. (R4-03, R7-E07-floor)
 - LBYL over EAFP. You know your invariants, you do not know every exception an implementation
   can raise. (Q22)
 
-- Degrade and report: process the whole batch, collect failures, log a summary, exit nonzero. Never
+- Degrade and report. Process the whole batch, collect failures, log a summary, and exit nonzero. Never
   abort on the first bad item. (Q24)
 
 - **The config gate is the exception.** (R8-D25-resolved) `Q24` is about the batch a program
@@ -447,11 +445,16 @@ exhaustive `match`. (R4-03, R7-E07-floor)
 - **`global` marks a side effect.** Declare `global` when a function *mutates* module
   state. A read is exempt. (R2b-G1)
 
-- Python already forces `global` to rebind. Python does not police in-place mutation, and it passes
-  every linter: `CONFIG.clear()`, `CONFIG['k'] = v`, `CONFIG.attr = v`. That is `NAR001`.
+- Python already forces `global` to rebind. Python does not police in-place mutation, and these mutations
+  pass the linters:
+  - `CONFIG.clear()`
+  - `CONFIG['k'] = v`
+  - `CONFIG.attr = v`
+
+  `NAR001` flags these mutations.
 
 - `NAR001` also counts a call to a method whose name starts with a configuration verb, such as
-  `set`, `add`, `register` or `close`. So a function that calls `LOG.addHandler(...)` declares
+  `set`, `add`, `register`, or `close`. So a function that calls `LOG.addHandler(...)` declares
   `global LOG` even though the function never rebinds `LOG`. (V-03)
 
 - Every attribute declared in `__init__`. `hasattr(self, ...)` is a red flag. (Q04)
@@ -470,10 +473,10 @@ In a program, configure logging once, in `main()`, and don't add a NullHandler. 
 **JSONL output is for machine reading. For terminal output, don't use JSONL.** (R5-03,
 R8-D23-resolved)
 
-- **A service, or any program whose logs are collected**: JSONL. Always import JSONL logging from a
-  shared module. Don't vendor it.
+- **A service, or any program whose logs are collected, logs JSONL.** Always import JSONL logging from a
+  shared module. Don't vendor the JSONL logging.
 
-- **A single-file tool run by hand**: the short field formatter below.
+- **A single-file tool run by hand uses the short field formatter below.**
 
 **Do not use `basicConfig(format='%(levelname)s %(message)s')`.** The standard formatter discards
 everything in `extra`. `LOG.warning('merge.rejected', extra={'rejected': 4812, 'total': 10000})`
@@ -516,7 +519,8 @@ asyncio is the default for I/O-bound work. (R2-04)
 
 ## Testing
 
-- **Real dependencies**: a real socket on loopback, a real temp SQLite file, a real temp directory.
+- **Real dependencies.** Use a real socket on loopback, a real temp SQLite file, and a real temp
+  directory.
   A test double is a last resort for something you cannot run. Flag each one as a known
   gap. When the transport is fake, tests pass while production fails. (R2-02, Q16)
 
@@ -582,7 +586,7 @@ Required:
 `NAR009` enforces the docstring. For a module with a `__main__` block, `NAR009` also enforces the
 example.
 
-### Show the thing, do not describe it
+### Samples of output
 
 **Where a module reads or writes concrete text, paste a real sample of that text.** A rendered
 table, a log line, a report, a converted value, an input format. **Delete the prose the sample
@@ -684,24 +688,23 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 - an **ordering or tie-break**, invisible without reading a sort key
 - a **unit, a nullability or a provenance** absent from the annotation — `Sizes are plain byte
   counts`, `host is null when the entry's report doesn't have a host`
-- **where the leftover, default and failure cases go**. Most awkward docstrings are awkward because
+- **where the leftover, default, and failure cases go**. Most awkward docstrings are awkward because
   they circle an unstated default.
 - a **sample** of concrete text the module reads or writes
 - a **constraint from outside the program** — `the standard formatter of logging discards extra`
 - a **guarantee a caller needs** — `` `dryRun()` doesn't write a file, print output or log an event ``
 
-- **A function gets a docstring when the function's contract is complex**, meaning the function
-  takes more than three parameters, or exceeds 20 lines. Below both, the contract goes in `#`
-  comments. Raising is not a trigger, because the style routes raise sites through a `reject*()`
-  helper and every two-line guard that calls one contains a `raise`. (Q05, R2-03, R2-05, R5-05,
-  R8-D18-resolved)
+- **A function gets a docstring when a reader can't learn from the name of the function and the comments of the body
+  what the function does.** Answer one question for each entry of the `NAR116` review list of `verify.py`:
+  - a function without a docstring: can a reader learn from the name of the function and the comments of the body what
+    the function does? If not, write a docstring.
+  - a docstring or a comment on a class, a function, a module constant, or a class field: what does a reader learn from
+    the docstring or the comment, and not from the name and the code? If the reader doesn't learn more, cut the
+    docstring or the comment.
+  (Q05, R8-D18-resolved, R12-python-review-list)
 
-  The trigger is contract complexity, and length is only part of the trigger, so the parameter count
-  sits beside the line count. A bare line threshold is easy to get around by fragmentation. Splitting a 21-line
-  function into two 12-line ones deletes the obligation without simplifying either contract.
-
-- **The docstring has a summary and a `Raises:` section. It has `Args:` and `Returns:` only where
-  they give a fact absent from the signature.** `NAR004` enforces `Raises:`, because an exception is
+- **The docstring has a summary, and a `Raises:` section when the function raises. It has `Args:` and
+  `Returns:` only where they give a fact absent from the signature.** `NAR004` enforces `Raises:`, because an exception is
   the one part of a contract absent from every annotation. (R8-D28-resolved)
 
   Write `Returns:` for an ordering, a nullability, a unit, or a count whose meaning is not obvious:
@@ -856,7 +859,7 @@ python3 "${CLAUDE_SKILL_DIR}/verify.py" . --since origin/main
 
 Pass `verify.py` any path. Every Python file below that path is checked. Run `verify.py` from the
 project root, because the default `--config` is `./pyproject.toml`. `verify.py` rewrites files with
-`checks.py --rewrap`, `ruff check --fix` and `ruff format`, unless you pass `--no-fix`. For each
+`checks.py --rewrap`, `ruff check --fix`, and `ruff format`, unless you pass `--no-fix`. For each
 tool that fails, `verify.py` prints that tool's output. `--cache-dir DIR` puts
 `.narrative_cache` in DIR, such as a directory outside a checkout that the agent may not write. A path of `-` is a
 page read from stdin, such as a draft that is not in a file yet.
@@ -881,12 +884,27 @@ whether to fix those findings. (R11-upstream-ask) (R11-since, R11-same-workflow)
 `pyproject.toml` is absent. **Do not replace it with a loop that greps tool output for findings.**
 When a missing binary or config produces empty output, such a loop reads the empty output as a pass.
 
-`verify.py` runs these tools, in the order that converges: `checks.py --rewrap`,
-`ruff check --fix`, `ruff format`, `pylint`, `mypy --strict`, `checks.py`, `vermin`, `agentverbs.py`.
-A run with exit 0 or 1 writes four lists to `.narrative_cache/review-lists.txt`, the input to **Prose
-review**: every sentence of every comment, docstring and named page, every verb whose subject cannot
-act, every sentence with a pronoun, and every sentence with a free modifier. The file and the number of entries in each list are
-on the last line of the output. When `--since` is given, the lists cover only the changed lines of the code
+`verify.py` runs these tools, in the order that converges:
+
+1. `checks.py --rewrap`
+2. `ruff check --fix`
+3. `ruff format`
+4. `pylint`
+5. `mypy --strict`
+6. `checks.py`
+7. `vermin`
+8. `agentverbs.py`
+
+A run with exit 0 or 1 writes five lists to `.narrative_cache/review-lists.txt`, the input to **Prose
+review**:
+
+- every sentence of every comment, docstring, and named page
+- every verb whose subject cannot act
+- every sentence with a pronoun
+- every sentence with a free modifier
+- each docstring and member comment, and each function over 20 body lines (`NAR116`)
+
+The file and the number of entries in each list are on the last line of the output. When `--since` is given, the lists cover only the changed lines of the code
 and the pages. Otherwise each list stops after 1000 entries, with the command for the next 1000.
 `verify.py` keeps the spaCy results of each comment in `.narrative_cache/` in the current
 directory, so a run after a small change parses only the changed comments. (R11-lists-on-failure,

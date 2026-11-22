@@ -5,18 +5,18 @@ or misresolved binary produces empty output and reads as a pass. This script res
 exits 2 if any one of them is absent, so a green result means the tools ran.
 
 This is the whole pipeline. Give it any path, and every Python file below the path is checked, so the caller doesn't
-choose a workflow at run time. A Markdown, HTML or plain text file named on the command line, such as a README or a
+choose a workflow at run time. A Markdown, HTML, or plain text file named on the command line, such as a README or a
 published page, gets the two prose checks only: the wording checks of checks.py and agentverbs.py. pyproject.toml is
 required only when Python files are checked. A path of `-` is a page read from stdin, Markdown, or the suffix given with
 --stdin-suffix. The page is saved in the cache directory as `stdin` with that suffix, and each finding is reported at
 the path of the saved page.
 
-When a file or a page was checked, verify.py writes four review lists, over the Python files and the pages, to
-review-lists.txt in the cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every
-subject that cannot act paired with the subject's verb, every sentence with a pronoun, and every sentence with a free
-modifier. The path of the file and the number of entries in each list are on the last line of the output, so `tail -1`
-shows them. Each list stops after 1000 entries, and the last line of the list is the command for the next 1000. --since
-removes the limit.
+When a file or a page was checked, verify.py writes five review lists, over the Python files and the pages, to
+review-lists.txt in the cache directory, .narrative_cache, or the directory given with --cache-dir: every sentence,
+every subject that cannot act paired with the subject's verb, every sentence with a pronoun, every sentence with a free
+modifier, and each declaration with a docstring or a comment and each function over 20 body lines (NAR116). The path of
+the file and the number of entries in each list are on the last line of the output, so `tail -1` shows them. Each list
+stops after 1000 entries, and the last line of the list is the command for the next 1000. --since removes the limit.
 
 --since REF limits the findings and the list entries to lines that the diff against merge-base(HEAD, REF) adds or
 changes. A finding on a `def` or `class` line counts for every line of the definition, and a finding in a comment,
@@ -80,7 +80,7 @@ SHARED_VENV = DATA_HOME / 'narrative' / 'lintenv'
 VENV_BIN = 'Scripts' if sys.platform == 'win32' else 'bin'
 VENV_PYTHON = 'python.exe' if sys.platform == 'win32' else 'python'
 SKIPPED = frozenset({'.venv', 'venv', '.lintenv', '.git', 'build', 'dist', '__pycache__'})
-# the default cache directory: the spaCy results of agentverbs.py, a page read from stdin, and the four review lists of
+# the default cache directory: the spaCy results of agentverbs.py, a page read from stdin, and the five review lists of
 # the last run, for Prose review. .ruff_cache and .mypy_cache are in the directory of the run
 CACHE_DIR = Path('.narrative_cache')
 LISTS_NAME = 'review-lists.txt'
@@ -210,8 +210,8 @@ def writeReviewLists(
     *,
     all_sentences: bool,
 ) -> str | None:
-    """Write the four lists for Prose review in SKILL.md to `lists_path`: sentences, agent verbs, pronouns and free
-    modifiers.
+    """Write the five lists for Prose review in SKILL.md to `lists_path`: sentences, agent verbs, pronouns, free
+    modifiers, and declarations.
 
     Args:
         python: The interpreter with the parser modules installed, for agentverbs.py.
@@ -222,8 +222,8 @@ def writeReviewLists(
 
     Returns:
         The number of entries in each list, such as
-        `12 sentences, 3 pairs, 1 pronoun sentences and 2 free modifier sentences`. None when the command of a list
-        exits nonzero.
+        `12 sentences, 3 pairs, 1 pronoun sentences, 2 free modifier sentences and 4 declarations`. None when the
+        command of a list exits nonzero.
     """
     checker = Path(__file__).resolve().parent / 'checks.py'
     agent_verbs = Path(__file__).resolve().parent / 'agentverbs.py'
@@ -250,6 +250,14 @@ def writeReviewLists(
             ' clause or a separate sentence, or cut the phrase ---',
             run([python, str(agent_verbs), '--free-modifiers', *every, *arguments, *cache]),
         ),
+        (
+            'declarations',
+            '--- each docstring and member comment, and each function over 20 body lines (NAR116). A function without a'
+            ' docstring: can a reader learn from the name and the comments of the body what the function does? A'
+            ' docstring or a comment: what does a reader learn from the docstring or the comment, and not from the name'
+            ' and the code? ---',
+            run([sys.executable, str(checker), '--declarations', *arguments]),
+        ),
     )
     if any(listed.code != 0 for _unit, _heading, listed in review_lists):
         return None
@@ -260,7 +268,7 @@ def writeReviewLists(
         written.extend([heading, listed.text.rstrip() or '(none)', ''])
         counts.append(f'{countEntries(listed.text.splitlines())} {unit}')
     lists_path.write_text('\n'.join(written), encoding='utf-8')
-    return f'{counts[0]}, {counts[1]}, {counts[2]} and {counts[3]}'
+    return f'{", ".join(counts[:-1])} and {counts[-1]}'
 
 
 def checkConfig(config: Path) -> int | None:
@@ -297,11 +305,11 @@ def runCodeTools(
     fix: bool,
     since: str | None,
 ) -> list[Result]:
-    """Fix and format the Python files unless told not to, then run ruff, pylint and mypy.
+    """Fix and format the Python files unless told not to, then run ruff, pylint, and mypy.
 
     Order matters. `ruff check --fix` and `ruff format` converge in that order and not the other. `since` limits the
-    fixes to fixes that edit a changed line, and limits formatting, the format check and the findings of ruff check,
-    pylint and mypy to changed lines.
+    fixes to fixes that edit a changed line, and limits formatting, the format check, and the findings of ruff check,
+    pylint, and mypy to changed lines.
 
     Returns:
         One result per tool, in the order they ran.

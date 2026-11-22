@@ -1,6 +1,6 @@
 """Read the prose of a page as passages for the prose checks, and split a passage into sentences.
 
-In a Markdown, HTML or plain text file, a passage is one paragraph, heading, list item or table cell, with the line
+In a Markdown, HTML, or plain text file, a passage is one paragraph, heading, list item, or table cell, with the line
 number of each of the passage's lines. Code is left out: fenced blocks in Markdown, and `pre`, `script` and `style` in
 HTML. Inline code stays in backticks, so it is read as code and not as a sentence. The comments and doc comments of a
 source file are read by the codeprose.py of the file's language, into the same Passage type.
@@ -96,9 +96,9 @@ def suppressedCodes(source: str) -> dict[int, set[str]]:
 
 
 def markdownPassages(markdown: str) -> list[Passage]:
-    """Split Markdown into paragraphs, headings, list items, quotes and table cells.
+    """Split Markdown into paragraphs, headings, list items, quotes, and table cells.
 
-    A line indented under a list item continues the item. Front matter, fenced code, table rules and HTML comments are
+    A line indented under a list item continues the item. Front matter, fenced code, table rules, and HTML comments are
     left out.
 
     Returns:
@@ -157,7 +157,7 @@ def inlineText(markdown: str) -> str:
 
 
 def htmlPassages(html: str) -> list[Passage]:
-    """Split HTML into the text of the block elements, such as `p`, `li`, `td` and `figcaption`.
+    """Split HTML into the text of the block elements, such as `p`, `li`, `td`, and `figcaption`.
 
     Returns:
         The passages in line order.

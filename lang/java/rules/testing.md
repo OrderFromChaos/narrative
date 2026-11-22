@@ -1,6 +1,6 @@
 ## Testing
 
-- **Real dependencies**: a real temp directory with `@TempDir`, a real file. No Mockito. A test
+- **Real dependencies.** Use a real temp directory with `@TempDir` and a real file. Don't use Mockito. A test
   double is a last resort for something you cannot run. Flag each one as a known gap. Keep logic off
   Minecraft types, so the tests run headless. (R2-02, Q16)
 

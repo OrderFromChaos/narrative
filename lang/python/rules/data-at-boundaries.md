@@ -32,7 +32,7 @@
   quietly and surfaces at run time with nothing to catch the bug. The standing exception is the
   schemaless remainder below, where a `Mapping` field is the prescribed shape.
 
-- **Genuinely schemaless input**: promote the fields the program computes on to typed
+- **Genuinely schemaless input.** Promote the fields the program computes on to typed
   attributes, and put the remainder in one `Mapping[str, object]` field. To flatten it to a JSON
   string costs a second `json.loads` downstream, makes the remainder unaddressable by `jq`, and
   forces the reader back through `Any`. (R4-04)
@@ -50,7 +50,7 @@
   validation that the database already does.** The cost is per row and per request, and worst on a
   hot path, such as an endpoint that returns database values. SQLAlchemy, peewee, Piccolo and Django
   models don't validate on write or on read. `TID251` bans the ORMs that do: SQLModel, ormar,
-  Tortoise, Pony and SQLObject. A migration, a healing script or a one-off backfill can still use
+  Tortoise, Pony, and SQLObject. A migration, a healing script, or a one-off backfill can still use
   one: declare `# ruff: noqa: TID251` in that module. Don't add a `per-file-ignores` list. An
   exception is a property of the module. A glob drifts from the tree the glob matches.
   Do not explain a suppression that follows this rule. Leave the suppression without a comment.

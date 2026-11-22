@@ -7,7 +7,7 @@ Name every magic number. (Q09) Then place it by this test:
 
 The latter is an implementation detail and belongs **inside** the function, still `ALL_CAPS`. Put
 `MAGIC`, `HEADER_FORMAT`, a padding byte, a derived size, a checksum mask, and the SQL of a single
-function inside. A log path, an archive directory, a glob, exit codes and operator-tunable timeouts
+function inside. A log path, an archive directory, a glob, exit codes, and operator-tunable timeouts
 stay at module level. (R3a-12)
 
 *`verify.py` doesn't check where a constant is. This is review judgement.*

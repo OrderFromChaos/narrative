@@ -100,7 +100,7 @@ tooltips leave. If the only name for a group has an "and", the group is two grou
 second user of the code.
 
 **There is no fixed split axis.** (`R7-B02`) Cut by technical role when the mod has one of
-everything. Cut by subject when it has several providers, several formats or several machines. Cut
+everything. Cut by subject when it has several providers, several formats, or several machines. Cut
 on the axis the expected changes land in more cleanly.
 
 **Naming a concept and crossing a boundary are two tests, and they can disagree.** (`R7-B04`,
@@ -122,7 +122,7 @@ subsystem, the change is one new class and one new line in the handler.
 **`main()`-first generalises to a library class.** (`R7-E05`) The public entry takes the first
 position, callees follow in first-call order, nested types last.
 
-## What earns a class, an interface, a record
+## Classes, interfaces, and records
 
 **Values that could differ between instances earn a class.** (`R7-C01-C02-revised`) Two plan files
 can be open at once, so a plan reader is a class. A packet format is the same everywhere, so the
@@ -136,8 +136,8 @@ answer.
 stage doesn't call the next stage. One method calls them in turn, with the intermediates in the method's local variables.
 
 **A pure core earns its place by the number of decisions in the core.** (`R7-C06`, `R7-C07`)
-Compute a plan, then apply the plan. In a mod, a pure core has one more benefit: with no Minecraft
-type in the core, the core's tests run headless.
+Compute a plan, then apply the plan. In a mod, a pure core has one more benefit. When the core doesn't have a Minecraft type, the
+core's tests run headless.
 
 **Every case of a closed set is in one class, in an exhaustive `switch`.** (`R7-A06`, `J1-A07`)
 Adding a constant must be a compile error at the switch. Forge registries are framework registration
@@ -146,7 +146,7 @@ and exempt.
 **Centralise a type before anything shares the type. Do not generalise behaviour before you need
 it.** (`R7-B07-preemption`)
 
-## Resources, state and config
+## Resources, state, and config
 
 **A resource is opened at the scope whose lifetime the resource matches**, in try-with-resources,
 and the reader finds the open at the top of that scope. (`R7-A03`)
@@ -169,7 +169,7 @@ and assert on ordering and bounds. Don't assert on an instant.
 ## Third-party code and other mods
 
 **Take a dependency when it is simpler at the call site, and prefer what the pack already ships.**
-(`R7-D02`, `R7-D02-stdlib`, `J1-A05`) The JDK, Guava, Gson and commons-lang3 are in every GTNH pack.
+(`R7-D02`, `R7-D02-stdlib`, `J1-A05`) The JDK, Guava, Gson, and commons-lang3 are in every GTNH pack.
 A new library is a new jar in the pack. Reuse library API, and take display conventions from the
 pack: read them in the sources jars under `~/.gradle/caches/modules-2`.
 
@@ -201,7 +201,7 @@ The comment rules are in `SKILL.md`, **Comments**, including the ban on decision
 (`NAR012`). The name of a rule that the program **implements** is allowed, such as the NAR code of a
 check, in the check. A name from the same program is not a citation.
 
-## Not architecture, learned alongside
+## Other lessons
 
 **Name the value of the last return.** (`R7-return-naming`) At the end of a long method, the name of
 the returned value is enough, and the reader does not scroll to the signature.
@@ -209,7 +209,7 @@ the returned value is enough, and the reader does not scroll to the signature.
 **Order constants by who changes the value.** (`R7-A05-ordering`) Pack-tunable values are in the
 Config class. Developer-only bindings are last in the block.
 
-## What the tools can't check
+## Rules without a check
 
 - **Dependency direction.** (`R7-A05-levels`)
 - **Where a fact belongs.** (`R7-A05-property`)

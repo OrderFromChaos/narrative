@@ -8,10 +8,10 @@ the mod here.
 
 An identifier in javadoc is a link: `{@link #getMachineModes}` or `{@link ExtendedBlockStorage}`.
 In an IDE, the reader can jump from the link to the target. When someone renames the target in the
-IDE, the link changes with the name. `{@link}` takes a class, a field, a method or a package. Put a
+IDE, the link changes with the name. `{@link}` takes a class, a field, a method, or a package. Put a
 parameter, a local variable or a value such as `null` in `{@code}`. In a `//` comment, put the name
 in backticks. Link to an identifier even when its name is unclear. From the link, the reader can
-jump to the code and see what the name stands for. (R11-pointer-wording, J1-F10)
+jump to the code and read what the name stands for. (R11-pointer-wording, J1-F10)
 
 ### Library facts
 
@@ -90,13 +90,13 @@ These cases are exempt from the checks:
   - `NAR130` on a member with the prefix `modid$`
   - `NAR106` on the abstract Mixin class
   - `NAR131` on an injector method, because the parameter list must match the target method
-  - `NAR140` on a `@Shadow`, `@Accessor` or `@Invoker` member and on an injector signature, because
+  - `NAR140` on a `@Shadow`, `@Accessor`, or `@Invoker` member and on an injector signature, because
     each type must be the type in the target class
 
 Keep these findings only when the user approves:
 - `NAR142` in a degrade-and-report loop
 - `NAR130` on a name in the style of upstream names, such as `TT_parallels`
-- `NAR112-gtnh` on a call to a method named `translate*`, `localize*`, `trans`, `tr` or `i18n` that
+- `NAR112-gtnh` on a call to a method named `translate*`, `localize*`, `trans`, `tr`, or `i18n` that
   does not localize text
 
 Ask the user about each finding. If the user approves, add the finding to the keep-list:

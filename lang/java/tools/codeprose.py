@@ -10,8 +10,8 @@ language with a codeprose.py.
 - `commentBlocks()`: the comments and doc comments of one source file, as blocks of lines for the re-wrap of rewrap.py
 
 In a Java file, a passage comes from one comment block: a run of whole-line `//` comments on consecutive lines at one
-column, one trailing comment, one block comment or one javadoc. A blank line, a pragma, a divider, a list item, `<p>` or
-a block tag starts a new passage, and a `<pre>` sample is not prose. javachecks.py reads the comments through
+column, one trailing comment, one block comment, or one javadoc. A blank line, a pragma, a divider, a list item, `<p>`,
+or a block tag starts a new passage, and a `<pre>` sample is not prose. javachecks.py reads the comments through
 lexComments() and groupBlocks() too. A block for the re-wrap is a run of whole-line `//` comments at one column, or one
 javadoc. A trailing comment and a `/*` block comment are never re-wrapped.
 
@@ -54,8 +54,8 @@ PRAGMA = re.compile(
 # `----------`
 # `==========`
 DIVIDER = re.compile(r'^[-=#~*/]{4,}$')
-# a text block, a string or character literal, a // comment or a /* comment. The literals are matched so that a // or /*
-# inside one is not read as a comment
+# a text block, a string or character literal, a // comment, or a /* comment. The literals are matched so that a // or
+# /* inside one is not read as a comment
 # matches:
 # `"""` then a text block then `"""`
 # `"a // b"`
@@ -77,7 +77,7 @@ def passages(source: str) -> list[Passage]:
 
 
 def lexComments(source: str) -> list[Comment]:
-    """Find every comment, skipping string literals, character literals and text blocks."""
+    """Find every comment, skipping string literals, character literals, and text blocks."""
     newlines = [index for index, char in enumerate(source) if char == '\n']
     comments: list[Comment] = []
     for token in JAVA_TOKEN.finditer(source):
@@ -122,7 +122,7 @@ def groupBlocks(comments: list[Comment]) -> list[list[Comment]]:
 def blockPassages(block: list[Comment]) -> list[Passage]:
     """Split one comment block into passages of prose.
 
-    A blank line, a pragma, a divider or a list item starts a new passage. `<p>`, `<li>` and each block tag start one
+    A blank line, a pragma, a divider, or a list item starts a new passage. `<p>`, `<li>`, and each block tag start one
     too in javadoc, and a `<pre>` sample is not prose.
     """
     passages: list[Passage] = []

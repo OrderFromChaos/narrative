@@ -6,9 +6,14 @@
   javac. (J1-P10, R2-11)
 
 - **Annotate the true requirement.** A parameter has the narrowest interface the method uses:
-  `Iterable`, `Collection`, `List`, `Map`. Never `ArrayList` or `HashMap` in a signature. `SortedMap`
-  where the order matters (see **GTNH**). `NAR140` flags a concrete collection type in a signature,
-  a field or a local. `EnumMap` and `EnumSet` keep their types: `new EnumMap<>(map)` and
+  - `Iterable`
+  - `Collection`
+  - `List`
+  - `Map`
+
+  Never `ArrayList` or `HashMap` in a signature. `SortedMap`
+  where the order matters (under **GTNH**). `NAR140` flags a concrete collection type in a signature,
+  a field, or a local. `EnumMap` and `EnumSet` keep their types: `new EnumMap<>(map)` and
   `EnumSet.copyOf(set)` throw on an empty argument of another type. (J1-P11, Q13, J1-F03)
 
 - **Domain primitives.** A one-component record, `record ScanId(int value)`, at boundaries and in
@@ -22,12 +27,12 @@
 - **A path is a `java.nio.file.Path` object**, never a `String` built with `+` or `/`. Forge returns
   `java.io.File`, as from `FMLPreInitializationEvent.getModConfigurationDirectory()`, so call
   `toPath()` on the `File` as soon as Forge returns the `File`. Use `Files` methods for file
-  operations. `File.delete()`, `renameTo()` and `mkdirs()` return `false` on
-  failure, and `File.listFiles()` returns `null`. `Files.delete()`, `Files.move()` and
+  operations. `File.delete()`, `renameTo()`, and `mkdirs()` return `false` on
+  failure, and `File.listFiles()` returns `null`. `Files.delete()`, `Files.move()`, and
   `Files.createDirectories()` throw an `IOException` with the cause. `NAR115` flags a `File`
   operation. (J1-P14, R3a-10)
 
-- **Amounts are exact.** `long` for item, fluid and EU counts, never `float` or `double`.
+- **Amounts are exact.** `long` for item, fluid, and EU counts, never `float` or `double`.
   `Math.addExact` and `Math.multiplyExact` where overflow is reachable. A rate may be a `double`.
   (J1-P15)
 
@@ -36,7 +41,7 @@
 
 - **`enum` for closed sets.** Never write `ordinal()` to NBT, a packet or JSON: reordering the
   constants changes every saved world. Serialise `name()`, or an explicit code field. `NAR105` flags
-  `ordinal()` in NBT, packet or Gson code. (J1-P17, R2-08)
+  `ordinal()` in NBT, packet, or Gson code. (J1-P17, R2-08)
 
 - **Composition over inheritance.** An `interface` for a seam with two real implementations. No
   `abstract class` in project code. `extends` only for a class the platform requires: Forge `Block`,
