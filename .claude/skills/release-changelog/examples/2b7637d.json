@@ -1,0 +1,164 @@
+{
+  "messages": [
+    {
+      "lead": "**Changes in Narrative `2b7637d`** (2026-11-22)\n**1. New prose rules** for comments, docstrings, javadoc, and published pages.",
+      "table": {
+        "header": [
+          "Rule",
+          "Before",
+          "After"
+        ],
+        "rows": [
+          [
+            "bullets for a list of more than two items after a colon",
+            "Retried errors: a timeout, a refused connection, a reset connection, and an HTTP 503.",
+            "Retry on these errors:\n- a timeout\n- a refused connection\n- a reset connection\n- an HTTP 503"
+          ],
+          [
+            "\"every\" is an intensifier",
+            "rebuild the index on every save",
+            "rebuild the index on save"
+          ],
+          [
+            "\"only\" is an intensifier",
+            "Drop a word that only stresses",
+            "Drop a word that adds stress and doesn't add a fact"
+          ],
+          [
+            "no clause joined by a colon",
+            "# idempotent: a second run changes nothing",
+            "# idempotent"
+          ],
+          [
+            "Oxford comma",
+            "a timeout, a refusal or a reset",
+            "a timeout, a refusal, or a reset"
+          ]
+        ]
+      }
+    },
+    {
+      "lead": "**1. New prose rules** (continued)",
+      "table": {
+        "header": [
+          "Rule",
+          "Before",
+          "After"
+        ],
+        "rows": [
+          [
+            "the behaviour for any input",
+            "A file with 10,000 bad rows emits one record at the default level",
+            "emit one status record per file"
+          ],
+          [
+            "a page states the current fact",
+            "far smaller than it first looked",
+            "9% less code on a spec with fixed outputs"
+          ],
+          [
+            "a heading names the topic",
+            "What goes in a body, and what does not",
+            "Docstring body"
+          ],
+          [
+            "no perception verb for an agent",
+            "see the list",
+            "read the list"
+          ],
+          [
+            "a program doesn't show (NAR017)",
+            "the summary shows the totals",
+            "the summary has the totals"
+          ],
+          [
+            "a vague verb of code (NAR017)",
+            "Enumerator.resolve() applies it",
+            "resolve() sets the tier of each recipe"
+          ]
+        ]
+      },
+      "tail": "In a README, the benefit is first. A short caveat for the cost of adoption is second, and an example is third."
+    },
+    {
+      "lead": "**2. The docstring review list in Python (NAR116).** Rule 11 of nar:gtnh is in nar:python now. `checks.py --declarations` writes the list, and `verify.py` reads the list as the fifth review list.",
+      "table": {
+        "header": [
+          "Case",
+          "Before",
+          "After"
+        ],
+        "rows": [
+          [
+            "function with more than 3 parameters",
+            "NAR004 finding without a docstring",
+            "on the list only with a docstring or over 20 lines"
+          ],
+          [
+            "function over 20 lines",
+            "NAR004 finding without a docstring",
+            "on the list, with or without a docstring"
+          ],
+          [
+            "function with a docstring",
+            "not on a list",
+            "on the list when the body is over one line"
+          ],
+          [
+            "class, module constant, or class field",
+            "not on a list",
+            "on the list with a docstring or a comment"
+          ],
+          [
+            "docstring without Raises:",
+            "NAR004 only on a function with the trigger",
+            "NAR004 on each function that raises"
+          ]
+        ]
+      }
+    },
+    {
+      "lead": "**3. Checks and the text of the skill**",
+      "table": {
+        "header": [
+          "Area",
+          "Before",
+          "After"
+        ],
+        "rows": [
+          [
+            "free modifier list",
+            "moves into, out of, within, or across the column (listed)",
+            "not listed (a list of prepositions)"
+          ],
+          [
+            "lists after a colon",
+            "Never agency or containment: finds, knows, holds, carries, keeps its, costs.",
+            "10 lists in bullets"
+          ],
+          [
+            "X: Y openings",
+            "**Source**: a fact or requirement from outside the code",
+            "**Source** is a fact or a requirement from outside the code"
+          ],
+          [
+            "Oxford comma",
+            "143 lists without the comma",
+            "84 commas in the rules, 59 in the tools"
+          ],
+          [
+            "perception verbs",
+            "(see **noqa**)",
+            "(the rule is under **noqa**)"
+          ],
+          [
+            "headings",
+            "What the tools can't check",
+            "Rules without a check"
+          ]
+        ]
+      },
+      "tail": "In the skill for new rules, a draft is de-poisoned before you read the draft, an example shows the most common fix, and a permission is written with `may`. The benchmark has 12 new decisions. The Claudish inbox has 10 new units."
+    }
+  ]
+}
