@@ -1,7 +1,8 @@
 ## The module docstring
 
 **Every module opens with a docstring. Anything runnable has a usage example.** A reader meets the
-docstring first, before `main()`, so the docstring says what the program is *for*. The code shows how the program works.
+docstring first, before `main()`, so the docstring is about what the program is *for*. How the program works
+is in the code.
 (R5-02, NAR009)
 
 **Write for a professional developer who has the file open.** That reader knows the language and the

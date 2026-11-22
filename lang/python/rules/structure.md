@@ -16,8 +16,8 @@
 
 - If an extracted function would take 5+ parameters, that is a **missing owner**. Don't leave
   the code inline. Find where the values belong. That owner is a **class** when two of it can
-  exist at once, and a **module** otherwise. A frozen record fits only when the group of values
-  doesn't need methods. If a general name for the group is hard to pick, the values are not
+  exist at once, and a **module** otherwise. A frozen record fits only a group of values
+  without methods. If a general name for the group is hard to pick, the values are not
   a real group. (R7-C05-resolved, R7-C05-naming)
 
 - Always collapse duplicated-but-drifting code, even when the shared version takes an extra

@@ -176,8 +176,8 @@ public final class PlanFiles {
 
 - If an extracted method would take 5 or more values, that is a **missing owner**. Don't leave
   the code inline. That owner is a **class** when two of it can exist at once, and a final
-  utility class with a private constructor and static methods otherwise. A record fits only when the
-  group of values doesn't need methods. If a general name for the group is hard to pick, the
+  utility class with a private constructor and static methods otherwise. A record fits only a group
+  of values without methods. If a general name for the group is hard to pick, the
   values are not a real group. (R7-C05-resolved, R7-C05-naming)
 
 - Always collapse duplicated-but-drifting code, even when the shared version takes an extra
@@ -448,7 +448,7 @@ in **Scope**. (J1-P19-java8)
   them. (J1-P28, Q08)
 
 - **One logger per mod**, `LogManager.getLogger(MODID)`. This is the GTNH convention, and the mod name
-  is then on each `latest.log` line. Minecraft sets the log format. (J1-P29)
+  is then on each `latest.log` line. The log format comes from Minecraft. (J1-P29)
 
 ## Configuration
 
@@ -490,8 +490,8 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
   the boundary values are in every run. Generate with jqwik, or with `java.util.Random` and a
   constant seed, so a failing case is the same on the next run. (J1-P36)
 
-- **A test method name is the rule.** Tests are found by the `@Test` annotation, so the name doesn't
-  need a `test` prefix: `runningMachineNeverDisplaysZero()`. (J1-P33)
+- **A test method name is the rule.** Tests are found by the `@Test` annotation, so a `test` prefix
+  isn't needed: `runningMachineNeverDisplaysZero()`. (J1-P33)
 
 - **Never merge a test that fails.** If a scenario is aspirational, raise the budget or disable the
   test explicitly, and say which in the PR. (J1-S12)
@@ -500,8 +500,8 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
   point in the main source set, so any source set can import the entry point. (J1-S13)
 
 - **No production change for a test.** No test-only field or variable in a production class. A test
-  reads private state through reflection. Add an accessor only when other code needs the accessor
-  too. (J1-S14)
+  reads private state through reflection. Add an accessor only when other code uses the
+  accessor too. (J1-S14)
 
 - **No test only because a bug was fixed.** Write a regression test when the code under test is
   likely to break the same way again, or when the test checks an invariant of the program. Write the
@@ -573,7 +573,8 @@ CompletableFuture.supplyAsync(() -> computePlan(request))
 ## Javadoc
 
 **Every top-level type has a javadoc of at least one sentence, about what the type is for.** A reader
-meets the javadoc first, so the javadoc says what the class is *for*. The code shows how the class works. The javadoc of a
+meets the javadoc first, so the javadoc is about what the class is *for*. How the class works is in the
+code. The javadoc of a
 class with `main`, such as a dev tool, also has a usage example and the exit codes. `NAR118` flags a
 top-level type without a javadoc. (J1-F3, R5-02)
 
@@ -685,12 +686,13 @@ not earn its place.** (R9-09)
 - a **guarantee a caller needs**: `` `preview()` doesn't write a file, send a packet or change a world ``
 
 - **A method gets a javadoc when a reader can't learn from the name of the method and the comments
-  of the body what the method does.** Answer one question for each method in the `NAR116` review
+  of the body what the method does.** Answer one question for each entry of the `NAR116` review
   list of `verify.py`:
-  - without a javadoc: can a reader learn from the name of the method and the comments of the body
-    what the method does? If not, write a javadoc.
-  - with a javadoc: what does a reader learn from the javadoc, and not from the name of the method
-    or the comments of the body? If the reader doesn't learn more, cut the javadoc.
+  - a method without a javadoc: can a reader learn from the name of the method and the comments of the
+    body what the method does? If not, write a javadoc.
+  - a javadoc or a comment on a type, a field, an enum constant or a method: what does a reader learn
+    from the javadoc or the comment, and not from the name and the code? If the reader doesn't learn
+    more, cut the javadoc or the comment. Keep one sentence on a top-level type (`NAR118`).
   (J1-P34, Q05, R8-D18-resolved, R12-nar116-review)
 
 - **`@throws` for every exception absent from the `throws` clause**, in the javadoc of a method. A checked exception is in the signature already. `NAR117` flags a `throw new X` with no
@@ -895,8 +897,8 @@ javac, then Checkstyle and PMD with the configs beside `verify.py`, at every lev
 `javachecks.py` then reads the comments, runs the prose checks, and merges the three reports into
 one list with NAR codes. A run with exit 0 or 1 writes five lists to `.narrative_cache/review-lists.txt`, the input to **Prose
 review**: every sentence of every comment, javadoc and named page, every verb whose subject cannot
-act, every sentence with a pronoun, every sentence with a free modifier, and every method with a javadoc or over 20 body lines (`NAR116`).
-The list of methods comes from the PMD report, so a run with `--prose-only` doesn't list methods. The file and the number of entries in each list are
+act, every sentence with a pronoun, every sentence with a free modifier, and every javadoc and member comment and every method over 20 body lines (`NAR116`).
+The list comes from the PMD report, so a run with `--prose-only` doesn't have the list. The file and the number of entries in each list are
 on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` doesn't
 write the lists, because `javachecks.py` has not read the comments yet. When `--since` is given, the
 lists cover only the changed lines of the code and the pages. Otherwise each list stops after 1000

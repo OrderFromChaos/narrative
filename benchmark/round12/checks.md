@@ -24,10 +24,12 @@ the rules too.
 - **Rule 10.** `NAR027` flags a number in a comment when the number is the value of a constant that the comment names, or
   of a constant on the 3 lines below the comment. The 2 rule units are config comment strings with the constants in
   another class, so `NAR027` doesn't reach them.
-- **Rule 11.** The `NAR116` list has each method with a javadoc and a body of more than one line, and each method over
-  20 body lines without a javadoc. A javadoc on a body of one line is `NAR023`. On `MobOverlayScan.java` and
-  `MobOverlayDisplayList.java` of NEI at commit 308febf, the list has the 6 javadocs that you cut by hand on
-  2026-11-22, on methods of 2 to 19 body lines. A list of methods over 20 body lines only had none of the 6.
+- **Rule 11.** The `NAR116` list has each type, field, enum constant and method with a javadoc or a comment, and
+  each method over 20 body lines without a javadoc. A javadoc on a body of one line is `NAR023`. Of the 25 comments
+  that you flagged on NEI PR 1146 on 2026-11-22, 22 are on a declaration and on the list. The other 3 are in a method
+  body, and are only on the sentence list. A list of methods over 20 body lines only had 1 of the 25.
+- **Rule 12.** A label is fine on a constant, an enum constant or a field when the label has a fact that isn't in the
+  name (`R12-label-constant`). No check.
 - **Rule 13.** The fourth review list of `verify.py` has each sentence with a free modifier. `, such as X` is left out,
   because you asked for more research on the form.
 - **Rule 15.** `NAR023` leaves out a stub: a body of `...`, `pass` or `raise NotImplementedError`, and a function under
@@ -37,7 +39,7 @@ the rules too.
 
 ## Line breaks
 
-A phrase such as `, not` or `no longer` can wrap onto the next line of a comment. The wording checks of `wording.py`
+A phrase such as `, not` can wrap onto the next line of a comment. The wording checks of `wording.py`
 (`NAR012` to `NAR016`, `NAR018`, `NAR024`) read each line with the next line, and report the line where the match
 starts. Python `NAR019` and Java `NAR120` read every line of the comment. `NAR027` reads the name of a constant in the
 whole comment block. In Java, an inline tag such as `{@link X#y(A,` / `B)}` over two lines of a javadoc is code on both
@@ -48,7 +50,7 @@ lines.
 `NAR026` flags an opener of time with `over` or `at`, such as `Over a few weekends,` and `At C1 the guided agent`, in
 the README. The README is out of the de-poisoning pass, so the form is only noted here.
 
-## The skill's own text
+## The text of the skill
 
 In the tools of the repository, the new checks have about 120 findings in text that was there before round 12, such as
 `With --since REF,` (`NAR026`) and `The list is no finding` (`NAR025`). 9 functions of the tools have a docstring on a

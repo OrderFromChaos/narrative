@@ -86,8 +86,8 @@ resolve coreference, so a reader names the noun for each pronoun. The list isn't
 
 `--free-modifiers` lists every sentence with a free modifier: a phrase without a verb after a comma, that opens with a
 preposition, a past participle or a number, such as `, in one list for each tenant`. A reader writes the phrase as a
-clause or a separate sentence, or cuts the phrase. A phrase after `and`, `or`, `but`, `so` or `then`, and a list of
-numbers, are left out. The list isn't a finding, and the exit code is 0.
+clause or a separate sentence, or cuts the phrase. A phrase after `and`, `or`, `but`, `so` or `then`, a list of numbers
+and a list of prepositions are left out. The list isn't a finding, and the exit code is 0.
 
 Each of the three lists stops after 1000 entries, and the last line of the list is the command for the next 1000:
 --from-pair N with --review, --from-pronoun N with --pronouns, and --from-modifier N with --free-modifiers. --since and
@@ -889,8 +889,8 @@ class SentenceReader:
         """Find each phrase without a verb after a comma, that opens with a preposition, a past participle or a number.
 
         The phrase is the text from a comma to the next comma or to the end of the sentence. A phrase that opens with a
-        word on LIST_WORDS, a phrase of one word, and the rest of a list of numbers, such as `32 and 40 blocks` after
-        `24`, are left out.
+        word on LIST_WORDS, a phrase of one word, the rest of a list of numbers, such as `32 and 40 blocks` after `24`,
+        and the rest of a list of prepositions, such as `out of or across the column` after `into`, are left out.
 
         Returns:
             The phrase with the comma, and the sentence, per hit. Each hit is a list, because JSON doesn't have a tuple
@@ -912,6 +912,9 @@ class SentenceReader:
                     continue
                 # the rest of a list of numbers: `at drops of 24, 32 and 40 blocks`
                 if words[0].pos_ == 'NUM' and before and before[-1].pos_ == 'NUM':
+                    continue
+                # the rest of a list of prepositions with one object: `moves into, out of or across the column`
+                if before and before[-1].pos_ == 'ADP':
                     continue
                 if words[0].pos_ == 'ADP' or words[0].tag_ == 'VBN' or words[0].pos_ == 'NUM':
                     hits.append([', ' + ' '.join(token.text for token in words), sentence.text.strip()])

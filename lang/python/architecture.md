@@ -235,8 +235,7 @@ program. Unlike every other bundle, the config doesn't get a wrapping class with
 
 **The config object is a module-level singleton.** Don't pass the config object as a
 parameter. (`R8-D09-resolved`) Parse the
-config once at import into a frozen record and import that name where that name is needed. A frozen
-config doesn't need a close, so the singleton rule above already allows a frozen config. Not allowed
+config once at import into a frozen record and import that name where that name is needed. A frozen config isn't closed, so the singleton rule above already allows a frozen config. Not allowed
 under that rule: a *hardcoded default* invented in a module. A default belongs in the config file.
 The singleton is **assigned once and never rebound.** A function that reassigns it mutates module
 state and owes a `global`, and fails `NAR001`.
@@ -316,8 +315,7 @@ of `checks.py` itself. A name from the same program is not a citation.
 **Name the value of the last return.** (`R7-return-naming`) At the end of a long function, the name of
 the returned value is enough, and the reader does not scroll to the signature. Early returns and
 guard exits are exempt, because a name on those produces near-identical pairs and creates the rote
-diffing banned by `R2b-P0`. `RET504` stays disabled, so this form is legal. *The rule doesn't set a
-size threshold. Apply it where the signature is off the screen.*
+diffing banned by `R2b-P0`. `RET504` stays disabled, so this form is legal. *The rule doesn't have a size threshold. Apply it where the signature is off the screen.*
 
 **Order module constants by who changes the value.** (`R7-A05-ordering`) Operator-tunable first,
 developer-only bindings last. Where execution order forces a constant later in the block, the

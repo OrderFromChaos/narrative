@@ -9,15 +9,14 @@
   skips an absent value. **Never substitute a plausible default**, because the output then contains
   a fact that the file does not. (R9-01)
 
-  A lockfile of `name==version` lines doesn't name a source. Give the record `source: SourceName |
+  A lockfile of `name==version` lines doesn't have a source. Give the record `source: SourceName |
   None` and let the source check pass on `None`. Do not stamp `'pypi'` on every package. When a
   policy allows only `internal`, an invented source turns every line of every lockfile into a finding
   that the manifest never justified.
 
 - **Pydantic can be used for standardizing user input, at the boundary gate, and nowhere else.**
   `TID251` bans the import, so declare `# ruff: noqa: TID251` in the gate module, and name the gate
-  function in the gate module docstring. A second suppression in one program means validation is no
-  longer at one gate. (R8-D10, R10-pydantic)
+  function in the gate module docstring. A second suppression in one program means validation isn't at one gate. (R8-D10, R10-pydantic)
 
 - **Don't let a framework validate output.** FastAPI makes a route's return annotation the route's
   response model, so every response is validated at run time. Pass `response_model=None` in the

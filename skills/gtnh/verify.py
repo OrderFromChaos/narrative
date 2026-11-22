@@ -27,12 +27,13 @@ is done.
 
 After the checks, verify.py writes five review lists over the Java sources and the pages to review-lists.txt in the
 cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every subject that cannot act
-paired with the subject's verb, every sentence with a pronoun, every sentence with a free modifier, and every method
-with a javadoc or over 20 body lines (NAR116). The list of methods is from the PMD report, so a run with --prose-only or
-with pages only doesn't list methods. The path of the file and the number of entries in each list are on the last line
-of the output, so `tail -1` shows them. verify.py doesn't write the lists on exit 2, or after a Gradle failure. Each
-list stops after 1000 entries, and the last line of the list is the command for the next 1000. --since removes the
-limit. --since also limits the checks and the lists to passages with a changed line.
+paired with the subject's verb, every sentence with a pronoun, every sentence with a free modifier, and every
+declaration with a javadoc or a comment and every method over 20 body lines (NAR116). The list of declarations is from
+the PMD report, so a run with --prose-only or with pages only doesn't have the list. The path of the file and the number
+of entries in each list are on the last line of the output, so `tail -1` shows them. verify.py doesn't write the lists
+on exit 2, or after a Gradle failure. Each list stops after 1000 entries, and the last line of the list is the command
+for the next 1000. --since removes the limit. --since also limits the checks and the lists to passages with a changed
+line.
 
 --keep FILE:LINE:CODE adds the finding to the keep-list and doesn't run a check. A kept finding isn't printed in later
 runs. The keep-list is described in the docstring of javachecks.py.
@@ -87,12 +88,13 @@ PASS_NOTE = 'These lint checks cover only some of the rules. Check the other rul
 # lists of the last run, for Prose review
 CACHE_DIR = Path('.narrative_cache')
 LISTS_NAME = 'review-lists.txt'
-# the NAR116 review list that javachecks.py writes: each method with a javadoc or over 20 body lines
+# the NAR116 review list that javachecks.py writes: each declaration with a javadoc or a comment, and each method over
+# 20 body lines
 METHODS_NAME = 'methods.txt'
 METHODS_HEADING = (
-    '--- each method with a javadoc, and each method over 20 body lines (NAR116). Without a javadoc: can a reader learn'
-    ' from the name of the method and the comments of the body what the method does? With a javadoc: what does a reader'
-    ' learn from the javadoc, and not from the name or the comments of the body? ---'
+    '--- each javadoc and member comment, and each method over 20 body lines (NAR116). A method without a javadoc: can'
+    ' a reader learn from the name and the comments of the body what the method does? A javadoc or a comment: what does'
+    ' a reader learn from the javadoc or the comment, and not from the name and the code? ---'
 )
 # the command-line path of a page read from stdin
 STDIN_PATH = Path('-')
@@ -303,7 +305,7 @@ def reportFindings(
     methods = methods_path.read_text(encoding='utf-8').splitlines() if methods_path.is_file() else []
     with lists_path.open('a', encoding='utf-8') as lists_file:
         lists_file.write(METHODS_HEADING + '\n' + ''.join(f'{method}\n' for method in methods))
-    counts = f'{counts} and {len(methods)} methods'
+    counts = f'{counts} and {len(methods)} declarations'
     if checked.returncode == EXIT_SUCCESS:
         print(f'Prose review: read the {counts} in {lists_path}')
         return EXIT_SUCCESS

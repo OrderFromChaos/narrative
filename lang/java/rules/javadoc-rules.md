@@ -57,12 +57,13 @@ not earn its place.** (R9-09)
 - a **guarantee a caller needs**: `` `preview()` doesn't write a file, send a packet or change a world ``
 
 - **A method gets a javadoc when a reader can't learn from the name of the method and the comments
-  of the body what the method does.** Answer one question for each method in the `NAR116` review
+  of the body what the method does.** Answer one question for each entry of the `NAR116` review
   list of `verify.py`:
-  - without a javadoc: can a reader learn from the name of the method and the comments of the body
-    what the method does? If not, write a javadoc.
-  - with a javadoc: what does a reader learn from the javadoc, and not from the name of the method
-    or the comments of the body? If the reader doesn't learn more, cut the javadoc.
+  - a method without a javadoc: can a reader learn from the name of the method and the comments of the
+    body what the method does? If not, write a javadoc.
+  - a javadoc or a comment on a type, a field, an enum constant or a method: what does a reader learn
+    from the javadoc or the comment, and not from the name and the code? If the reader doesn't learn
+    more, cut the javadoc or the comment. Keep one sentence on a top-level type (`NAR118`).
   (J1-P34, Q05, R8-D18-resolved, R12-nar116-review)
 
 - **`@throws` for every exception absent from the `throws` clause**, in the javadoc of a method. A checked exception is in the signature already. `NAR117` flags a `throw new X` with no

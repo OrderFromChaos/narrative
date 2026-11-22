@@ -296,7 +296,11 @@ R10-depth-example, R10-period-join)
   - `A GL display list of the mob spawn overlay.` on the class `MobOverlayDisplayList` →
     `` `MobOverlayDisplayList` compiles the overlay quads of each chunk column into one GL display
     list. ``
-  (R12-no-name-phrase)
+  A label is fine on a constant, an enum constant or a field when the label has a fact that isn't
+  in the name, such as the look of a style:
+  - `` {@link #addVertices} adds a small square in the middle of the block `` on `SQUARE` →
+    `A small square in the middle of an untinted block.`
+  When the fact fits in the name, rename the field. (R12-no-name-phrase, R12-label-constant)
 - callables as `name()`, and no article before an identifier (R10-Q30, R10-Q35)
 - only names the reader can resolve from the comment's position (R10-Q22, R10-Q21)
 - only verbs for what code literally does, when the subject is code or an abstract noun: `returns`,
@@ -396,7 +400,8 @@ Take these steps in order before writing or rewording a comment. The kinds, the 
 1. **Rename first.** If the information fits in a name or a type, rename, and don't write a comment:
    `ByteCount` as the type of `overQuota`, `totalCents`, `rollingMeanSignedError`. (R10-Q25, R10-Q27, R10-Q16)
 2. **Guarantee it in code.** Establish a cheap precondition, such as sorted input, upstream in the
-   call flow. The function that depends on the precondition doesn't establish the precondition. Don't
+   call flow. Don't establish the precondition in the function that depends on the
+   precondition. Don't
    write a comment. An index lookup doesn't sort its input. If a code change removes a trap, make the
    change, and don't write a comment. If explaining how the code works takes more than one plain clause, rewrite the code
    instead. Name the step, or use the obvious construct. A `dict` filled with `setdefault()` and
@@ -420,7 +425,7 @@ an operation of code. A verb such as `reads` or `runs` is an operation of code o
 object and code as the verb's subject: `PlanLoader reads the plan file` is one, and `the spec reads` isn't. The
 third has every sentence with `it`, `its` or a standalone `that`, each after the sentence before. The fourth has every
 sentence with a free modifier: write the phrase as a clause or a separate sentence, or cut the phrase
-(R12-no-free-modifier). In Java, a fifth list has each method with a javadoc, and each method over 20 body lines (`NAR116`). Take these steps for each
+(R12-no-free-modifier). In Java, a fifth list has each javadoc and member comment, and each method over 20 body lines (`NAR116`). Take these steps for each
 sentence. (R10-prose-inventory, R10-closing-review, R11-pronoun-list,
 R11-literal-review)
 

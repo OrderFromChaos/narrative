@@ -165,8 +165,8 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
 
 - If an extracted function would take 5+ parameters, that is a **missing owner**. Don't leave
   the code inline. Find where the values belong. That owner is a **class** when two of it can
-  exist at once, and a **module** otherwise. A frozen record fits only when the group of values
-  doesn't need methods. If a general name for the group is hard to pick, the values are not
+  exist at once, and a **module** otherwise. A frozen record fits only a group of values
+  without methods. If a general name for the group is hard to pick, the values are not
   a real group. (R7-C05-resolved, R7-C05-naming)
 
 - Always collapse duplicated-but-drifting code, even when the shared version takes an extra
@@ -349,15 +349,14 @@ exhaustive `match`. (R4-03, R7-E07-floor)
   skips an absent value. **Never substitute a plausible default**, because the output then contains
   a fact that the file does not. (R9-01)
 
-  A lockfile of `name==version` lines doesn't name a source. Give the record `source: SourceName |
+  A lockfile of `name==version` lines doesn't have a source. Give the record `source: SourceName |
   None` and let the source check pass on `None`. Do not stamp `'pypi'` on every package. When a
   policy allows only `internal`, an invented source turns every line of every lockfile into a finding
   that the manifest never justified.
 
 - **Pydantic can be used for standardizing user input, at the boundary gate, and nowhere else.**
   `TID251` bans the import, so declare `# ruff: noqa: TID251` in the gate module, and name the gate
-  function in the gate module docstring. A second suppression in one program means validation is no
-  longer at one gate. (R8-D10, R10-pydantic)
+  function in the gate module docstring. A second suppression in one program means validation isn't at one gate. (R8-D10, R10-pydantic)
 
 - **Don't let a framework validate output.** FastAPI makes a route's return annotation the route's
   response model, so every response is validated at run time. Pass `response_model=None` in the
@@ -544,7 +543,8 @@ asyncio is the default for I/O-bound work. (R2-04)
 ## The module docstring
 
 **Every module opens with a docstring. Anything runnable has a usage example.** A reader meets the
-docstring first, before `main()`, so the docstring says what the program is *for*. The code shows how the program works.
+docstring first, before `main()`, so the docstring is about what the program is *for*. How the program works
+is in the code.
 (R5-02, NAR009)
 
 **Write for a professional developer who has the file open.** That reader knows the language and the

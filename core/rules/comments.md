@@ -272,7 +272,11 @@ R10-depth-example, R10-period-join)
   - `A GL display list of the mob spawn overlay.` on the class `MobOverlayDisplayList` →
     `` `MobOverlayDisplayList` compiles the overlay quads of each chunk column into one GL display
     list. ``
-  (R12-no-name-phrase)
+  A label is fine on a constant, an enum constant or a field when the label has a fact that isn't
+  in the name, such as the look of a style:
+  - `` {@link #addVertices} adds a small square in the middle of the block `` on `SQUARE` →
+    `A small square in the middle of an untinted block.`
+  When the fact fits in the name, rename the field. (R12-no-name-phrase, R12-label-constant)
 - callables as `name()`, and no article before an identifier (R10-Q30, R10-Q35)
 - only names the reader can resolve from the comment's position (R10-Q22, R10-Q21)
 - only verbs for what code literally does, when the subject is code or an abstract noun: `returns`,

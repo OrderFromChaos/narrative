@@ -141,7 +141,7 @@ trailing space.
 **mypy reports `import-not-found` for banned libraries** before ruff gets to say why. Read the ruff
 message first.
 
-**Two blank lines after the import block is an isort setting.** The formatter doesn't set the count. This one
+**Two blank lines after the import block is an isort setting.** The count isn't a formatter setting. This one
 is backwards from expectation. `ruff format` *preserves* two blank lines quite happily.
 
 The autofix of `I001` in `ruff check` deletes the second one, because the isort setting

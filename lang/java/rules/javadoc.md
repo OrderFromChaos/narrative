@@ -1,7 +1,8 @@
 ## Javadoc
 
 **Every top-level type has a javadoc of at least one sentence, about what the type is for.** A reader
-meets the javadoc first, so the javadoc says what the class is *for*. The code shows how the class works. The javadoc of a
+meets the javadoc first, so the javadoc is about what the class is *for*. How the class works is in the
+code. The javadoc of a
 class with `main`, such as a dev tool, also has a usage example and the exit codes. `NAR118` flags a
 top-level type without a javadoc. (J1-F3, R5-02)
 

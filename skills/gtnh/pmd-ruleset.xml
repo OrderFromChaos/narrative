@@ -308,6 +308,24 @@
         </properties>
     </rule>
 
+    <rule name="NAR116-member" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          message="type, field, enum constant or method without a body">
+        <description>
+            R12-nar116-review: a type, a field, an enum constant, or a method without a body. javachecks.py writes
+            a hit to the NAR116 review list when a javadoc or a comment is above the declaration, or a comment is
+            after the declaration on the same line.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//(ClassDeclaration | RecordDeclaration | EnumDeclaration | AnnotationTypeDeclaration | FieldDeclaration | EnumConstant)
+| //MethodDeclaration[not(Block)]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
     <rule name="NAR023" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
           message="method of one line">
         <description>

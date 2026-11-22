@@ -6,7 +6,8 @@ Take these steps in order before writing or rewording a comment. The kinds, the 
 1. **Rename first.** If the information fits in a name or a type, rename, and don't write a comment:
    `ByteCount` as the type of `overQuota`, `totalCents`, `rollingMeanSignedError`. (R10-Q25, R10-Q27, R10-Q16)
 2. **Guarantee it in code.** Establish a cheap precondition, such as sorted input, upstream in the
-   call flow. The function that depends on the precondition doesn't establish the precondition. Don't
+   call flow. Don't establish the precondition in the function that depends on the
+   precondition. Don't
    write a comment. An index lookup doesn't sort its input. If a code change removes a trap, make the
    change, and don't write a comment. If explaining how the code works takes more than one plain clause, rewrite the code
    instead. Name the step, or use the obvious construct. A `dict` filled with `setdefault()` and

@@ -45,9 +45,10 @@ list stops after 1000 entries, and the last line of the list is the command for 
 --from-pair, --from-pronoun and --from-modifier print only the list they name, from the given entry. --since and
 --all-sentences remove the limit.
 
-NAR116 isn't a finding. --method-list PATH writes the NAR116 review list to PATH: each method with a javadoc and a body
-of more than one line, and each method over 20 body lines without a javadoc. verify.py adds the file to the review
-lists. For a method on the list with a javadoc, each `throw new X` without a `@throws X` line is a NAR117 finding.
+NAR116 isn't a finding. --method-list PATH writes the NAR116 review list to PATH: each type, field, enum constant and
+method with a javadoc or a comment, and each method over 20 body lines without a javadoc. A method with a body of one
+line is NAR023. verify.py adds the file to the review lists. For a method on the list with a javadoc, each `throw new X`
+without a `@throws X` line is a NAR117 finding.
 
 --keep FILE:LINE:CODE adds a finding that the user approved to the keep-list. A finding in a Java source isn't silenced
 with `// noqa`, because the maintainer of an upstream project must delete each `// noqa` from a PR. The keep-list is
@@ -141,7 +142,10 @@ def main() -> int:
     parser.add_argument(
         '--method-list',
         type=Path,
-        help='write the NAR116 review list to this file: each method with a javadoc or over 20 body lines',
+        help=(
+            'write the NAR116 review list to this file: each declaration with a javadoc or a comment, and each method'
+            ' over 20 body lines'
+        ),
     )
     parser.add_argument('--rewrap', action='store_true', help='fill the javadoc and // comments again, in place')
     parser.add_argument(
@@ -553,6 +557,9 @@ def checkFile(
                 continue
         span = frozenset(range(tool_finding.first_line, last_line + 1))
         line_span = span if tool_finding.scope is Scope.SPAN else frozenset({tool_finding.first_line})
+        if tool_finding.code in ('NAR116', 'NAR116-member'):
+            # an entry of the NAR116 list counts for --since when the javadoc or the comment of the entry changed
+            line_span |= commentLines(reading, lines, declarationLine(lines, tool_finding.first_line))
         located = ToolFinding(
             java_path,
             tool_finding.first_line,
@@ -786,11 +793,13 @@ def annotationStart(lines: list[str], last_line: int) -> int | None:
 
 
 def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: CommentReading) -> list[JavaFinding]:
-    """Turn a tool finding into JavaFindings, with a look at the comments of the file for two codes.
+    """Turn a tool finding into JavaFindings, with a look at the comments of the file for some codes.
 
     - NAR110: a mutable static field. The finding is dropped when a comment for the reason is above the field, or after
       the field on the same line
     - NAR023: a method of one line. When a javadoc is above the method, the finding is reported
+    - NAR116-member: a type, a field, an enum constant or a method without a body. The declaration is an entry of the
+      NAR116 review list when a javadoc or a comment is above the declaration, or a comment is beside the declaration
     - NAR116: a method with a javadoc or over LONG_METHOD_LINES body lines, an entry of the NAR116 review list. When a
       javadoc is above the method, NAR117 is reported for each `throw new X` in the method where X is absent from the
       throws clause and from the `@throws` lines of the javadoc
@@ -811,6 +820,15 @@ def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: Com
                 return []
             detail = 'javadoc on a method of one line. Cut the javadoc'
             return [JavaFinding(tool_finding.java_path, line, 'NAR023', detail)]
+        case 'NAR116-member':
+            declaration = declarationLine(lines, line)
+            if javadocAbove(reading, lines, declaration) is not None:
+                detail = 'with a javadoc'
+            elif commentAbove(reading, lines, declaration):
+                detail = 'with a comment'
+            else:
+                return []
+            return [JavaFinding(tool_finding.java_path, declaration, 'NAR116', detail)]
         case 'NAR116':
             javadoc = javadocAbove(reading, lines, line)
             if javadoc is None:
@@ -826,6 +844,42 @@ def methodEntry(method: JavaFinding) -> str:
     lines = method.java_path.read_text(encoding='utf-8', errors='replace').splitlines()
     declaration = lines[method.line - 1].strip() if method.line <= len(lines) else ''
     return f'{method.java_path}:{method.line}: {declaration} ({method.detail})'
+
+
+def commentAbove(reading: CommentReading, lines: list[str], declaration_line: int) -> bool:
+    """Tell whether a whole-line // comment ends above a declaration, or a comment follows the declaration."""
+    end = lineAboveAnnotations(lines, declaration_line)
+    return any(
+        (comment.kind is CommentKind.LINE and not comment.trailing and comment.last_line == end)
+        or (comment.trailing and comment.first_line == declaration_line)
+        for comment in reading.comments
+    )
+
+
+def commentLines(reading: CommentReading, lines: list[str], declaration_line: int) -> frozenset[int]:
+    """Return the lines of the javadoc or the // block above a declaration, and of a comment beside the declaration."""
+    end = lineAboveAnnotations(lines, declaration_line)
+    found: set[int] = set()
+    for block in reading.blocks:
+        if block[0].trailing:
+            if block[0].first_line == declaration_line:
+                found.add(declaration_line)
+        elif block[-1].last_line == end:
+            found.update(number for comment in block for number, _text in comment.texts)
+    return frozenset(found)
+
+
+def declarationLine(lines: list[str], first_line: int) -> int:
+    """Return the first line at or after `first_line` that isn't an annotation line."""
+    number = first_line
+    depth = 0
+    while number < len(lines):
+        text = lines[number - 1].strip()
+        if depth == 0 and not text.startswith('@'):
+            return number
+        depth += text.count('(') - text.count(')')
+        number += 1
+    return first_line
 
 
 def javadocAbove(reading: CommentReading, lines: list[str], declaration_line: int) -> str | None:
@@ -943,6 +997,7 @@ PMD_CODES = {
     'NAR115': ('NAR115', Scope.SPAN),
     'NAR023': ('NAR023', Scope.SPAN),
     'NAR116': ('NAR116', Scope.SPAN),
+    'NAR116-member': ('NAR116-member', Scope.LINE),
     'NAR122': ('NAR122', Scope.SPAN),
     'NAR123': ('NAR123', Scope.SPAN),
     'NAR124': ('NAR124-gtnh', Scope.LINE),

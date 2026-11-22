@@ -13,8 +13,8 @@
   the boundary values are in every run. Generate with jqwik, or with `java.util.Random` and a
   constant seed, so a failing case is the same on the next run. (J1-P36)
 
-- **A test method name is the rule.** Tests are found by the `@Test` annotation, so the name doesn't
-  need a `test` prefix: `runningMachineNeverDisplaysZero()`. (J1-P33)
+- **A test method name is the rule.** Tests are found by the `@Test` annotation, so a `test` prefix
+  isn't needed: `runningMachineNeverDisplaysZero()`. (J1-P33)
 
 - **Never merge a test that fails.** If a scenario is aspirational, raise the budget or disable the
   test explicitly, and say which in the PR. (J1-S12)
@@ -23,8 +23,8 @@
   point in the main source set, so any source set can import the entry point. (J1-S13)
 
 - **No production change for a test.** No test-only field or variable in a production class. A test
-  reads private state through reflection. Add an accessor only when other code needs the accessor
-  too. (J1-S14)
+  reads private state through reflection. Add an accessor only when other code uses the
+  accessor too. (J1-S14)
 
 - **No test only because a bug was fixed.** Write a regression test when the code under test is
   likely to break the same way again, or when the test checks an invariant of the program. Write the
