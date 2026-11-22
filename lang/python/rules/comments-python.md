@@ -35,7 +35,7 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 
 ### Fence
 
-- `# bool subclasses Python int. Reject it too`, not `# bool subclasses Python int`
+- `# bool subclasses Python int` → `# bool subclasses Python int. Reject it too`
 - `# isdigit() admits non-ASCII digits such as '²'. Check isascii() too`
 - the `X would` form in full:
   ```python
@@ -59,12 +59,12 @@ while len(page := fetchPage(cursor)) == PAGE_SIZE:
 ### Placement
 
 A comment on an argument goes above the call that passes the argument, such as above
-`pendulum.parse(raw_at, tz=None)`, not below the `try` block. (R10-argument-placement)
+`pendulum.parse(raw_at, tz=None)`. Don't put the comment below the `try` block. (R10-argument-placement)
 
 ### FIXME
 
-In reachable code a `FIXME:` blocks the merge (`NAR010`). In code nothing calls, the `FIXME:` is a
-warning to whoever wires that code in. Every function of a module with no `main` and no `__main__`
+In reachable code a `FIXME:` blocks the merge (`NAR010`). In a function that isn't called, the `FIXME:`
+is a warning to whoever wires that function in. Every function of a module without a `main` or a `__main__`
 block counts as reachable. (R8-D02)
 
 ### noqa

@@ -22,7 +22,7 @@
 - **A path is a `java.nio.file.Path` object**, never a `String` built with `+` or `/`. Forge returns
   `java.io.File`, as from `FMLPreInitializationEvent.getModConfigurationDirectory()`, so call
   `toPath()` on the `File` as soon as Forge returns the `File`. Use `Files` methods for file
-  operations, not `File` methods. `File.delete()`, `renameTo()` and `mkdirs()` return `false` on
+  operations. `File.delete()`, `renameTo()` and `mkdirs()` return `false` on
   failure, and `File.listFiles()` returns `null`. `Files.delete()`, `Files.move()` and
   `Files.createDirectories()` throw an `IOException` with the cause. `NAR115` flags a `File`
   operation. (J1-P14, R3a-10)
@@ -61,22 +61,22 @@ private static Level levelOf(Outcome outcome) {
 }
 ```
 
-For an `enum` or `sealed` type, write a `switch` expression with no `default` arm. javac then rejects
+For an `enum` or `sealed` type, write a `switch` expression without a `default` arm. javac then rejects
 a missing constant. **A `default ->` arm compiles clean and accepts the missing case.** `NAR107`
 flags a `default` arm in a switch over an enum or a sealed type of the project.
-(J1-P19, Q18, R3a-07) Java 8 has no `switch` expression, and the form there is in **Rules by level**
+(J1-P19, Q18, R3a-07) Java 8 doesn't have a `switch` expression, and the form there is in **Rules by level**
 in **Scope**. (J1-P19-java8)
 
-- A `switch` **statement** over an enum has no exhaustiveness check. Rewrite it as a `switch`
+- javac doesn't check that a `switch` **statement** over an enum covers every constant. Rewrite it as a `switch`
   expression that returns a value.
 - **Keep the `switch` even where an `EnumMap` looks natural.** `EnumMap.get()` returns `null` for a
   missing key, at run time.
-- Under jvmDowngrader, the synthetic default of an exhaustive `switch` throws a stub
-  `MatchException`, and under jabel an `IncompatibleClassChangeError`. It is reachable only when a
+- In a jvmDowngrader build, the synthetic default of an exhaustive `switch` throws a stub
+  `MatchException`, and in a jabel build an `IncompatibleClassChangeError`. It is reachable only when a
   newer enum class is loaded than the one compiled against.
 - **Where the behaviour is a property of the constant**, such as the amount format of a resource
   type, write the behaviour on the constant, as an abstract method or a constructor argument. javac
-  then requires it of every constant, and call sites get no branches. **Where only one caller needs
+  then requires it of every constant, and call sites don't branch on the constant. **Where only one caller needs
   a mapping**, such as a log level for each outcome, the `switch` is in that caller. (J1-P19)
 - A type-pattern switch over a type that is not sealed, such as an NEI handler object, needs a
   `default` arm.

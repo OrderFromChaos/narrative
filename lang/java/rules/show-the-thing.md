@@ -7,7 +7,7 @@ sample replaces** rather than keeping both. (R9-08)
 **Never invent a sample.** Run the code and paste what it printed. A format that appears nowhere in
 the program is a lie in the shape of documentation. **Do not state what you did not observe.**
 
-**Show one line of each shape, not the whole output.** A sample goes stale and no tool checks the
+**Show one line of each shape of the output.** A sample goes stale, and `verify.py` doesn't check the
 sample. Keep it small, and re-paste the sample when the output changes.
 
 ```java

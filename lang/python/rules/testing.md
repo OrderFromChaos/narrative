@@ -2,7 +2,7 @@
 
 - **Real dependencies**: a real socket on loopback, a real temp SQLite file, a real temp directory.
   A test double is a last resort for something you cannot run. Flag each one as a known
-  gap. With a fake transport, tests pass while production fails. (R2-02, Q16)
+  gap. When the transport is fake, tests pass while production fails. (R2-02, Q16)
 
 - **Property-based tests (hypothesis) wherever there is an invariant**: round-trips, ordering,
   conservation, numeric range. Example-based tests cover specific regressions on top. A very slow
@@ -13,7 +13,7 @@
   camelCase spelling passes pylint, *and* the pytest default `python_functions = test*` still
   collects the test function.
 
-- Tests are in a separate module, not in the program file. A `from hypothesis import given` at
+- Tests are in a separate module. Don't put a test in the program file. A `from hypothesis import given` at
   module scope makes the program raise `ModuleNotFoundError` before the program reaches `main()` on
   any machine without the test library.
 

@@ -10,5 +10,5 @@ The latter is an implementation detail and belongs **inside** the function, stil
 function inside. A log path, an archive directory, a glob, exit codes and operator-tunable timeouts
 stay at module level. (R3a-12)
 
-*No tool checks this. This is review judgement.*
+*`verify.py` doesn't check where a constant is. This is review judgement.*
 

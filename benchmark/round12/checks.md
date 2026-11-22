@@ -31,6 +31,14 @@ the rules too.
 - **Rule 2.** No check. A detector of the past tense had hits on 2 of your 13 rewrites, such as the participle
   `scanned`. A detector of `once` alone had hits on 3 of the 21 rule units, and on human uses such as `more than once`.
 
+## Line breaks
+
+A phrase such as `, not` or `no longer` can wrap onto the next line of a comment. The wording checks of `wording.py`
+(`NAR012` to `NAR016`, `NAR018`, `NAR024`) read each line with the next line, and report the line where the match
+starts. Python `NAR019` and Java `NAR120` read every line of the comment. `NAR027` reads the name of a constant in the
+whole comment block. In Java, an inline tag such as `{@link X#y(A,` / `B)}` over two lines of a javadoc is code on both
+lines.
+
 ## The skill's own text
 
 In the tools of the repository, the new checks have about 120 findings in text that was there before round 12, such as

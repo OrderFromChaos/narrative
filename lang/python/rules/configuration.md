@@ -7,7 +7,7 @@ Most explicit first:
 
 2. **CLI arguments** for the inputs of a batch tool invoked by hand. `argparse`.
 
-3. **Environment** for secrets and DB URLs, via `python-decouple`, not `os.environ`. (R2-06)
+3. **Environment** for secrets and DB URLs, via `python-decouple`. Don't read `os.environ` directly. (R2-06)
 
 4. **`ALL_CAPS` constants** for tuning knobs that do not vary by deployment.
 

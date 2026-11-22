@@ -1,20 +1,19 @@
 """Write the units of one agent session as files, and read the agent's edits back as one verdict per unit.
 
-In the edit mode of the agent predictor, the session gets files, not a list of units, and applies the
-skill to the files in place, like a normal session. A unit with file context goes back into the unit's
-file: the real file when the repository still has that file, and otherwise a file built from the
-context of every unit of that file, with each context at the line of the unit and the excerpts one
-blank line apart. A unit with no context becomes a comment block of a notes file. After the session,
-the verdict of each unit comes from the diff of the unit's file:
+In the edit mode of the agent predictor, the session gets files, not a list of units, and applies the skill to the files
+in place, like a normal session. A unit with file context goes back into the unit's file: the real file when the
+repository still has that file, and otherwise a file built from the context of every unit of that file, with each
+context at the line of the unit and the excerpts one blank line apart. A unit with no context becomes a comment block of
+a notes file. After the session, the verdict of each unit comes from the diff of the unit's file:
 
     the unit's lines unchanged          keep
     no comment left where the unit was  cut
     other comment text                  rewrite, with the new text
 
-The rules of a change come from a grader, a separate session that reads the git diff and lists
-each changed comment with the rules of the change. The list is matched to the units by file and text.
-The same match is a check of the diff reader. A unit that is changed by the diff reader's verdict and
-missing from the grader's list, or the reverse, is counted in the `Agreement` of the session.
+The rules of a change come from a grader, a separate session that reads the git diff and lists each changed comment with
+the rules of the change. The list is matched to the units by file and text. The same match is a check of the diff
+reader. A unit that is changed by the diff reader's verdict and missing from the grader's list, or the reverse, is
+counted in the `Agreement` of the session.
 
 Usage, from run.py:
     workspace = buildWorkspace(session_dir, units, pyproject_path)
@@ -107,8 +106,8 @@ def planWorkspace(session_dir: Path, units: list[Unit]) -> Workspace:
 def sourceOf(origin_file: str, units: list[Unit]) -> tuple[str, dict[UnitId, int]]:
     """Give the text of the file of these units: the real file when the repository has that file, else the excerpts.
 
-    A real file is used only when each unit's context is at the unit's line in that file, so a file
-    changed since the rating is not used.
+    A real file is used only when each unit's context is at the unit's line in that file, so a file changed since the
+    rating is not used.
 
     Returns:
         The text, and the line of each unit in the text.
@@ -148,7 +147,6 @@ def contextAt(lines: list[str], unit: Unit) -> bool:
 
 
 def contextStart(unit: Unit) -> int:
-    """Return the line of the original file where the unit's context starts."""
     return unitLine(unit) - (unit.focus_line or 1) + 1
 
 
@@ -198,8 +196,8 @@ def readEdits(
 ) -> tuple[dict[UnitId, Prediction], Agreement]:
     """Turn the session's edits into one prediction per unit, from the diff of each file.
 
-    A changed unit gets the rules of its entry in the grader's list of changes, and no rules when the
-    list has no entry for the unit.
+    A changed unit gets the rules of its entry in the grader's list of changes, and no rules when the list has no entry
+    for the unit.
 
     Returns:
         A prediction for each unit of the workspace, and how the diff and the list agree.
@@ -320,9 +318,9 @@ def partnerLines(
 ) -> tuple[list[str], list[str]]:
     """Find the lines that replaced a unit's lines: first the partner of the unit's run, then the unit's lines there.
 
-    Runs are matched first, so the edits to two neighbouring units are told apart even when the
-    session changes the line count of each unit. Where the session deleted or added runs, each old run
-    is paired in order with the most similar later run, and a run with no similar run was deleted.
+    Runs are matched first, so the edits to two neighbouring units are told apart even when the session changes the line
+    count of each unit. Where the session deleted or added runs, each old run is paired in order with the most similar
+    later run, and a run with no similar run was deleted.
 
     Returns:
         The unit's lines before the session, and the lines that took their place, empty after a cut.
@@ -411,8 +409,8 @@ def commentText(line: str, language: Language) -> str | None:
             if token.type == tokenize.COMMENT:
                 return token.string.lstrip('#').strip() or None
     except (tokenize.TokenError, SyntaxError):
-        # the tokens end early on a line that opens a bracket or a string. A comment before that point is
-        # returned in the loop
+        # the tokens end early on a line that opens a bracket or a string. A comment before that point is returned in
+        # the loop
         pass
     return None
 

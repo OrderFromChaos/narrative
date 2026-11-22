@@ -18,7 +18,7 @@ uv pip install --python $env:LOCALAPPDATA\narrative\lintenv\Scripts\python.exe -
 ```
 
 When an update of the skill changes `requirements-lock.txt`, run the `uv pip install` line again.
-`install.sh` and a plugin update copy the new lock file but install nothing.
+`install.sh` and a plugin update copy the new lock file but don't install a package.
 `verify.py` uses this venv by default, and when the venv is missing `verify.py` prints these two
 commands for the current machine. Pass `--venv` for a venv at another path. On Windows, run the
 scripts with `py` or `python` wherever `python3` appears in this document.

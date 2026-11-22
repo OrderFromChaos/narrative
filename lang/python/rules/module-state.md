@@ -1,6 +1,6 @@
 ## Module state
 
-- **`global` marks a side effect, not a dependency.** Declare it when a function *mutates* module
+- **`global` marks a side effect.** Declare `global` when a function *mutates* module
   state. A read is exempt. (R2b-G1)
 
 - Python already forces `global` to rebind. Python does not police in-place mutation, and it passes

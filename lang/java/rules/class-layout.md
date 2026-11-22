@@ -39,19 +39,19 @@ public final class PlanFiles {
 - Layout is a spotless setting. Lines are broken at 120 columns by the GTNH Eclipse formatter, with
   each call of a chain after the first on a separate line. Do not fight it. (J1-D01)
 
-- **Re-wrap with `verify.py`, not by hand.** Spotless splits a comment line over 120 columns but never joins
+- **Re-wrap with `verify.py`.** Spotless splits a comment line over 120 columns but never joins
   short lines, so after an edit the line breaks of the first draft remain: `The product is` / `a` /
   `float, …`. Before Gradle runs, `verify.py` fills each paragraph of the javadoc and the whole-line
-  `//` comments up to column 120 of the line, so spotless splits no line. With `--no-fix`, `NAR125`
-  flags each paragraph that the re-wrap would change, and `javachecks.py --rewrap` on the file
+  `//` comments up to column 120 of the line, so spotless doesn't split a line. When `--no-fix` is
+  given, `NAR125` flags each paragraph that the re-wrap would change, and `javachecks.py --rewrap` on the file
   re-wraps each such paragraph. (R11-rewrap-fill)
 
 - Separate logically self-contained blocks inside a method with **one blank line**. That is its only
   meaning here. Short guards written as a group stay grouped. (R3a-01)
 
-  **No tool checks this.** Place a blank line by these five rules: (`R8-NAR008`, `R8-NAR008-rule`)
+  **The tools don't check this.** Place a blank line by these five rules: (`R8-NAR008`, `R8-NAR008-rule`)
 
-  - a body of **8 lines or under takes no internal blanks at all**
+  - a body of **8 lines or under doesn't take an internal blank**
   - blanks **recur into nested blocks**, and one loop body can take four
   - **a multi-line statement and the statement that consumes the result are
     one step**, so a builder chain then the `return` of the chain stay adjacent
@@ -63,7 +63,7 @@ public final class PlanFiles {
   `reject*()` helper that logs and returns the exception. The guards are two lines again and group:
   `throw rejectLine(raw_line, "no machine count");` (R4-05)
 
-- **Java has no keyword arguments.** A call with more than 3 positional values, or with a `null` for
+- **Java doesn't have keyword arguments.** A call with more than 3 positional values, or with a `null` for
   a skipped argument, is replaced by a builder, or by a parameter record. Where Lombok is present,
   use `@Builder(toBuilder = true)`. An `@Override` has the signature of the platform. `NAR131`
   flags a method with more than 3 parameters, and `NAR102` a call with two or more `null` arguments.

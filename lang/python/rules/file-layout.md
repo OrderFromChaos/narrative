@@ -38,11 +38,11 @@ class ScanHeader: ...
 - `main()` returns an exit code. Call it as `sys.exit(main())`. All executable code is in
   `main()`. (Q10)
 
-- Caller before callee throughout. At module level, do not *call or subclass* anything defined
-  further down. Watch for a constant whose **value** references an Enum member or class. Annotations
+- Caller before callee throughout. Code at module level must not *call or subclass* anything
+  defined further down. Watch for a constant whose **value** references an Enum member or class. Annotations
   are safe, because the future import makes them lazy. (R2-10, R3a-03)
 
-- That is an **ordering** rule, not a placement ban. A constant whose value is an Enum member is
+- That is an **ordering** rule. A constant whose value is an Enum member is
   legal in `### vocabulary` immediately after that Enum, and that is the constant's only legal
   module-level position. Do not contort around it. (R4-03)
 
@@ -56,18 +56,18 @@ class ScanHeader: ...
   only meaning here. Short guards written as a group stay grouped, and two adjacent two-line
   `if ...: raise` checks belong together. No blank line after a docstring. (R3a-01)
 
-  **No tool checks this.**
+  **`verify.py` doesn't check the blank lines.**
   Place a blank line by these five rules: (`R8-NAR008`, `R8-NAR008-rule`)
 
-  - a body of **8 lines or under takes no internal blanks at all**
+  - **don't put a blank line in a body of 8 lines or under**
   - blanks **recur into nested blocks**, and one loop body can take four
   - **a multi-line statement and the statement that consumes the result are
     one step**, so `executemany` then `commit`, and a constructor then the `return` of the
     constructor's result, stay adjacent
   - a blank precedes a `return` when the phase before the `return` is unrelated, and not when the
     returned value was just built
-  - **length is not the trigger**, in either direction. A long statement earns no blank after the
-    statement, and a short group of statements still earns one before the next group
+  - **length is not the trigger**, in either direction. A long statement doesn't get a blank line
+    after the statement, and a short group of statements still gets a blank line before the next group
 
 - If a guard grows to three lines because it logs before raising, move the log call into a
   `reject*()` helper that logs and returns the exception. The guards are two lines again and group,

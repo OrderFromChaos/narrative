@@ -6,5 +6,5 @@
   them. (J1-P28, Q08)
 
 - **One logger per mod**, `LogManager.getLogger(MODID)`. This is the GTNH convention, and the mod name
-  is then on each `latest.log` line. The log format is set by Minecraft, not by the mod. (J1-P29)
+  is then on each `latest.log` line. Minecraft sets the log format. (J1-P29)
 

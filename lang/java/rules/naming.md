@@ -8,7 +8,7 @@
 - Spell names out. No `cfg`, `idx`, `tmp`. (Q11)
 
 - **A method name starts with a verb, and the verb's object is what the method returns.**
-  `parsePlan`, `readManifest`, `computeDeletionCutoff`. Not `planFrom`, not `cutoffFor`. Record
+  `parsePlan`, `readManifest`, `computeDeletionCutoff`. `planFrom` and `cutoffFor` break the rule. Record
   accessors and `@Override` methods of the platform are exempt. (R9-03)
 
 - **A static method's name is clear without the method's class**, to a reader who has never opened
@@ -21,12 +21,12 @@
   Minecraft, GT and Lombok `@Getter` use these names, so a call site reads the same as the library
   calls beside the call site. (J1-F1)
 
-- **Do not restate a domain type in a parameter name:** `RebinConfig config`, not
-  `RebinConfig rebinConfig`. (Q11)
+- **Do not restate a domain type in a parameter name:** `RebinConfig rebinConfig` →
+  `RebinConfig config`. (Q11)
 
-- **With a generic type, the parameter name is the only place the thing is named.** `Path`,
-  `String`, `int` and `Object` constrain only a value's shape. Write `Path policyJsonPath`, not
-  `Path path`, and `String manifestText`, not `String text`.
+- **When the type is generic, the parameter name is the only place the thing is named.** `Path`,
+  `String`, `int` and `Object` constrain only a value's shape. `Path path` → `Path policyJsonPath`,
+  and `String text` → `String manifestText`.
 
 - **Raw and parsed forms get different names.** Prefix the raw form with `raw`: `String rawAt` from
   the file, `Instant at` once parsed. Never `at` beside `parsed.at()`. (R10-raw-names)

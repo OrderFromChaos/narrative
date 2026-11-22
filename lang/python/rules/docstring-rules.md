@@ -6,14 +6,14 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 
 - **It is visible in the file.** `frozen=True` is on the line above. `| None` is in the signature.
   A reader who has the file open does not need either restated.
-- **Its negation would be a bug, an absurdity, or an implementation nobody would ship.** Negate the
+- **Its negation would be a bug, an absurdity, or an implementation that a developer wouldn't ship.** Negate the
   sentence and read it back. `it never holds a value that the file did not state` negates to a bug.
   `An empty line doesn't have a value` negates to an absurdity. `Other files are skipped, so the quota file
-  can share the directory` negates to a scanner that dies on a stray file. Nobody would ship that scanner.
+  can share the directory` negates to a scanner that dies on a stray file. A developer wouldn't ship that scanner.
   All three are free sentences and all three go. **Assume the reader expects competent code, and
   document only the departures.**
 - **It is a language feature, explained.** `Such a field holds None` repeats what optional means.
-- **It goes stale and nothing checks it**, unless it is a sample you accept that cost for.
+- **It goes stale and the tools don't check it**, unless it is a sample you accept that cost for.
 
 **Compress what survives:**
 
@@ -48,8 +48,8 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   helper and every two-line guard that calls one contains a `raise`. (Q05, R2-03, R2-05, R5-05,
   R8-D18-resolved)
 
-  The trigger is contract complexity, not length alone, so the parameter count sits beside the line
-  count. A bare line threshold is easy to get around by fragmentation. Splitting a 21-line
+  The trigger is contract complexity, and length is only part of the trigger, so the parameter count
+  sits beside the line count. A bare line threshold is easy to get around by fragmentation. Splitting a 21-line
   function into two 12-line ones deletes the obligation without simplifying either contract.
 
 - **The docstring has a summary and a `Raises:` section. It has `Args:` and `Returns:` only where
@@ -65,15 +65,15 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
   A section that duplicates the module docstring is worse than an absent one. When the exit codes
   are already in the module docstring, leave them out of the docstring of `main()`.
 
-- Write nothing in a docstring that the code does not do, and no consequence that an earlier
+- Don't write a fact in a docstring that the code doesn't do, or a consequence that an earlier
   sentence already implies. (Q05)
 
 - **A docstring is about its file alone.** Do not assert what another module does, do not claim to
   be the only place something happens, and do not count callers. `only this module imports
-  sqlite3` and `this is the one place that builds it` are claims that no tool checks and
-  that the next commit can make false. Name another module only where a reader of *this* file needs
+  sqlite3` and `this is the one place that builds it` are claims that the tools don't check,
+  and that the next commit can make false. Name another module only where a reader of *this* file needs
   the name in order to use this file. (R9-02)
 
 - Where semantics vary by implementation (file moves, copies, path manipulation), **show a
-  concrete before/after example**, not prose. (R3a-11)
+  concrete before/after example** in place of prose. (R3a-11)
 

@@ -5,9 +5,9 @@ message is a queryable key. (Q08)
 
 **Get each module's logger with `logging.getLogger(__name__)`.** In a package used as a library, add
 `logging.NullHandler()` to the package logger once, in the package's top-level `__init__.py`.
-Without it, the last-resort handler prints the package's warnings to stderr in a program that
-configures no logging.
-In a program, configure logging once, in `main()`, and add no NullHandler. (R10-nullhandler)
+When the package logger doesn't have a NullHandler, the last-resort handler prints the package's warnings to
+stderr in a program that doesn't configure logging.
+In a program, configure logging once, in `main()`, and don't add a NullHandler. (R10-nullhandler)
 
 **JSONL output is for machine reading. For terminal output, don't use JSONL.** (R5-03,
 R8-D23-resolved)

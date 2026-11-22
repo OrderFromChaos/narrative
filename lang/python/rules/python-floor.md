@@ -11,6 +11,6 @@ cancels every task when one raises. (R7-E07-floor, R10-taskgroup-scope)
 
 - Anything added in 3.12 or later is out, including the `type` statement and PEP 695 generics.
 
-- On a guard for a runtime newer than the floor, the comment has the version: `# on 3.12.1 and
+- A comment on a guard for a runtime newer than the floor names the version: `# on 3.12.1 and
   later, wait_closed() waits for open connections`. (R10-version-guard)
 

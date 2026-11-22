@@ -1,8 +1,8 @@
 """The wording checks and the --since helpers, shared by the checkers of every language of Narrative.
 
-NAR012 to NAR016, NAR018 and NAR024 flag wording that no comment, docstring or published page needs. The checks read
-lines of prose. A language's checker passes in the lines of the language's comments and doc comments, and checkPage()
-reads a Markdown, HTML or plain text page through prose.py.
+NAR012 to NAR016, NAR018 and NAR024 flag wording that a comment, docstring or published page doesn't need. The checks
+read lines of prose. A language's checker passes in the lines of the language's comments and doc comments, and
+checkPage() reads a Markdown, HTML or plain text page through prose.py.
 
 readChangedLines() lists the lines that the diff against a base branch adds or changes, for --since. pageSpans() maps
 each line of a page to the lines of the line's passage, for --since. countEntries() counts the entries of a review list,
@@ -86,7 +86,7 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
 
     `used to` counts as changelog only after a pronoun subject. In `the key used to sort`, it means employed for. A bare
     `now` is not flagged. `now that X` and `until now` are common in correct prose. A dash after a list-item term is a
-    separator, not a clause join. Pragmas, section dividers and pasted usage lines (`$`, `>>>`) are skipped.
+    separator, and doesn't join clauses. Pragmas, section dividers and pasted usage lines (`$`, `>>>`) are skipped.
 
     Args:
         prose_lines: line number and text of each line of prose
@@ -134,18 +134,23 @@ def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], ch
     # `not only the first file, not yet the second`
     CONTRAST = re.compile(r',\s+not\s+(?!only\b|yet\b|even\b|necessarily\b|always\b)|\bnot merely\b', re.IGNORECASE)
     findings: list[Finding] = []
+    following = {number: text for number, text in prose_lines}
     for number, text in prose_lines:
+        # A phrase such as `, not` can wrap onto the next line, so each pattern reads the line and the next line. A
+        # match counts for the line where the match starts.
+        joined = f'{text} {following.get(number + 1, "")}'
         for code, pattern in WORDING.items():
             if code == 'NAR013' and number in list_items:
                 continue
-            if found := pattern.search(text):
-                findings.append(Finding(checked_file, number, code, repr(found.group(0).strip())))
-        # a semicolon in backticked code is code. A list item gets no semicolon exemption
-        prose_text = re.sub(r'`[^`]*`', '', text)
-        if SEMICOLON.search(prose_text):
+            if (found := pattern.search(joined)) and found.start() < len(text):
+                findings.append(Finding(checked_file, number, code, repr(' '.join(found.group(0).split()))))
+        # a semicolon in backticked code is code. A list item doesn't get a semicolon exemption. Each backtick span
+        # becomes spaces of the same length, so an offset in `masked` is an offset in `joined`
+        masked = re.sub(r'`[^`]*`', lambda span: ' ' * len(span.group(0)), joined)
+        if SEMICOLON.search(masked[: len(text)]):
             findings.append(Finding(checked_file, number, 'NAR013', repr(';')))
-        if found := CONTRAST.search(prose_text):
-            findings.append(Finding(checked_file, number, 'NAR024', repr(found.group(0).strip())))
+        if (found := CONTRAST.search(masked)) and found.start() < len(text):
+            findings.append(Finding(checked_file, number, 'NAR024', repr(' '.join(found.group(0).split()))))
 
     return findings
 

@@ -2,7 +2,7 @@
 
 The prose checks read each comment as one joined text. After an edit of that text, the line breaks of the first draft
 remain: `The product is` / `a` / `float, …`. The re-wrap joins the lines of each paragraph and fills them again, so that
-the first word of each next line would pass column 120 on the line before. No word changes, only the line breaks.
+the first word of each next line would pass column 120 on the line before. The re-wrap changes only the line breaks.
 
 The codeprose.py of each language reads the comments of one source file into blocks of `Line`: the margin before the
 text, such as `    # ` or `     * `, and the text. A block is a run of comment lines that can share paragraphs, such as

@@ -16,7 +16,7 @@ prose.py reads from the file. A directory expands to its Python files.
 With --since REF, only the Python files that the diff against merge-base(HEAD, REF) adds or changes are checked, and a
 finding is reported only when the finding's lines overlap the changed lines. The lines of a finding in a comment,
 docstring or page are the lines of the passage, and the lines of a finding on a `def` or `class` line are the lines of
-the definition. A named page with no changed line has no finding and no sentence in the list.
+the definition. A named page without a changed line doesn't have a finding or a sentence in the list.
 
 --prose lists every sentence of every comment, docstring and page. Without --since, the list stops after 1000 sentences,
 with the command for the next 1000.
@@ -210,7 +210,7 @@ MUTATING_METHODS = frozenset({
     '__setitem__', '__delitem__', '__iadd__',
 })
 # Configuration calls mutate module state too, e.g. `LOG.addHandler(...)`. 'write' and 'load' are not listed.
-# `LOG_PATH.write_text(...)` writes a file and mutates no module state.
+# `LOG_PATH.write_text(...)` writes a file and doesn't mutate module state.
 MUTATING_PREFIXES = (
     'set', 'add', 'remove', 'register', 'unregister', 'reset', 'delete', 'insert',
     'enable', 'disable', 'configure', 'install', 'attach', 'detach',
@@ -237,7 +237,8 @@ def mutatedModuleNames(func: ast.FunctionDef | ast.AsyncFunctionDef, module_vars
     """Find module-level names this function changes in place.
 
     Detects mutating method calls, augmented assignment, `del`, and assignment through a subscript or attribute. A plain
-    `NAME = x` rebind is not counted. Without `global`, it binds a local, and NAR006 reports that case.
+    `NAME = x` rebind is not counted. When the function doesn't declare `global`, the rebind binds a local, and NAR006
+    reports that case.
 
     Args:
         module_vars: Names bound by a plain assignment at module level.
@@ -324,7 +325,7 @@ def checkGlobalDeclarations(tree: ast.Module, checked_file: Path) -> list[Findin
     NAR001 is in-place mutation with no `global`, which neither ruff nor pylint reports at any setting. NAR006 is a bare
     assignment that shadows a module-level name, so the module value silently never changes.
 
-    Reads aren't flagged: `global` marks a side effect, not a dependency.
+    Reads aren't flagged: `global` marks a side effect.
     """
     module_vars = moduleLevelVariables(tree)
     findings: list[Finding] = []
@@ -398,7 +399,7 @@ def checkArgsPerLine(tree: ast.Module, checked_file: Path) -> list[Finding]:
 
 
 def missingSections(node: ast.FunctionDef | ast.AsyncFunctionDef, docstring: str, checked_file: Path) -> list[Finding]:
-    """Report a function that the docstring trigger caught and whose docstring has no `Raises:`.
+    """Report a function that the docstring trigger caught and whose docstring doesn't have a `Raises:` section.
 
     A docstring can exist without stating the contract, so the trigger and the section check are two separate tests over
     the same function.
@@ -419,7 +420,7 @@ def missingSections(node: ast.FunctionDef | ast.AsyncFunctionDef, docstring: str
 
 
 def checkDocstringThreshold(tree: ast.Module, checked_file: Path) -> list[Finding]:
-    """Require a docstring wherever the contract is complex, not merely where the body is long.
+    """Require a docstring wherever the contract is likely to be complex.
 
     Two triggers: the function takes more than three parameters, or its body exceeds the line threshold. A `raise` is
     not a trigger, because the style routes raise sites through a reject*() helper and every two-line guard that calls
@@ -440,7 +441,7 @@ def checkDocstringThreshold(tree: ast.Module, checked_file: Path) -> list[Findin
         if docstring is not None:
             findings.extend(missingSections(node, docstring, checked_file))
             continue
-        # a function of one line gets no docstring, by NAR023, whatever the number of parameters
+        # a function of one line doesn't get a docstring, by NAR023, whatever the number of parameters
         if oneLineBody(node):
             continue
 
@@ -612,14 +613,8 @@ SKIPPED_DIRECTORIES = frozenset({
 
 
 def discoverPython(root: Path) -> list[Path]:
-    """Find every Python file under a directory, skipping the trees no linter should read.
-
-    Ruff already excludes a virtual environment. This function skips the same trees, so `checks.py .` reports nothing
-    from installed third-party code. findFiles() skips the worktrees of other branches.
-
-    Returns:
-        Every `.py` file outside a skipped directory.
-    """
+    # ruff excludes a virtual environment. Skip the same trees, so `checks.py .` doesn't report a finding in installed
+    # third-party code
     return [found for found in findFiles(root, '*.py') if not SKIPPED_DIRECTORIES & set(found.parts)]
 
 
@@ -644,7 +639,7 @@ def reachableFunctions(tree: ast.Module) -> set[str]:
     Names are matched without scope analysis, so a method and a function that share a name are one node. That
     over-approximates reachability. A false NAR010 finding on an orphan is safer than a missed live FIXME.
 
-    A module with no `main` and no `__main__` block is a library module. Its callers are in files outside this check, so
+    A module without a `main` or a `__main__` block is a library module. Its callers are in files outside this check, so
     every function in the module counts as reachable.
     """
     defined = {node.name: node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
@@ -714,8 +709,8 @@ def checkFixmeReachability(tree: ast.Module, source: str, checked_file: Path) ->
     """Flag a FIXME sitting in code that runs.
 
     The two markers mean different things. A TODO is deferred work and never blocks. A FIXME is either a merge blocker,
-    or a known correctness problem parked in code nothing calls, left as a danger sign for whoever next considers wiring
-    that code into the hot loop.
+    or a known correctness problem parked in a function that isn't called, left as a danger sign for whoever next
+    considers wiring that code into the hot loop.
 
     Only the first kind is a defect. Reachability separates the two.
 
@@ -738,11 +733,6 @@ def checkFixmeReachability(tree: ast.Module, source: str, checked_file: Path) ->
 
 
 def checkProseWording(tree: ast.Module, source: str, checked_file: Path) -> list[Finding]:
-    """Flag the wording faults of `wordingFindings()` in every comment and docstring line.
-
-    Returns:
-        One finding per rule and line.
-    """
     return proseWording([*commentLines(source), *docstringLines(tree)], checked_file)
 
 
@@ -755,7 +745,8 @@ def checkOneLineDocstring(tree: ast.Module, checked_file: Path) -> list[Finding]
     """Flag a docstring on a function whose body, below the docstring, is one statement on one line.
 
     A stub is exempt: a body of `...`, `pass` or `raise NotImplementedError`, and a function under `@abstractmethod` or
-    `@overload`. A stub has no implementation to read, and the docstring of a stub is the contract of an interface.
+    `@overload`. A stub doesn't have an implementation to read, and the docstring of a stub is the contract of an
+    interface.
 
     Returns:
         One finding per function, at the `def` line.
@@ -814,12 +805,24 @@ def checkConstantValues(tree: ast.Module, source: str, checked_file: Path) -> li
         and not isinstance(node.value.value, bool)
         and node.value.value not in {0, 1}
     ]
-    findings: list[Finding] = []
+    # comment lines on consecutive lines are one block, so a name and a value on two lines of one comment match
+    blocks: list[list[tuple[int, str]]] = []
     for number, text in commentLines(source):
-        values = {float(value) for value in NUMBER.findall(re.sub(r'`[^`]*`', '', text))}
-        for declared, name, value in constants:
-            if value in values and (number <= declared <= number + 3 or re.search(rf'\b{name}\b', text)):
-                findings.append(Finding(checked_file, number, 'NAR027', name))
+        if blocks and blocks[-1][-1][0] == number - 1:
+            blocks[-1].append((number, text))
+        else:
+            blocks.append([(number, text)])
+    findings: list[Finding] = []
+    for block in blocks:
+        block_text = '\n'.join(text for _number, text in block)
+        # a backtick span can wrap onto the next line. Blank the span and keep each newline
+        masked = re.sub(r'`[^`]*`', lambda span: re.sub(r'[^\n]', ' ', span.group(0)), block_text).split('\n')
+        for (number, _text), masked_text in zip(block, masked, strict=True):
+            values = {float(value) for value in NUMBER.findall(masked_text)}
+            for declared, name, value in constants:
+                is_below = block[0][0] <= declared <= block[-1][0] + 3
+                if value in values and (is_below or re.search(rf'\b{name}\b', block_text)):
+                    findings.append(Finding(checked_file, number, 'NAR027', name))
     return findings
 
 
@@ -848,7 +851,8 @@ def checkReturnContract(tree: ast.Module, source: str, checked_file: Path) -> li
             above -= 1
         if above + 1 == first:
             continue
-        opening = lines[above].strip().lstrip('#').strip()
+        # `None when` can wrap onto the second line of the comment
+        opening = ' '.join(line.strip().lstrip('#').strip() for line in lines[above : first - 1])
         if CONTRACT.match(opening):
             findings.append(Finding(checked_file, above + 1, 'NAR019', repr(opening[:40])))
     return findings

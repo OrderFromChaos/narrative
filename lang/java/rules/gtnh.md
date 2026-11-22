@@ -4,9 +4,9 @@
   through a localization call: `StatCollector.translateToLocal(key)`,
   `StatCollector.translateToLocalFormatted(key, values)`, `ChatComponentTranslation`, MUI2
   `IKey.lang(key)`, or a wrapper of the mod around one of these, such as `NEIClientUtils.translate`.
-  A text call takes the text itself, such as `IKey.str`, `new ChatComponentText` or `drawString`. No
-  literal user-facing text in a text call, so not `IKey.str("Machines")`, not
-  `new ChatComponentText("Done")` and not `drawString("Done", x, y, color)`. `NAR113-gtnh` flags
+  A text call takes the text itself, such as `IKey.str`, `new ChatComponentText` or `drawString`. Don't
+  pass literal user-facing text to a text call. `IKey.str("Machines")`,
+  `new ChatComponentText("Done")` and `drawString("Done", x, y, color)` break the rule. `NAR113-gtnh` flags
   literal text in `IKey.str`, `ChatComponentText`, `drawString` and a tooltip line of
   `addInformation`. (J1-S15, J1-P04-keys)
 
@@ -25,7 +25,7 @@
 
 - **A computed lang key starts with its literal prefix**: `translate("chat.mode." + mode)`. In the key
   argument of a localization call, a `+` is allowed when the key starts with a literal that ends in a
-  dot, and no literal of the key has a space. `translate(name + ".enable")` is a finding, and so is a
+  dot, and a literal of the key doesn't have a space. `translate(name + ".enable")` is a finding, and so is a
   `+` in a text call. (J1-P04-keys)
 
 - **Deterministic order is a property of the field.** Declare `SortedMap`, build a `TreeMap`, and
@@ -33,15 +33,15 @@
   plain `Map` with keys that are not `String` as an insertion-ordered `LinkedTreeMap`. A comparator
   that defines a canonical key is allowed. (J1-S01)
 
-- **A draw or render method writes no serialized state.** (J1-S02)
+- **A draw or render method doesn't write serialized state.** (J1-S02)
 
-- **No allocation in a per-frame or draw method.** Reuse buffers and primitive containers. On a wrap
+- **No allocation in a per-frame or draw method.** Reuse buffers and primitive containers. In a wrap
   or measure path, use an identity-keyed cache, `if (source == wrappedFor) return;`, with a dirty flag
-  at the source, so a steady frame recomputes nothing. `NAR114-gtnh` flags `new` and `.stream()` in a
+  at the source, so a steady frame doesn't recompute. `NAR114-gtnh` flags `new` and `.stream()` in a
   `draw*` or `render*` method. (J1-S03)
 
 - **Optional instrumentation is called through an interface.** The implementation for "off" is a
-  no-op that allocates nothing. (J1-S04)
+  no-op that doesn't allocate. (J1-S04)
 
 - **A point query is answered without a scan of the whole collection.** First look for an invariant
   that removes the query, and add an index only if the query is still needed. (J1-S05)
@@ -58,6 +58,6 @@
 - **NEI-style lookup and hover only on sprite-like surfaces**, such as item stacks and pins, never
   on text rows. Players expect it on NEI sprites. (J1-S10)
 
-- **Colours through the colour API of the GUI library**, MUI2 `Color`, not bit arithmetic or hex
-  literals. (J1-S11)
+- **Colours through the colour API of the GUI library**, MUI2 `Color`. Don't use bit arithmetic or
+  hex literals. (J1-S11)
 

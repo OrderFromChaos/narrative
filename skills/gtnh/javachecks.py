@@ -1,10 +1,10 @@
 """Check Java sources for the rules of the Java skill, and merge the PMD, Checkstyle and javac reports.
 
-Comments and javadoc are read with a lexer, not a parser, so the comments of a file are read even when the file uses
-syntax newer than a Java grammar. The prose checks are the ones of every language: the wording checks of wording.py
-(NAR012 to NAR016, NAR018, NAR024) and the agent-verb checks of agentverbs.py (NAR017, NAR020, NAR021, NAR022, NAR025,
-NAR026). The value of a constant in a comment is a NAR027 finding. The structural checks are PMD XPath rules in
-pmd-ruleset.xml. Every tool finding is mapped to a NAR code here.
+Comments and javadoc are read with a lexer, so the comments of a file are read even when the file uses syntax newer than
+a Java grammar. The prose checks are the ones of every language: the wording checks of wording.py (NAR012 to NAR016,
+NAR018, NAR024) and the agent-verb checks of agentverbs.py (NAR017, NAR020, NAR021, NAR022, NAR025, NAR026). The value
+of a constant in a comment is a NAR027 finding. The structural checks are PMD XPath rules in pmd-ruleset.xml. Every tool
+finding is mapped to a NAR code here.
 
 With --rewrap, javachecks.py checks nothing. Each paragraph of the javadoc and the whole-line // comments is filled
 again up to column 120 in place, by rewrap.py, and under --since only a paragraph with a changed line. Without --rewrap,
@@ -47,15 +47,15 @@ With --all-sentences, every entry is listed.
 
 NAR116 isn't a finding. When --method-list PATH is given, javachecks.py writes each hit of the NAR116 rule of
 pmd-ruleset.xml, a method over 20 body lines, to PATH, with or without a javadoc. verify.py adds the file to the review
-lists. For a method with a javadoc, each `throw new X` with no `@throws X` line is a NAR117 finding.
+lists. For a method with a javadoc, each `throw new X` without a `@throws X` line is a NAR117 finding.
 
-With --keep FILE:LINE:CODE, a finding that the user approved is added to the keep-list. A Java source gets no `// noqa`,
-because the maintainer of an upstream project must delete each `// noqa` from a PR. The keep-list is
-.git/info/narrative-keep, or the file given with --keep-list. The file is the same in every worktree of the repository,
-and is not part of any commit. Each line has three tab-separated fields, the path from the top of the working tree, the
-code and the text of the line. The reason is on a `#` line above the entry. An entry is matched by the text of the line,
-not by the line number. A kept finding is not printed, and is counted as kept in the count line. A finding on a line
-under a `// noqa` comment is not printed either.
+With --keep FILE:LINE:CODE, a finding that the user approved is added to the keep-list. A finding in a Java source isn't
+silenced with `// noqa`, because the maintainer of an upstream project must delete each `// noqa` from a PR. The
+keep-list is .git/info/narrative-keep, or the file given with --keep-list. The file is the same in every worktree of the
+repository, and is not part of any commit. Each line has three tab-separated fields, the path from the top of the
+working tree, the code and the text of the line. The reason is on a `#` line above the entry. An entry is matched by the
+text of the line, so the entry still matches after an edit moves the line. A kept finding is not printed, and is counted
+as kept in the count line. A finding on a line under a `// noqa` comment is not printed either.
 
 Exit codes:
     0  no finding. Warnings may be printed
@@ -172,7 +172,7 @@ def main() -> int:
         print(f'javachecks.py: no line changed since {args.since}', file=sys.stderr)
         return EXIT_UNREADABLE
 
-    # under --since, a file with no changed line can have no finding
+    # a file without a changed line can't have a finding under --since
     if changed is not None:
         java_paths = [java_path for java_path in java_paths if java_path.resolve() in changed]
     if args.rewrap:
@@ -236,8 +236,8 @@ def addKeptFindings(keeps: list[str], reason: str | None, keep_list_path: Path |
     """Append one keep-list entry for each FILE:LINE:CODE, with the reason as a # line above the entry.
 
     Returns:
-        0 when every entry was added or was in the keep-list already. 2 when a --keep names no line of a file or no
-        code, or when the file is in no git repository and no --keep-list is given.
+        0 when every entry was added or was in the keep-list already. 2 when a --keep doesn't name a line of a file or a
+        code, or when the file isn't in a git repository and --keep-list isn't given.
     """
     # matches:
     # `src/main/java/com/example/Scan.java:57:NAR142`
@@ -396,8 +396,8 @@ def proseInventory(
     changed: ChangedLines | None,
     list_page: ListPage | None,
 ) -> list[str]:
-    """List every sentence of every comment and page, the review pairs that are no NAR017 finding, the pronouns and the
-    free modifiers.
+    """List every sentence of every comment and page, the review pairs that aren't a NAR017 finding, the pronouns and
+    the free modifiers.
 
     With a ListPage, each list printed stops after wording.LIST_PAGE entries, with the command for the next entries of
     that list. Under --since, a passage of a source file or a page is listed when a line of the passage changed.
@@ -586,20 +586,29 @@ def constantValueFindings(java_path: Path, lines: list[str], reading: CommentRea
         if (found := CONSTANT.search(line)) and float(found.group(2)) not in {0.0, 1.0}
     ]
     findings: list[JavaFinding] = []
-    for comment in reading.comments:
-        for number, text in comment.texts:
-            values = {float(value) for value in NUMBER.findall(re.sub(r'`[^`]*`|\{@code [^}]*\}', '', text))}
+    for block in reading.blocks:
+        texts = [pair for comment in block for pair in comment.texts]
+        block_text = '\n'.join(text for _number, text in texts)
+        # a backtick span or a {@code} tag can wrap onto the next line. Blank the span and keep each newline
+        masked = re.sub(
+            r'`[^`]*`|\{@code [^}]*\}',
+            lambda span: re.sub(r'[^\n]', ' ', span.group(0)),
+            block_text,
+        ).split('\n')
+        last_line = block[-1].last_line
+        for (number, _text), masked_text in zip(texts, masked, strict=True):
+            values = {float(value) for value in NUMBER.findall(masked_text)}
             for declared, name, value in constants:
-                is_below = comment.last_line < declared <= comment.last_line + 3
-                is_beside = comment.trailing and declared == number
-                if value in values and (is_below or is_beside or re.search(rf'\b{name}\b', text)):
+                is_below = last_line < declared <= last_line + 3
+                is_beside = block[0].trailing and declared == number
+                if value in values and (is_below or is_beside or re.search(rf'\b{name}\b', block_text)):
                     detail = f'{name} is in the declaration. Cut the value'
                     findings.append(JavaFinding(java_path, number, 'NAR027', detail))
     return findings
 
 
 def maskLiterals(source: str) -> str:
-    """Return the source with every comment and literal blanked, keeping each newline."""
+    # each newline stays, so a line number of the masked source is the line number of the source
     return JAVA_TOKEN.sub(lambda token: re.sub(r'[^\n]', ' ', token[0]), source)
 
 
@@ -715,7 +724,8 @@ def commentFindings(java_path: Path, lines: list[str], reading: CommentReading) 
 
     for block in reading.blocks:
         first = block[0]
-        opening = first.texts[0][1].strip()
+        # `null when` can wrap onto the second line of the comment
+        opening = ' '.join(text.strip() for comment in block for _number, text in comment.texts)
         previous_code = lines[first.first_line - 2].strip() if first.first_line > 1 else ''
         if first.kind is CommentKind.LINE and RETURN_CONTRACT.match(opening) and METHOD_OPENING.search(previous_code):
             detail = 'return contract in a comment at the top of a method. Put it in the javadoc, or cut it'
@@ -750,7 +760,7 @@ def annotationStart(lines: list[str], last_line: int) -> int | None:
 
     Returns:
         The number of the line that starts with `@` and opens the parentheses that close on `last_line`. None when
-        `last_line` closes no parenthesis, or when the line with the matching `(` does not start with `@`.
+        `last_line` doesn't close a parenthesis, or when the line with the matching `(` does not start with `@`.
     """
     # matches a literal, whose parentheses are not code:
     # `"(beta)"`
@@ -768,8 +778,8 @@ def annotationStart(lines: list[str], last_line: int) -> int | None:
 def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: CommentReading) -> list[JavaFinding]:
     """Turn a tool finding into JavaFindings, with a look at the comments of the file for two codes.
 
-    - NAR110: a mutable static field. With a comment for the reason, above the field or after the field on the same
-      line, there is no finding
+    - NAR110: a mutable static field. The finding is dropped when a comment for the reason is above the field, or after
+      the field on the same line
     - NAR023: a method of one line. When a javadoc is above the method, the finding is reported
     - NAR116: a method over 20 body lines, an entry of the NAR116 review list. When a javadoc is above the method,
       NAR117 is reported for each `throw new X` in the method where X is absent from the throws clause and from the
@@ -846,7 +856,7 @@ def readKeepList(any_path: Path, keep_list_path: Path | None) -> KeepList:
     """Read the keep-list of the repository of `any_path`, or the keep-list at `keep_list_path`.
 
     Returns:
-        The entries and the root directory of the entry paths. No entry when there is no keep-list.
+        The entries and the root directory of the entry paths. An empty list when the keep-list doesn't exist.
 
     Raises:
         ReportError: a line of the keep-list is not FILE, CODE and LINE TEXT with a tab between them.

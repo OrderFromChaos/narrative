@@ -1,8 +1,8 @@
 ### Javadoc rules
 
-**Most members get no javadoc.** Write one for a top-level type (`NAR118`), and for a method by the `NAR116` review list. Any other field, constant or method gets a javadoc only for a fact
+**Most members don't get a javadoc.** Write one for a top-level type (`NAR118`), and for a method by the `NAR116` review list. Any other field, constant or method gets a javadoc only for a fact
 that the name, type, value and signature do not show. A javadoc whose facts are already in the
-declaration only costs the reader time. Cut such a javadoc whole, not sentence by sentence. The Java
+declaration only costs the reader time. Cut such a javadoc whole. Don't cut the javadoc sentence by sentence. The Java
 habit of a javadoc on every public member does not apply here. (J1-F07)
 
 **State each fact once**, on the declaration the fact belongs to. Elsewhere, link to that
@@ -32,11 +32,11 @@ not earn its place.** (R9-09)
 **Cut a sentence when any of these is true:**
 
 - **It is visible in the file.** `final` is on the line above. `@Nullable` is in the signature.
-- **Its negation would be a bug, an absurdity, or an implementation nobody would ship.** Negate the
+- **Its negation would be a bug, an absurdity, or an implementation that a developer wouldn't ship.** Negate the
   sentence and read it back. **Assume the reader expects competent code, and document only the
   departures.**
 - **It is a language feature, explained.**
-- **It goes stale and nothing checks it**, unless it is a sample you accept that cost for.
+- **It goes stale and the tools don't check it**, unless it is a sample you accept that cost for.
 
 **Compress what survives:**
 
@@ -62,14 +62,14 @@ not earn its place.** (R9-09)
   - without a javadoc: can a reader learn from the name of the method and the comments of the body
     what the method does? If not, write a javadoc.
   - with a javadoc: what does a reader learn from the javadoc, and not from the name of the method
-    or the comments of the body? If nothing, cut the javadoc.
+    or the comments of the body? If the reader doesn't learn more, cut the javadoc.
   (J1-P34, Q05, R8-D18-resolved, R12-nar116-review)
 
 - **`@throws` for every exception absent from the `throws` clause**, in the javadoc of a method. A checked exception is in the signature already. `NAR117` flags a `throw new X` with no
   `@throws X` line. `@param` and `@return` only for a fact absent from the signature: an ordering, a
   nullability, a unit, or a count whose meaning is not obvious. (J1-P34, R8-D28-resolved)
 
-- Write nothing in a javadoc that the code does not do, and no consequence that an earlier sentence
+- Don't write a fact in a javadoc that the code doesn't do, or a consequence that an earlier sentence
   already implies. (Q05)
 
 - **A javadoc is about its class alone.** Do not assert what another class does, do not claim to be
@@ -77,5 +77,5 @@ not earn its place.** (R9-09)
   of *this* file needs the name to use this file. (R9-02)
 
 - Where semantics vary by implementation (file moves, copies, path manipulation), **show a concrete
-  before and after example**, not prose. (R3a-11)
+  before and after example** in place of prose. (R3a-11)
 

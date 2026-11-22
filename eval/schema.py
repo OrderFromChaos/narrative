@@ -1,7 +1,7 @@
 """Read and write the units of the eval set, one JSONL record per unit.
 
-A unit is one comment, one docstring, or one sentence of prose, with up to 15 lines of the unit's
-file on each side. A record, indented:
+A unit is one comment, one docstring, or one sentence of prose, with up to 15 lines of the unit's file on each side. A
+record, indented:
 
     {
         "id": "7bfae996c5f7f009",
@@ -37,9 +37,8 @@ file on each side. A record, indented:
         ]
     }
 
-`id` is a hash of the normalised text and the context file, so two copies of one comment in one
-file are one unit. `split` comes from a hash of `group`, so the units of one file, PR or session
-are all in dev or all in test.
+`id` is a hash of the normalised text and the context file, so two copies of one comment in one file are one unit.
+`split` comes from a hash of `group`, so the units of one file, PR or session are all in dev or all in test.
 
 Label fields:
     judged   the rule codes the label rules on. A code in `judged` and absent from `rules` is a
@@ -54,13 +53,13 @@ Label fields:
     window   up to 15 lines on each side of the unit, from the whole file
     repo     the repository at the unit's commit
 
-A unit passes under a keep label, and fails under a cut or a rewrite. In one tier, the current
-label of a unit is the unit's latest label in that tier. When the unit passes under one label of the
-latest date and fails under another, the unit has a conflict and is left out of the matrix.
+A unit passes under a keep label, and fails under a cut or a rewrite. In one tier, the current label of a unit is the
+unit's latest label in that tier. When the unit passes under one label of the latest date and fails under another, the
+unit has a conflict and is left out of the matrix.
 
-Public units are under eval/units/. The private store has the same layout. The `runs/` and
-`reports/` directories of the private store contain no units. Every unit of a file under `work/`
-in the private store is confidential, even where a record has `confidential: false`.
+Public units are under eval/units/. The private store has the same layout. The `runs/` and `reports/` directories of the
+private store contain no units. Every unit of a file under `work/` in the private store is confidential, even where a
+record has `confidential: false`.
 """
 
 from __future__ import annotations
@@ -122,8 +121,7 @@ def readUnitFile(unit_path: Path, *, confidential: bool = False) -> list[Unit]:
 def mergeUnits(units: Iterable[Unit]) -> list[Unit]:
     """Collapse units with one id into one unit with the labels of all of them, in first-seen order.
 
-    A label that appears in two records is kept once. A unit is confidential when any record of the
-    unit is.
+    A label that appears in two records is kept once. A unit is confidential when any record of the unit is.
     """
     merged: dict[UnitId, Unit] = {}
     for unit in units:
@@ -162,12 +160,11 @@ def splitOf(group: str) -> Split:
 def currentLabel(unit: Unit, tier: Tier, *, rule: str | None) -> Label | Conflict | None:
     """Pick the current label of the unit in one tier, for the overall matrix or for one rule.
 
-    Without `rule`, only labels that are not partial count. With `rule`, only labels with the rule
-    in `judged` count.
+    Without `rule`, only labels that are not partial count. With `rule`, only labels with the rule in `judged` count.
 
     Returns:
-        The latest such label, a Conflict when the unit passes under one label of the latest date
-        and fails under another, or None when the unit has no such label.
+        The latest such label, a Conflict when the unit passes under one label of the latest date and fails under
+        another, or None when the unit has no such label.
     """
     labels = [
         label
@@ -183,7 +180,6 @@ def currentLabel(unit: Unit, tier: Tier, *, rule: str | None) -> Label | Conflic
 
 
 def failing(label: Label, *, rule: str | None) -> bool:
-    """Whether the unit fails under the label: a cut or a rewrite, or, with `rule`, the rule in `rules`."""
     return label.verdict is not Verdict.KEEP if rule is None else rule in label.rules
 
 

@@ -19,7 +19,7 @@ requires, and spaCy with spaCy's `en_core_web_md` model for `agentverbs.py`.
 |---|---|
 | `ruff format` | all whitespace, line breaking, quote normalisation |
 | `ruff check` | imports, annotations presence, bugbear, quotes, banned APIs, bare except |
-| `pylint` (naming only) | `mixedCase` functions. **No other linter can require this** |
+| `pylint` (naming only) | `mixedCase` functions. **The other linters can't require this** |
 | `mypy --strict` | type correctness |
 | `checks.py` | the residual rules no tool implements. It uses only the standard library, so it runs alone with any `python3` at 3.11 or later: `python3 checks.py src/ --select NAR001` |
 | `agentverbs.py` | `NAR017`, an agent verb on a subject that cannot act, `NAR020`, a clause with no subject before `, so`, `NAR021`, a clause joined by `as` or `, where`, and `NAR022`, `it` or `its` after two or more singular nouns in one sentence, from a spaCy parse. `agentverbs.py --review` and `--pronouns` print a review list instead |
@@ -42,7 +42,7 @@ themselves**, because a second copy of them drifts. Below is *why* each non-obvi
 setting is there.
 
 `disallow_any_explicit` is not part of `strict`, so a false value is the default. It is in the
-snippet because it is a decision, not an oversight.
+snippet to record the decision.
 
 **`global-statement` (W0603) must stay disabled.** `NAR001` *requires* a `global` declaration on
 mutation and W0603 *complains* about every `global`, so conformant code could never be pylint-clean
@@ -51,14 +51,14 @@ and the gate would be unusable. If you want an inventory of module-state touch p
 
 ## The one fault outside every tool's checks
 
-The `global` rule (R2b-G1) is about **mutation**, not reference. `global XYZ` at the top of a
+The `global` rule (R2b-G1) is about **mutation**, and a read of the name doesn't count. `global XYZ` at the top of a
 function is a warning sign. The function has side effects on module state. Read-only access is
 exempt.
 
 Python already enforces half of this. A module name cannot be *rebound* without `global`, because
 without `global`, Python silently binds a local instead.
 
-Nothing enforces the other half:
+The tools don't enforce the other half:
 
 ```python
 SAMPLE_CONFIG: dict[str, int] = {}
@@ -70,7 +70,7 @@ def loadConfig(data: dict[str, int]) -> None:
     SAMPLE_CONFIG['x'] = 1       # module state changed
 ```
 
-No `global`, no error, module state mutated. Verified: **neither `ruff check --select ALL` nor
+The sample mutates module state without a `global`, and Python doesn't raise an error. Verified: **neither `ruff check --select ALL` nor
 `pylint --enable=all` has a finding for the undeclared mutation.** Both have findings for other
 things in the file, such as a missing docstring and a non-conforming function name. That gap is
 `NAR001`, and `NAR001` is the highest-value check in the set.
@@ -98,19 +98,19 @@ local, so the module value silently never changes.
 ## Gotchas
 
 **`ruff format` collapses a 4-arg signature back onto one line** unless the signature ends with a
-magic trailing comma. With the comma, the signature stays exploded. Without it, the signature is
-joined onto one line.
+magic trailing comma. When the comma is there, the signature stays exploded. When the comma is missing, `ruff
+format` joins the signature onto one line.
 
 So the ">3 args goes multiline" rule in `SKILL.md` survives only because of the trailing comma.
 `COM812` is therefore *enabled*, against the general ruff advice to disable `COM812` alongside the
 formatter. Here `COM812` is the mechanism that makes the rule stick.
 
-**Nothing forces the split in the first place.** Neither `ruff check` nor `ruff format` touches a
+**The tools don't force the split in the first place.** Neither `ruff check` nor `ruff format` touches a
 4-arg signature written on one line under 120 columns. That is `NAR003` in `checks.py`.
 
 **`multiline-quotes = 'single'` conflicts with the formatter.** Ruff prints a warning, and the
-formatter writes double quotes regardless. Set it to `'double'`. There is no real cost. The style uses no
-`"""` for data strings anyway (implicit concatenation in parens instead, Q03), so multiline quotes
+formatter writes double quotes regardless. Set it to `'double'`. The change doesn't cost anything. The style
+doesn't use `"""` for data strings anyway (implicit concatenation in parens instead, Q03), so multiline quotes
 only ever appear in docstrings.
 
 **`ruff format` deletes the blank line between `class X:` and the first method**, and collapses two
@@ -129,7 +129,7 @@ sample loses alignment:
 """                             """
 ```
 
-With one line of the body at the docstring's column, the block is left alone.
+When one line of the body is at the docstring's column, the block is left alone.
 `NAR011` checks this, with the same result as `ruff format` on every form tested. The forms are a module docstring
 whose body is all indented, a function docstring whose body is indented past the `def`, and an
 anchored block that ruff leaves alone (R9-08).
@@ -139,14 +139,14 @@ whitespace-only line once the block is indented, and ruff reports that line as `
 trailing space.
 
 **mypy reports `import-not-found` for banned libraries** before ruff gets to say why. Read the ruff
-message, not the mypy one.
+message first.
 
-**Two blank lines after the import block is an isort setting, not a formatter setting.** This one
+**Two blank lines after the import block is an isort setting.** The formatter doesn't set the count. This one
 is backwards from expectation. `ruff format` *preserves* two blank lines quite happily.
 
 The autofix of `I001` in `ruff check` deletes the second one, because the isort setting
-`lines-after-imports` defaults to 1 before a statement. Without `lines-after-imports = 2`,
-`ruff check --fix` silently undoes the rule every time (R3a-14).
+`lines-after-imports` defaults to 1 before a statement. When `lines-after-imports = 2` is
+missing, `ruff check --fix` silently undoes the rule every time (R3a-14).
 
 **Moving a constant inside a function takes two escapes.** An `ALL_CAPS` name on a function-local
 constant (R3a-12) trips ruff `N806` and pylint `C0103`, once per constant. The count reaches double
@@ -157,10 +157,10 @@ pylint side:
 variable-rgx = '^([a-z_][a-z0-9_]*|[A-Z][A-Z0-9_]*)$'
 ```
 
-Use `variable-rgx`, **not** `good-names-rgxs`. `variable-rgx` relaxes only *locals*, so a mixedCase local, a
+Use `variable-rgx`, and leave `good-names-rgxs` unset. `variable-rgx` relaxes only *locals*, so a mixedCase local, a
 mixedCase argument and a mixedCase attribute still fail pylint.
 
-With `N806` ignored, mixedCase locals pass ruff but still fail pylint, so coverage survives
+When `N806` is ignored, mixedCase locals pass ruff but still fail pylint, so coverage survives
 (R3a-13).
 
 **The `SIM114` autofix makes code worse, so the config disables `SIM114`.** Applied to two adjacent

@@ -11,13 +11,13 @@ invented sample from a real one. This is the docstring case of the boundary rule
 state what you did not observe.** A module that computes records rather than rendering text pastes
 the records.
 
-**Show one line of each shape, not the whole output.** One team row, one over-quota line, one file
-outcome, and no repeats. The reader needs every shape the module can emit and needs no volume.
+**Show one line of each shape of the output.** One team row, one over-quota line, one file
+outcome, and no repeats. The reader needs each shape the module can emit, once.
 
-**A sample goes stale and no tool checks the sample.** Keep it small, and re-paste the sample when
+**A sample goes stale, and `verify.py` doesn't check the sample.** Keep it small, and re-paste the sample when
 the output changes.
 
-**Expect it to cost lines.** The sample is there for exactness, not brevity. A reader learns
+**Expect it to cost lines.** The sample is there for exactness. A reader learns
 the column order, the units and the alignment from three rows of a table and cannot learn them from
 a sentence about the table having columns.
 
@@ -35,8 +35,8 @@ Teams over quota come first, worst first. A team within its quota has `-` as its
 
 **Keep at least one line of the body at column 0**, as the last line above does. `ruff format`
 strips the common leading indent from a docstring body, so a docstring whose body is *entirely*
-indented gets flattened and the sample loses alignment. With one unindented line, the indent
-is kept. The check is listed in `tooling.md`.
+indented gets flattened and the sample loses alignment. When one line is at column 0,
+`ruff format` keeps the indent. The check is listed in `tooling.md`.
 
 Avoid the same table as prose:
 

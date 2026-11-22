@@ -50,8 +50,7 @@ NAMED_SECTION = re.compile(r'(?:Args|Arguments|Raises|Attributes):$')
 def passages(source: str) -> list[Passage]:
     """Read every comment passage and every docstring passage of one Python file.
 
-    For a file that does not parse, such as a file in the middle of an edit, the list has the comment passages and no
-    docstring passages.
+    For a file that does not parse, such as a file in the middle of an edit, the list has only the comment passages.
     """
     comments = commentPassages(source)
     try:
@@ -196,7 +195,7 @@ def changeSpans(checked_file: Path) -> Spans:
 def commentBlocks(source: str) -> list[list[Line]]:
     """Read the comments and docstrings of one Python file as blocks of lines, for the re-wrap.
 
-    For a file that does not parse, the list has the comment blocks and no docstring blocks.
+    For a file that does not parse, the list has only the comment blocks.
     """
     lines = source.split('\n')
     blocks = hashBlocks(lines, commentTokens(source))

@@ -1,12 +1,12 @@
 """Write each entry skill of skills.toml to skills/<name>/: a SKILL.md that loads the rules, and the tools.
 
-An install copies one skill directory and nothing else, so every tool of a skill is in the skill's directory. The rules
-and the tools are written once in core/ and lang/, and each entry skill gets a copy of the tools of the skill.
+An install copies only one skill directory, so every tool of a skill is in the skill's directory. The rules and the
+tools are written once in core/ and lang/, and each entry skill gets a copy of the tools of the skill.
 
 The SKILL.md of a skill with modules is the output of assemble.py: the frontmatter, then the rules. The SKILL.md of a
 skill with `combines`, such as `code`, has the frontmatter and one line. When the skill loads, Claude Code runs
-assemble.py and puts the output, the skills to load, in place of that line. With `allowed-tools` in the frontmatter, the
-line runs with no permission prompt.
+assemble.py and puts the output, the skills to load, in place of that line. When the frontmatter has `allowed-tools`,
+the line runs without a permission prompt.
 
 With --check, nothing is written, and a file of skills/ that differs from the build, is missing, or is not part of the
 build is an error. verify_docs.py runs the check.

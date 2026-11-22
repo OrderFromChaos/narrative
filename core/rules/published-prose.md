@@ -13,7 +13,7 @@ repository, such as `CHANGELOG.md`. Do not create a changelog file unless the us
 (R11-page-changelog)
 
 Only the wording checks and `agentverbs.py` run on a page. `verify.py` writes the lists of
-**Prose review** for each named page too. With `--since`, only the passages of a page with a changed
-line are checked and listed. Take the steps of **Prose review** for each sentence you wrote, and
+**Prose review** for each named page too. When `--since` is given, only the passages of a page with a
+changed line are checked and listed. Take the steps of **Prose review** for each sentence you wrote, and
 handle each finding by the rule **A finding is information**. (R10-published-prose,
 R11-page-inventory)

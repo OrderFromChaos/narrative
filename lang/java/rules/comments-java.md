@@ -68,7 +68,7 @@ while ((page = fetchPage(cursor)).size() == PAGE_SIZE) {
 
 ### FIXME
 
-`verify.py` prints each `FIXME:` as a warning, `NAR119`, and still exits 0. A mod has no `main`, so
+`verify.py` prints each `FIXME:` as a warning, `NAR119`, and still exits 0. A mod doesn't have a `main`, so
 every method counts as reachable. (J1-F4)
 
 ### Return contracts
@@ -118,7 +118,7 @@ python3 "${CLAUDE_SKILL_DIR}/verify.py" README.md docs/report.html
 ```
 
 A page named beside Java sources gets the same checks, in the same list of findings. A run with
-pages only checks no Java source, so for a change to code and a page, name both:
+pages only doesn't check a Java source, so for a change to code and a page, name both:
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/verify.py" src/main/java README.md

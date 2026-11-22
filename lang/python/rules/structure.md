@@ -9,15 +9,15 @@
 - Comprehensions may have any number of `if` clauses at a single level. Any **nesting** becomes an
   explicit loop. (Q07)
 
-- **Extract a block when you can foresee reusing or testing it separately**, not merely because it
-  has a name. `computeChecksum` extracts because many places could call it. The two halves of
+- **Extract a block when you can foresee reusing or testing it separately.** A name for the block
+  isn't a reason to extract the block. `computeChecksum` extracts because many places could call it. The two halves of
   `openDatabase` do not extract, even though each is nameable. A one-line helper called once is
   residue. (R2-09, R2b-E1, R2b-E2)
 
-- If an extracted function would take 5+ parameters, that is a **missing owner**, not a reason to
-  leave the code inline. Find where the values belong. That owner is a **class** when two of it can
-  exist at once, and a **module** otherwise. A frozen record is the answer only when nothing has
-  behaviour over the values. If a general name for the group is hard to pick, the values are not
+- If an extracted function would take 5+ parameters, that is a **missing owner**. Don't leave
+  the code inline. Find where the values belong. That owner is a **class** when two of it can
+  exist at once, and a **module** otherwise. A frozen record fits only when the group of values
+  doesn't need methods. If a general name for the group is hard to pick, the values are not
   a real group. (R7-C05-resolved, R7-C05-naming)
 
 - Always collapse duplicated-but-drifting code, even when the shared version takes an extra
@@ -32,7 +32,7 @@
   (R2b-B5)
 
 - Collection literals get one item per line **wherever `ruff format` explodes them**. That is any
-  literal it cannot fit on one line. This is the output of `ruff format`, not a further rule. A
+  literal it cannot fit on one line. This is the output of `ruff format`. A
   short literal it leaves packed is already correct. A word-list-shaped literal may use a
   `# fmt: off` / `# fmt: on` fence to stay packed. (R2b-B2)
 

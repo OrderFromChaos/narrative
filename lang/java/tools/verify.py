@@ -9,14 +9,14 @@ and the whole-line // comments again up to column 120, unless --no-fix is given.
 changed line is re-wrapped. Then, in one Gradle run, the code is formatted (spotlessApply, or spotlessCheck with
 --no-fix), compiled with the raw-type and unchecked warnings of javac, and checked with Checkstyle and PMD and the
 configs beside this script. javac comes from the JDK of the project's toolchain, and Checkstyle and PMD run on a JDK 25
-at every level. Those tasks come from the init script narrative.init.gradle, so no project file changes. javachecks.py
-then reads the comments, runs the prose checks, and merges the three reports into one list of findings.
+at every level. Those tasks come from the init script narrative.init.gradle, so verify.py doesn't change a project file.
+javachecks.py then reads the comments, runs the prose checks, and merges the three reports into one list of findings.
 
 A Markdown, HTML or plain text file named on the command line gets the prose checks of javachecks.py, in the same list
 of findings as the Java sources. A Gradle project is required only when Java sources are checked. When only pages are
-named, no Java source is checked. In a Gradle project, verify.py then prints a warning. A path of `-` is a page read
-from stdin, Markdown, or the suffix given with --stdin-suffix. The page is saved in the cache directory as `stdin` with
-that suffix, and each finding is reported at the path of the saved page.
+named, verify.py doesn't check a Java source. In a Gradle project, verify.py then prints a warning. A path of `-` is a
+page read from stdin, Markdown, or the suffix given with --stdin-suffix. The page is saved in the cache directory as
+`stdin` with that suffix, and each finding is reported at the path of the saved page.
 
 With --prose-only, Gradle does not run: no spotless, javac, Checkstyle or PMD. After a re-wrap, javachecks.py checks the
 comments and the pages, and verify.py writes the review lists. A run after an edit of comments only takes seconds
@@ -31,9 +31,9 @@ cache directory, .narrative_cache or the directory given with --cache-dir: every
 paired with the subject's verb, every sentence with a pronoun, every sentence with a free modifier, and every method
 over 20 body lines (NAR116). The list of methods is from the PMD report, so a run with --prose-only or with pages only
 doesn't list methods. The path of the file and the number of entries in each list are on the last line of the output, so
-`tail -1` shows them. verify.py writes no lists on exit 2, or after a Gradle failure. Without --since, each list stops
-after 1000 entries, with the command for the next 1000. Under --since, a passage of a source file or a page is checked
-and listed when a line of the passage changed.
+`tail -1` shows them. verify.py doesn't write the lists on exit 2, or after a Gradle failure. Without --since, each list
+stops after 1000 entries, with the command for the next 1000. Under --since, a passage of a source file or a page is
+checked and listed when a line of the passage changed.
 
 With --keep FILE:LINE:CODE, nothing is checked. The finding is added to the keep-list, and is not printed in later runs.
 The keep-list is described in the docstring of javachecks.py.
@@ -218,8 +218,8 @@ def main() -> int:
         print(f'verify.py: Gradle found no JDK for the build: {gradle_run.missing_jdk}', file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
 
-    # verify.py prints no review lists here. javachecks.py has not read the comments yet, so the comments can still have
-    # prose findings, and the sentences of the lists change with each fix of a prose finding
+    # verify.py doesn't print the review lists here. javachecks.py has not read the comments yet, so the comments can
+    # still have prose findings, and the sentences of the lists change with each fix of a prose finding
     if gradle_run.failed_tasks:
         print(gradle_run.output_tail)
         return EXIT_FINDINGS
@@ -267,11 +267,11 @@ def reportFindings(
 ) -> int:
     """Print the findings of javachecks.py, then write the review lists to LISTS_NAME in the cache directory.
 
-    The path of the lists and the number of entries in each list are on the last line. On a run with findings, the count
-    line of javachecks.py comes before the last line.
+    The path of the lists and the number of entries in each list are on the last line. When the run has findings, the
+    count line of javachecks.py comes before the last line.
 
     Returns:
-        The exit code of javachecks.py, or 2 when javachecks.py printed no count line, as after a Python exception.
+        The exit code of javachecks.py, or 2 when javachecks.py didn't print a count line, as after a Python exception.
     """
     methods_path = cache_dir / METHODS_NAME
     methods_path.unlink(missing_ok=True)
@@ -453,7 +453,7 @@ def findGradlew(project_dir: Path) -> list[str]:
     sh on Linux and macOS.
 
     Raises:
-        PrerequisiteError: the project has no wrapper.
+        PrerequisiteError: the project doesn't have a Gradle wrapper.
     """
     wrapper = project_dir / GRADLEW
     if not wrapper.is_file():
@@ -508,7 +508,7 @@ def readChangedFiles(since: str, project_dir: Path) -> list[Path]:
     """List the Java source files with lines added or changed since merge-base(HEAD, since), and the untracked ones.
 
     Raises:
-        PrerequisiteError: git fails, or there is no commit `since`.
+        PrerequisiteError: git fails, or the commit `since` doesn't exist.
     """
     root = Path(runGit(['rev-parse', '--show-toplevel'], project_dir).strip())
     base = runGit(['merge-base', 'HEAD', since], root).strip()
@@ -544,7 +544,7 @@ def runGradle(
     """Run spotless, compileJava and narrativeCheck in one Gradle invocation, and keep the invocation's output.
 
     The reports and caches of earlier runs stay, so a task whose inputs did not change is up to date. Incremental
-    compilation is off in the init script, so compileJava compiles every file or none. Its output is written to
+    compilation is off in the init script, so compileJava compiles every file or is up to date. Its output is written to
     javac.log only in a run where compileJava compiled. Under --since, Checkstyle and PMD read only the files of
     changed-files.txt.
     """

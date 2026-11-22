@@ -11,11 +11,11 @@ for only the lines your PR adds or changes.
   allocation in a draw method, no `ordinal()` saved to NBT, a `switch` over an enum with no
   `default`, an optional mod behind one guarded class, and checked exceptions at the file and packet
   boundaries.
-- **Quiet on code you did not write.** On PlanNH `origin/dev`, a full run has 1,682 findings in
-  upstream code. With `--since origin/dev` and a planted change, the output has the 4 planted
-  findings and none of the 1,682.
+- **Quiet on code you did not write.** A full run on PlanNH `origin/dev` has 1,682 findings in
+  upstream code. A run with `--since origin/dev` on a planted change reports only the 4 planted
+  findings.
 - **No build change.** PMD and Checkstyle run through a Gradle init script, so `git status` stays
-  clean and no `dependencies.gradle` change ends up in your PR.
+  clean and your PR doesn't change `dependencies.gradle`.
 
 ⚠️ For GTNHGradle projects at three Java levels: `enableModernJavaSyntax = jvmDowngrader` or
 `modern` (Java 25), `jabel` (Java 17 syntax, Java 8 library), and `false` (Java 8). A few rules

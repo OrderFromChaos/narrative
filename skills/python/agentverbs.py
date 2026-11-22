@@ -1,9 +1,9 @@
 r"""Flag comments and docstrings whose subject cannot act, cut or joined clauses, and unclear pronouns.
 
-NAR017 is an agent verb on a subject that cannot act. NAR020 is a clause with no subject before `, so`:
+NAR017 is an agent verb on a subject that cannot act. NAR020 is a clause without a subject before `, so`:
 `Named, so a recreated container gets it back`. The rewrite has a subject:
 `Named volumes persist when a container is recreated`. A subordinate clause before `, so` is flagged too:
-`Whether some terms differ by mode, so the mode is an input`. That sentence has no main clause before `, so`.
+`Whether some terms differ by mode, so the mode is an input`. That sentence doesn't have a main clause before `, so`.
 
 NAR021 is a clause that `as` or `, where` joins to a sentence: `a float, as in the machines' code`, `As the EBF.`,
 `as the recipe works it out`, and in a comment `the values it takes, where the spec has no range`. To fix a NAR021
@@ -78,11 +78,11 @@ A line with `# noqa: NAR017`, `# noqa: NAR020`, `# noqa: NAR021`, `# noqa: NAR02
 stative, such as `breaks` or `stays`, and a verb on LITERAL unless the verb has a direct object and code as the subject:
 `the spec runs it` is listed, `PlanLoader reads the plan file` is not. A verb whose subject receives, such as `gets`, is
 never listed. An `-s` word after another noun is on the list too when only a verb fits there and spaCy tags a noun:
-`the path breaks`. A reader decides whether the subject can perform the verb. The list is no finding, and the exit code
-is 0.
+`the path breaks`. A reader decides whether the subject can perform the verb. The list isn't a finding, and the exit
+code is 0.
 
-`--pronouns` lists every sentence with `it`, `its` or a standalone `that`, each after the sentence before. spaCy has no
-coreference resolution, so a reader names the noun for each pronoun. The list is no finding, and the exit code is 0.
+`--pronouns` lists every sentence with `it`, `its` or a standalone `that`, each after the sentence before. spaCy doesn't
+resolve coreference, so a reader names the noun for each pronoun. The list isn't a finding, and the exit code is 0.
 
 `--free-modifiers` lists every sentence with a free modifier: a phrase without a verb after a comma, that opens with a
 preposition, a past participle or a number, such as `, in one list for each tenant`. A reader writes the phrase as a
@@ -159,8 +159,8 @@ LITERAL = frozenset({
 })  # fmt: skip
 # verbs of a relation, never an act. reviewPairs() skips them for every subject
 RELATION_VERBS = frozenset({'be', 'have', 'will'})
-# verbs whose subject receives, and does nothing: `every block of the column gets the sky light`. reviewPairs() skips
-# them for every subject
+# verbs whose subject receives and doesn't act: `every block of the column gets the sky light`. reviewPairs() skips them
+# for every subject
 RECEIVING_VERBS = frozenset({'get', 'receive', 'gain'})
 # nouns for a piece of code. A LITERAL verb with a direct object and a subject on this list is an operation of code
 CODE_NOUNS = frozenset({
@@ -180,7 +180,7 @@ PROGRAMS = frozenset({
     'handler', 'parser', 'loader', 'reporter',
 })  # fmt: skip
 SINGULAR_DETERMINERS = frozenset({'a', 'an', 'each', 'every', 'this', 'its', 'one'})
-# a container verb counts only with an object: `a file holds whole bytes`, not `the invariant holds`  # noqa: NAR016
+# a container verb counts only with an object. `a file holds bytes` counts, `a rule holds` doesn't  # noqa: NAR016
 CONTAINER_VERBS = frozenset({'hold', 'keep', 'carry', 'own'})
 # an object or clause that makes a verb take the VerbNet frame with an animate subject
 AGENT_OBJECTS = frozenset({'dobj', 'iobj', 'dative', 'ccomp', 'xcomp', 'prt'})
@@ -192,7 +192,7 @@ MODALS = frozenset({'can', 'cannot', 'could', 'would', 'will', 'may', 'might', '
 # rejects:
 # `plain`
 IDENTIFIER = re.compile(r'[_()`.\[\]]|[a-z][A-Z]')
-# a quoted span is code or an example, not a sentence of the comment
+# a quoted span is code or an example, and isn't a sentence of the comment
 # matches:
 # a span in backticks
 # `'name'`
@@ -208,7 +208,7 @@ PAGE_PARTS = frozenset({
 # British spellings, and the American ones that WordNet lists: `honour`, `recognise`, `analyse`
 SPELLINGS = (('our', 'or'), ('ise', 'ize'), ('yse', 'yze'))
 SO_JOIN = re.compile(r',\s+so\b')
-# a clause opened by one of these words is subordinate, and is no main clause before `, so`
+# a clause opened by one of these words is subordinate, and isn't a main clause before `, so`
 SUBORDINATORS = frozenset({'whether', 'if', 'because', 'when', 'while', 'although', 'though', 'unless', 'since'})
 # matches:
 # `a float, as in the machines' code`
@@ -218,7 +218,7 @@ AS_IN = re.compile(r'\bas in\b(?!-)', re.IGNORECASE)
 # matches:
 # `the values it takes, where the spec has no range`
 WHERE_JOIN = re.compile(r',\s+where\b')
-# `as` in these phrases compares two things, and opens no clause: `the same as`, `such as`
+# `as` in these phrases compares two things, and doesn't open a clause: `the same as`, `such as`
 COMPARING_AS = frozenset({'same', 'such', 'well', 'soon', 'long', 'far', 'much', 'many'})
 PRONOUN_OBJECTS = frozenset({'it', 'them'})
 # a pronoun that NAR022 checks, and the tags of a singular noun that the pronoun could stand for
@@ -239,7 +239,11 @@ NEGATING_PRONOUNS = frozenset({'nothing', 'none', 'nobody'})
 # `at 1,000 requests per second, the queue grows`
 # rejects:
 # `When the disk is full, export() deletes the partial file`
-CONDITION_OPENER = re.compile(r'^(?:at|with|without|beside|against|on|under|over)\s+[^,.;:]{1,80},', re.IGNORECASE)
+# `at least one finding, or the code does not compile`
+CONDITION_OPENER = re.compile(
+    r'^(?:at(?!\s+(?:least|most|once|first|last|all|times)\b)|with|without|beside|against|on|under|over)\s+[^,.;:]{1,80},',
+    re.IGNORECASE,
+)
 # matches:
 # `On Windows,`
 # `Under Python 3.10,`
@@ -596,7 +600,7 @@ def quotedWord(token: Token) -> bool:
 
 
 def standaloneThat(token: Token) -> bool:
-    """Tell `that` as a pronoun (`return that`) from `that` as a determiner or a relative word."""
+    # `that` as a pronoun, such as `return that`
     return token.lower_ == 'that' and token.tag_ == 'DT' and token.dep_ != 'det'
 
 
@@ -747,7 +751,7 @@ class SentenceReader:
         return pairs
 
     def fragments(self, text: str) -> list[str]:
-        """Find each clause before `, so` that has no subject and is not a noun phrase or a command.
+        """Find each clause before `, so` that doesn't have a subject and is not a noun phrase or a command.
 
         `Named, so…` and `In float, so…` count. `constant-time comparison, so…` is a label, and `Sort by key, so…` is an
         imperative, so neither counts. A subordinate clause is flagged even with a subject, because the sentence then
@@ -778,7 +782,7 @@ class SentenceReader:
         """Find each clause that `as` or `, where` joins to a sentence.
 
         Three forms of `as` are flagged: `as in` (`a float, as in the machines' code`), a sentence that opens with `As`
-        and has no verb (`As the EBF.`), and `as` before a verb whose object is `it` or `them`
+        and doesn't have a verb (`As the EBF.`), and `as` before a verb whose object is `it` or `them`
         (`as the recipe works it out`). `the same as` and `such as` compare, and in `as you write it` a person acts, so
         neither is flagged. In a page, `, where` often opens a definition and `As` opens a heading such as
         `As a plugin`, so only a comment is checked for those two.
@@ -810,14 +814,14 @@ class SentenceReader:
         """Find the finite verb after `as` whose object is `it` or `them`, with no punctuation between.
 
         spaCy can attach `as` to the noun before `as` (`the tier as the terms count it`), so the verb is searched for by
-        position, not through the parse. A verb whose subject can act is left out: `as you write it`.
+        position in the sentence. A verb whose subject can act is left out: `as you write it`.
 
         Returns:
             The verb, or None.
         """
         for token in word.doc[word.i + 1 : sentence_end]:
-            # a hyphen joins a compound such as `per-tier`, and ends no clause. An `and` between two verbs ends the `as`
-            # phrase: `keeps the output as javac.log and reads it`
+            # a hyphen joins a compound such as `per-tier`, and doesn't end a clause. An `and` between two verbs ends
+            # the `as` phrase: `keeps the output as javac.log and reads it`
             if (token.is_punct and token.tag_ != 'HYPH') or (token.dep_ == 'cc' and token.head.pos_ in ('VERB', 'AUX')):
                 return None
             if token.pos_ != 'VERB' or token.tag_ not in FINITE_TAGS:
@@ -831,8 +835,8 @@ class SentenceReader:
     def ambiguousPronouns(self, text: str) -> list[str]:
         """Find each `it` or `its` after two or more singular nouns in the same sentence.
 
-        spaCy has no coreference resolution, so the noun that the pronoun stands for is unknown here. Two candidates are
-        enough for a reader to mix them up. A noun that modifies the next noun, such as `push` in `push flag`, is no
+        spaCy doesn't resolve coreference, so the noun that the pronoun stands for is unknown here. Two candidates are
+        enough for a reader to mix them up. A noun that modifies the next noun, such as `push` in `push flag`, isn't a
         candidate. An empty subject, such as `It` in `It is raining`, is left out when spaCy tags the word so.
 
         Returns:
@@ -916,8 +920,8 @@ class SentenceReader:
     def pronounSentences(self, text: str) -> list[tuple[str, str, str]]:
         """List each sentence with `it`, `its`, or `that` as a pronoun, each with the sentence before.
 
-        spaCy has no coreference resolution, so the list is for the review, not a check. `that` is listed only as a
-        standalone pronoun: `return that`, not `that file` or `the file that`.
+        spaCy doesn't resolve coreference, so the list is for a review by a reader. `that` is listed only as a
+        standalone pronoun: `return that` is listed, and `that file` and `the file that` aren't.
 
         Returns:
             The pronouns, the sentence and the previous sentence (empty for the first), in order.
@@ -945,7 +949,8 @@ class SentenceReader:
         return hits
 
     def _sharedSubjects(self, doc: Doc) -> dict[int, str]:
-        """Read a verb that has no subject and is joined to another verb as taking the subject of the other verb.
+        """Read a verb that doesn't have a subject and is joined to another verb as taking the subject of the other
+        verb.
 
         In `the scan can stop early and list no files`, `list` has the subject `scan`. When the subject is a clause such
         as `parsing the file`, the subject is an event, which cannot act.
@@ -969,7 +974,7 @@ class SentenceReader:
             while head.dep_ == 'conj' and head.head.i != head.i:
                 head = head.head
             subject = next((c for c in head.children if c.dep_ in ('nsubj', 'nsubjpass', 'csubj')), None)
-            # an imperative has no subject. Its parse sometimes takes the object for one
+            # an imperative doesn't have a subject. Its parse sometimes takes the object for one
             imperative = head.tag_ == 'VB' and not any(c.dep_ in ('aux', 'auxpass') for c in head.children)
             if not joined or imperative or subject is None or not self._needsMind(verb):
                 continue
@@ -1004,7 +1009,7 @@ class SentenceReader:
         return americanSpelling(verb.lemma_.lower(), self.verbs)
 
     def _stem(self, word: Token) -> str:
-        """Read an `-s` word as a verb: `names` as `name`, `recognises` as `recognize`."""
+        # `names` → `name`, `recognises` → `recognize`
         return americanSpelling(word.lower_[:-1], self.verbs)
 
     def _needsMind(self, verb: Token) -> bool:
@@ -1030,7 +1035,7 @@ class SentenceReader:
         clause_start = subject.i == 0 or subject.nbor(-1).pos_ in ('PUNCT', 'CCONJ')
         imperative_opener = clause_start and subject.lower_ in self.verbs and not list(subject.children)
         bare_verb_word = subject.lower_ in self.verbs and subject.tag_ == 'NN' and not list(subject.children)
-        # `the code see`: a singular noun takes no base-form verb, so this is no subject and verb
+        # `the code see`: a base-form verb doesn't follow a singular subject, so the pair isn't a subject and a verb
         disagrees = (
             subject.tag_ in ('NN', 'NNP') and verb.tag_ in ('VB', 'VBP') and not any(c.dep_ == 'aux' for c in children)
         )
@@ -1077,7 +1082,8 @@ class SentenceReader:
         for token in doc:
             if token.dep_ != 'conj' or not token.lower_.endswith('s') or self._stem(token) not in self.mind_verbs:
                 continue
-            # a verb takes an object: `names an unknown timezone`, not `fractions of a cent`
+            # a verb takes an object: `names` in `names an unknown timezone` is a verb, and `fractions` in
+            # `fractions of a cent` isn't
             if token.i + 1 >= len(doc) or doc[token.i + 1].pos_ not in ('DET', 'ADJ', 'NOUN', 'PROPN', 'NUM'):
                 continue
             clause = token.head
@@ -1213,7 +1219,7 @@ class CachedReader:
         return [(phrase, sentence) for phrase, sentence in stored]
 
     def pronounSentences(self, text: str) -> list[tuple[str, str, str]]:
-        # JSON has no tuple, so each entry is stored in the cache as a list
+        # JSON doesn't have a tuple type, so each entry is stored in the cache as a list
         stored = self._cached(
             text,
             'pronoun_sentences',

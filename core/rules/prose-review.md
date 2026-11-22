@@ -6,7 +6,7 @@ fix findings, so read the lists from the run after the fixes. The first list has
 docstring in the code, and every sentence of each named page. The second has each subject that
 cannot act, paired with the subject's verb, for every verb that is neither a `NAR017` finding nor
 an operation of code. A verb such as `reads` or `runs` is an operation of code only with a direct
-object and code as the verb's subject: `PlanLoader reads the plan file`, not `the spec reads`. The
+object and code as the verb's subject: `PlanLoader reads the plan file` is one, and `the spec reads` isn't. The
 third has every sentence with `it`, `its` or a standalone `that`, each after the sentence before. The fourth has every
 sentence with a free modifier: write the phrase as a clause or a separate sentence, or cut the phrase
 (R12-no-free-modifier). In Java, a fifth list has each method over 20 body lines (`NAR116`). Take these steps for each
@@ -16,7 +16,7 @@ R11-literal-review)
 1. Name the subject and the verb. Can that subject perform that verb? Most pairs are in the second
    list. A subject that is misread in the parse is not in the list. If the subject can't perform the verb, name the person or the program that does the act. The details are in the `NAR017` rule of **Comments**.
 2. For each noun phrase, name the variable, function, file or value that the phrase refers to. If
-   none fits, or two do, rewrite. Check each descriptive word of the phrase by **A descriptive word
+   you can't name one, or you can name two, rewrite. Check each descriptive word of the phrase by **A descriptive word
    in a term is a claim**. For each pronoun in the third list, name the noun the pronoun stands for.
    If that noun is in another sentence, repeat the noun. (R10-stand-in)
 3. List the code paths that reach the line: each branch, each caller, each failure. Check the claim
@@ -39,6 +39,7 @@ Fix every finding and answer every list entry from one run, then run `verify.py`
 run `verify.py` after each single fix. (R11-batch-runs)
 
 **When you ask the user to choose in a report, show the text of each option before and after the
-change.** With only an id such as `B3`, or a path to a file, the user cannot compare the options.
+change.** When the report has only an id such as `B3`, or a path to a file, the user can't compare the
+options.
 (R11-options-inline)
 

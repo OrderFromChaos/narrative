@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 ### The schema that benchmark/README.md documents. Kept here rather than parsed out of the table,
-### because a checker that reads the rule from the checked document proves nothing. The two are
+### because a checker that reads the rule from the checked document doesn't prove the document right. The two are
 ### compared by a human when either changes. That is cheap, and it already drifted three ways
 ### without one.
 
@@ -140,7 +140,7 @@ def supersessions(decisions: list[dict[str, object]]) -> dict[str, str]:
     """Map every superseded decision id to the replacing decision's id.
 
     Declared in a field rather than parsed out of the reasoning. A marker read from free prose is the kind of check that
-    silently stops matching and then reports nothing, which is the failure this whole script exists to prevent.
+    silently stops matching and then doesn't report a finding, which is the failure this whole script exists to prevent.
     """
     replaced: dict[str, str] = {}
     for record in decisions:
@@ -151,11 +151,8 @@ def supersessions(decisions: list[dict[str, object]]) -> dict[str, str]:
 
 
 def statesCurrentRules(relative: Path) -> bool:
-    """Report whether a document is a description of the current rules.
-
-    The rule modules, the built skills and the top-level README are. A round writeup is not: it is a record of what was
-    decided then, so naming a decision that a later round replaced is the point rather than a defect.
-    """
+    # A round writeup records what was decided in the round, so a decision that a later round replaced is correct in the
+    # writeup.
     return relative.parts[0] in SKILL_SOURCE_DIRECTORIES or str(relative) == 'README.md'
 
 

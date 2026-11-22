@@ -73,7 +73,6 @@ JAVA_TOKEN = re.compile(
 
 
 def passages(source: str) -> list[Passage]:
-    """Read the passages of every comment block of one Java source."""
     return [passage for block in groupBlocks(lexComments(source)) for passage in blockPassages(block)]
 
 
@@ -129,11 +128,13 @@ def blockPassages(block: list[Comment]) -> list[Passage]:
     passages: list[Passage] = []
     current: Passage | None = None
     in_sample = False
+    in_tag = False
     javadoc = block[0].kind is CommentKind.JAVADOC
     for number, raw_text in (pair for comment in block for pair in comment.texts):
         text = raw_text.strip() if block[0].kind is CommentKind.LINE else cleanBlockLine(raw_text)
         if javadoc:
             in_sample, text = stripSample(in_sample, text)
+            in_tag, text = closeInlineTag(in_tag, text)
         breaks, list_item, text = splitMarkup(text, javadoc=javadoc)
         if not text or PRAGMA.search(text) or DIVIDER.match(text):
             current = None
@@ -157,6 +158,28 @@ def stripSample(in_sample: bool, text: str) -> tuple[bool, str]:
     """Blank the lines of a `<pre>` sample, and return whether the next line is still in the sample."""
     if '<pre>' in text or in_sample:
         return '</pre>' not in text, ''
+    return False, text
+
+
+def closeInlineTag(in_tag: bool, text: str) -> tuple[bool, str]:
+    """Turn the part of an inline tag on each line into backticks, for a tag such as `{@code ...}` over two lines.
+
+    Returns:
+        Whether a tag is still open at the end of the line, and the text with each part of the tag in backticks.
+    """
+    # matches:
+    # `the reader of {@link PlanReader#read(Path,`
+    # rejects:
+    # `the reader of {@link PlanReader}`
+    OPEN_TAG = re.compile(r'\{@(?:code|literal|link|linkplain|value)\b([^}]*)$')
+    if in_tag:
+        close = text.find('}')
+        if close == -1:
+            return True, f'`{text}`' if text else ''
+        text = f'`{text[:close].strip()}`{text[close + 1 :]}'
+    if opened := OPEN_TAG.search(text):
+        part = opened[1].strip()
+        return True, text[: opened.start()] + (f'`{part}`' if part else '')
     return False, text
 
 

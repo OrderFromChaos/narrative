@@ -1,8 +1,8 @@
 ## Errors
 
 - **Checked for boundary and I/O failures, unchecked for everything else.** A parse error of a file,
-  a packet or NBT `extends Exception`, so a call site with no `try` and no `throws` clause is a
-  compile error. A broken invariant `extends RuntimeException`. (J1-F2, Q20)
+  a packet or NBT `extends Exception`, so a call site without a `try` or a `throws` clause doesn't
+  compile. A broken invariant `extends RuntimeException`. (J1-F2, Q20)
 
   A checked exception cannot leave a lambda for a JDK functional interface, or an override of a
   Minecraft or Forge method. Catch it there:
@@ -23,8 +23,8 @@
   restored" and drops the tile entity. A `@Mod.EventHandler` or `@SubscribeEvent` method is not an
   override, so a `throws` clause on the method compiles.
 
-- **The name of an exception class ends in `Exception`:** `PlanException`, not `PlanError` or
-  `PlanFailure`. Never `Error`, because a `java.lang.Error` subclass means the JVM is unusable.
+- **The name of an exception class ends in `Exception`:** `PlanError` or `PlanFailure` →
+  `PlanException`. Never `Error`, because a `java.lang.Error` subclass means the JVM is unusable.
   `NAR109` enforces both. (J1-P23)
 
 - **Handle each failure mode narrowly and separately.** No `catch (Exception)`,
@@ -48,7 +48,7 @@
 
   (J1-P24, Q19, J1-F04, J1-no-noqa)
 
-- **Related means the handling is the same, not that the classes share a base.** Where two failures
+- **Related means the handling is the same.** A shared base class doesn't make two failures related. Where two failures
   produce one outcome, one multi-catch `catch (A | B exception)` is correct. But check the premise
   first. A timeout and an unreachable host are different facts and deserve different words.
   (R8-D24-resolved)
@@ -62,8 +62,8 @@
 - **Log the generic fact once at the raise site, however you factor that.** Route several raise
   sites through a `reject*()` helper that logs and returns the exception. (Q23, R4-02)
 
-- **At the handle site, log what the failure meant there, but in a degrade-and-report loop log the
-  aggregate, not the item.** Log the item at DEBUG and the tally at WARN. (R4-02)
+- **Where a failure is handled, log what the failure meant there. In a degrade-and-report loop, log
+  the aggregate.** Log the item at DEBUG and the tally at WARN. (R4-02)
 
 - **Level follows from what an operator can act on.** A pack maker cannot act on recipe 4,812. A
   pack maker can act on "4,812 of 10,000 recipes rejected". (R4-02)

@@ -10,13 +10,13 @@ on the `level` line of each run. (J1-levels)
 | jabel | `jabel`, `true` | 17 | Java 17, with `@Desugar` on a record, and no sealed types | Java 8, with `--release 8` |
 | Java 8 | `false`, or no value | 8 | Java 8 | Java 8 |
 
-`true` and `false` match with any case. On any other value, `verify.py` exits 2, and also on
+`true` and `false` match with any case. `verify.py` exits 2 on any other value, and on a
 `forceToolchainVersion` other than `-1` or the toolchain of the level. javac runs on the toolchain of
 the project, so a call to a method that the library of the level does not have is a compile error.
 Checkstyle and PMD run on a JDK 25 at every level.
 
-- No preview features.
-- On a guard for a runtime newer than the floor, the comment has the version:
+- Don't use preview features.
+- A comment on a guard for a runtime newer than the floor names the version:
   `// on Java 21 and later, Thread.ofVirtual() is available`. (R10-version-guard)
 
 ### Rules by level
@@ -31,8 +31,8 @@ Every rule and every check applies at every level, except these. Where a rule be
   can fire only on a record. (J1-P21-levels)
 - **`List.copyOf`.** jabel and Java 8: Guava `ImmutableList.copyOf`, and `ImmutableSet.copyOf` or
   `ImmutableMap.copyOf` for the other collections. (J1-P21-levels)
-- **A `switch` over an enum.** Java 25 and jabel: a `switch` expression with no `default` arm. javac
-  rejects a missing constant at both levels. Java 8 has no `switch` expression. Put the behaviour on
+- **A `switch` over an enum.** Java 25 and jabel: a `switch` expression without a `default` arm. javac
+  rejects a missing constant at both levels. Java 8 doesn't have a `switch` expression. Put the behaviour on
   the constant, where javac checks every constant. Where only one caller needs a mapping, write a
   `switch` statement with a case for every constant, no `default` arm, and a throw after the switch.
   `NAR107` flags a `default` arm at every level. (J1-P19-java8)

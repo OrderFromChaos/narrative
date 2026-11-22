@@ -29,5 +29,5 @@ rule here. Read it before you change a config.
 
 The reason for each rule is in the rule's text, so read the rule and not the id after the rule. The
 ids are provenance. They resolve in `benchmark/decisions.jsonl` in the source repository,
-`github.com/OrderFromChaos/narrative`. That repository does not ship with the skill. **A rule with no id and no check behind the rule does not belong here.**
+`github.com/OrderFromChaos/narrative`. That repository does not ship with the skill. **A rule without an id or a check behind the rule does not belong here.**
 

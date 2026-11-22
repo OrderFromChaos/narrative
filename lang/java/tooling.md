@@ -30,7 +30,7 @@ of the narrative repository, and `build_skills.py` copies them into `skills/gtnh
 | javac `-Xlint:rawtypes,unchecked` | raw types and unchecked operations (`NAR121`) |
 | Checkstyle | naming (`NAR130`) and the parameter limit (`NAR131`), with `checkstyle.xml` |
 | PMD | the structural checks, as XPath rules in `pmd-ruleset.xml`, plus four built-in rules |
-| `javachecks.py` | comments and javadoc with a lexer, the prose checks, the checks on comments (`NAR118` to `NAR120`, `NAR125`), the comment and javadoc lookups of `NAR110`, `NAR116` and `NAR117`, then noqa, the keep-list and `--since` over every finding. With `--rewrap`, `javachecks.py` re-wraps comments in place instead. `verify.py` runs the re-wrap before Gradle unless `--no-fix` is given |
+| `javachecks.py` | comments and javadoc with a lexer, the prose checks, the checks on comments (`NAR118` to `NAR120`, `NAR125`), the comment and javadoc lookups of `NAR110`, `NAR116` and `NAR117`, then noqa, the keep-list and `--since` over every finding. When `--rewrap` is given, `javachecks.py` re-wraps comments in place instead. `verify.py` runs the re-wrap before Gradle unless `--no-fix` is given |
 | `codeprose.py` | the lexer that reads Java comments and javadoc into passages for the prose checks, and into blocks of lines for the re-wrap |
 | `rewrap.py` | the re-wrap of every language: the paragraphs of a block of comment lines, filled up to column 120 |
 | `wording.py`, `agentverbs.py`, `prose.py` | the prose checks of every language: `NAR012` to `NAR018`, and `NAR020` to `NAR022` |
@@ -88,7 +88,7 @@ suffix. A keep-list entry or a `noqa` comment with the bare code, such as `// no
 matches the finding.
 
 A PMD rule or a Checkstyle check with no entry in `PMD_CODES` or `CHECKSTYLE_CODES` of
-`javachecks.py` is exit 2, so no finding of a new rule is printed without a code.
+`javachecks.py` is exit 2, so a finding of a new rule is never printed without a code.
 
 ## The configs
 
@@ -103,10 +103,10 @@ Below is *why* each non-obvious setting is there.
 - The **LocalFinalVariableName** pattern has UPPER_SNAKE too, for the local compile-time constants of
   **Constants** in `SKILL.md`.
 - **NAR107** has the XPath comment `(: SEALED_TYPES :)`. `verify.py` replaces it with one
-  `pmd-java:typeIs()` test per sealed type found in the sources, because XPath has no test for a
+  `pmd-java:typeIs()` test per sealed type found in the sources, because XPath doesn't have a test for a
   sealed type. The name of a nested sealed type is the file name, a dot and the type name, so a
   sealed type nested two levels deep is not tested.
-- **NAR112** has no type test for a wrapper, only the method names `translate*`, `localize*`,
+- **NAR112** doesn't test the type of a wrapper. NAR112 tests the method names `translate*`, `localize*`,
   `trans`, `tr` and `i18n`. A method of another kind with one of those names and a `+` in a `String`
   argument is a finding too. Ask the user whether to keep that finding (see **noqa** in
   `SKILL.md`). The key-prefix exception is for the first argument of a localization call only, and
@@ -129,7 +129,7 @@ Everything below is in `build/narrative/` of the project, and a repeat run skips
 - The reports themselves. A Checkstyle or PMD task with no changed input is up to date, and the
   task's report stays valid.
 
-Under `--since`, only the passages on changed lines go to spaCy, Checkstyle and PMD read only the
+When `--since` is given, only the passages on changed lines go to spaCy, Checkstyle and PMD read only the
 changed files, and an empty diff is exit 2 before Gradle starts.
 
 ## Gotchas
@@ -147,7 +147,7 @@ with Java 25 is 7.16.0. PMD 7.28.0 is set in the init script.
 Checkstyle 13 does not start on a JDK older than 21. In the init script, both tasks have a JDK 25
 launcher. `compileJava` keeps the toolchain of the project.
 
-**The Gradle PMD plugin passes no Java version to PMD 7**, so PMD parses every project at the
+**The Gradle PMD plugin doesn't pass a Java version to PMD 7**, so PMD parses every project at the
 default Java version of PMD, at every level. The XPath rules are the same at each level. The
 rules that differ by level are in **Scope** of `SKILL.md`. The NAR107 message of the level comes
 from `verify.py`, which replaces `NAR107_MESSAGE` in `pmd-ruleset.xml`.
@@ -156,9 +156,9 @@ from `verify.py`, which replaces `NAR107_MESSAGE` in `pmd-ruleset.xml`.
 line of the name as both the first and the last line. `javachecks.py` finds the end of a `NAR116`
 method by brace matching, with comments and literals blanked, for `NAR117` and for `--since`.
 
-**A parenthesised union with predicates matched nothing in PMD 7.28.**
-`//(MethodCall[@MethodName = 'str'] | ConstructorCall[...])/ArgumentList/StringLiteral` has no
-match, while each branch alone has one. Write a flat union of full paths, `//A[...]/B | //C[...]/B`.
+**In PMD 7.28, a parenthesised union with predicates doesn't match.**
+`//(MethodCall[@MethodName = 'str'] | ConstructorCall[...])/ArgumentList/StringLiteral` doesn't
+match, and each branch alone matches. Write a flat union of full paths, `//A[...]/B | //C[...]/B`.
 
 **In a rule message, `{}` is read by PMD as a MessageFormat argument**, and every match of the rule
 is then an exception in the PMD log. No braces in a message.
@@ -188,8 +188,7 @@ and the code line after a whole-line block. The same syntax applies to a finding
 repository, and is not part of any commit. Each line has three tab-separated fields, the path from
 the top of the working tree, the code and the text of the line. The reason is on a `#` line above
 the entry. To add an entry, run `verify.py --keep FILE:LINE:CODE --reason TEXT`. An entry is matched
-by the text of the line, not by the line number, so an entry matches the finding at any line
-number. Kept findings are counted in the last line of the output, for example
+by the text of the line, so an entry matches the finding at any line number. Kept findings are counted in the last line of the output, for example
 `4 findings, 0 warnings, 1 kept over 226 files`.
 
 **In `<pre>{@code …}</pre>`, spotless moves each tag to a separate line.** A plain `<pre>` block and

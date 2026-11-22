@@ -2,12 +2,12 @@
 
 `SKILL.md` applies to one file. This document applies to several.
 
-Read this when the program spans more than one module, or imports a third-party package. Do not read
-it for a single-file program. None of it applies, and reading it is pure context cost.
+Read this when the program spans more than one module, or imports a third-party package. Skip this
+document for a single-file program. The rules here don't apply to one file, and reading them costs context.
 
 The reason for each rule is in the rule's text. The ids are provenance and resolve in
 `benchmark/decisions.jsonl` in the source repository. That repository does not ship with the skill. A rule that
-no tool can check is marked as such.
+the tools can't check is marked as such.
 
 ## The measure
 
@@ -20,7 +20,8 @@ each of those sentences has exactly one destination, and when the person making 
 which destination before they read the program. It fails when the answer is "it depends" or "three
 places".
 
-**Measure how much the person making an edit must know, not how many files the edit touches.**
+**Measure how much the person making an edit must know.** The number of files the edit touches isn't the
+measure.
 (`R7-A05-measure`)
 
 Two designs can touch the same number of files and not be the same design. One writes a wire format
@@ -31,7 +32,7 @@ diff does not need to know what the device is.
 
 1. a parameter threaded through functions that do not use it
 2. one more file
-3. one more named type. It costs nothing when the field belongs to the thing the field is about
+3. one more named type. A named type is free when the field belongs to the thing the field is about
 
 Spend a named type or a file to delete a threaded parameter. Never the reverse.
 
@@ -41,29 +42,30 @@ Spend a named type or a file to delete a threaded parameter. Never the reverse.
 
 A per-vendor retry cap is a property of the manufacturer's networking stack, so the retry cap
 belongs with the vendor and not in a generic backoff module. A retention window is a property of the
-data, not of the scheduler that runs the cleanup. Four questions that look unrelated have their
+data, and the window doesn't belong in the scheduler that runs the cleanup. Four questions that look unrelated have their
 answer in this one rule:
 
 - **Do not make a caller pass what the callee can compute from its arguments and imports.**
-  (`R7-A01-revised`) A store module may import a config module, so that no caller has to pass the
-  store module a lookup. **This outranks dependency direction.** The two rules collide often.
+  (`R7-A01-revised`) A store module may import a config module, so that a caller doesn't have to pass
+  the store module a lookup. **This outranks dependency direction.** The two rules collide often.
 
-- **An exception type belongs in the shared vocabulary, not in the module that raises the
-  exception.** (`R7-A04-revised`) Any module may catch the exception, so the exception type belongs
-  to no one module. The alternative pays for a circular import.
+- **An exception type belongs in the shared vocabulary, even when one module raises the
+  exception.** (`R7-A04-revised`) Any module may catch the exception, so the exception type doesn't
+  belong to one module. The alternative pays for a circular import.
 
 - **A type centralises once it appears in a signature.** (`R7-B07`, `R7-B07-bound`) A shape built and
-  consumed inside one function is a step, not a type. The three values a `struct.unpack` produces
+  consumed inside one function is a step, and doesn't get a type. The three values a `struct.unpack` produces
   stay unnamed.
 
   **Every type in a signature that other modules use goes in the shared vocabulary**, with no
   exception for a type that only one other module reads. (`R8-D19-resolved`) A config record built
   in one module and read in three crosses. A round report built in one module and returned to the
   entry point crosses. The modules then contain functions and constants, and the glossary contains
-  every type passed between them. A module of types alone takes **no `### vocabulary` divider**,
-  because the divider separates types from the code above them and there is no code.
+  every type passed between them. A module of types alone **doesn't take a `### vocabulary`
+  divider**, because the divider separates types from the code above them, and that module doesn't
+  have code.
 
-- **A log field set belongs to whatever emits the record**, not to the formatter. A flat shared list
+- **A log field set belongs to whatever emits the record.** Keep the set out of the formatter. A flat shared list
   is fine while one module produces the records, and is a smell once two producers need different
   keys. (`R7-E02-fields`)
 
@@ -90,24 +92,25 @@ answer in this one rule:
   The first is three `Path` calls. The second composes `isReport`, a concept from the
   problem. From the name of the whole, a reader learns that the two conditions belong together.
 
-  This is judgement. No tool checks it. Measured over eight packages, seven functions forwarded to
+  This is judgement, and the tools don't check it. Measured over eight packages, seven functions forwarded to
   a single expression and only one was the defect, so a mechanical threshold would be six false
   positives in seven.
 
 **Two participants that must agree on a byte layout share one module, beside them.** (`R7-A05`) A
-copy on each side is the worst option, because drift between the copies is a bug that no type checker
-and no linter reports.
+copy on each side is the worst option, because drift between the copies is a bug that a type
+checker or a linter doesn't report.
 
 ## Which module imports which
 
-**There is no layer table and no directory rule. This is review judgement, not a check.**
+**There isn't a layer table or a directory rule. A reviewer judges the direction, and the tools don't check
+it.**
 (`R7-A05-levels`)
 
 `io/reader.py` importing `io/checksum.py` is correct, because a checksum is below a reader whatever
 the directory layout. Directory depth is not the level. A declared layer order fails for a different
 reason. Layers inferred from current imports make every existing edge legal by construction.
 
-**A cycle is a wrong cut, not an import problem.** (`R7-A02`) Break it with a shared vocabulary
+**A cycle is a wrong cut, and the fix is a new cut.** (`R7-A02`) Break it with a shared vocabulary
 module. Do not reach for `if TYPE_CHECKING`. It is cheap only because the future import is
 mandatory. Do not dissolve the shared type into primitives. **When a callee takes primitives, every
 caller has to destructure the shared type.**
@@ -143,9 +146,9 @@ measure directly. Cut on the axis the expected changes land in more cleanly.
 **Naming a concept and crossing a boundary are two tests, and they can disagree.** (`R7-B04`,
 `R8-D39`) A helper that leaves the package must be findable by someone who did not write the helper,
 which forces the helper to name a concept. A checksum earns `checksum.py`. A byte formatter and a
-batcher that never leave can share one module. But a version comparator can be a clean concept and
-still be imported by one module and cross nothing. Where the two tests disagree, no order between
-them is settled. Treat it as a question for review, not a rule.
+batcher that never leave can share one module. But a version comparator can be a clean concept that only
+one module imports, and that doesn't cross a boundary. When the two tests disagree, the rules don't
+settle an order between them. Treat the case as a question for review.
 
 **Shared code inside one system starts as one `common.py`, scoped to that system's directory.**
 (`R7-A05-growth`) Split it when it grows: definitions first, then implementation. This is never a
@@ -156,25 +159,25 @@ project-wide `utils.py`.
 **Prefix every internal module-level name with an underscore:** functions, constants,
 classes, and type aliases. (`R7-B08`, `R7-B08-scope`) A module filename does not take one.
 
-Decide by the callers the name has now, not by the callers you expect. **A name that nothing outside
-this module calls today takes the underscore.** When a later change uses it elsewhere, drop the
-underscore in that change. A module nothing can import has no public surface to mark, so the rule
-does not reach `__main__.py`, whose names stay bare.
+Decide by the callers the name has now. The callers you expect don't count. **A name that only this
+module calls today takes the underscore.** When a later change uses it elsewhere, drop the
+underscore in that change. A module that code can't import doesn't have a public
+surface to mark. So the rule doesn't reach `__main__.py`, and the names of `__main__.py` stay bare.
 
 **`__all__` declares a package's exports.** (`R7-B05`) A library's `__init__.py` is a re-export façade
-with `__all__`, and has no state and no constants. An application package's `__init__.py` is empty.
+with `__all__`, and doesn't have state or constants. An application package's `__init__.py` is empty.
 
 **`main` is in `__main__.py`.** (`R7-B09`) Users type `python3 -m collector` and never see the dunder.
 Split the workflow out only when `main` grows long.
 
-**The entry point has the list of modules and nothing about any of them.** (`R7-A05-entry`) Two
+**The entry point has the list of modules. What each module does is in that module.** (`R7-A05-entry`) Two
 files is the floor for adding a new subject: the new module, and the one line with the module's
 name.
 
 **The reading order is in `__main__.py`.** (`R7-B01-map`) Its docstring is the program's purpose,
-then the modules in reading order. What every other module owes is `SKILL.md`'s rule, not a second
-one stated here. This cost is known and accepted. A reader arriving at one module from a stack trace sees that
-module and no map.
+then the modules in reading order. For every other module, the rule is the one in `SKILL.md`, and
+this document doesn't add a second rule. This cost is known and accepted. A reader who arrives at one module from a stack trace sees that
+module, and doesn't see a map.
 
 **This is the one docstring with other modules' names in it, and the only exception to the rule that
 a docstring is about the docstring's file alone.** The entry point is the file whose subject *is*
@@ -197,8 +200,8 @@ seam earns a `Protocol` once the seam has more than one real implementation. A t
 once two of that thing can exist at once. One object, one implementation, and a class is the right
 answer.
 
-**One coordinator, not a chain.** (`R7-C03`) Stages that nothing reuses separately do not each call
-the next. One function calls them in turn, with the intermediates in the function's local variables.
+**One coordinator calls the stages in turn.** (`R7-C03`) When code doesn't reuse a stage alone,
+the stage doesn't call the next stage. One function calls them in turn, with the intermediates in the function's local variables.
 
 **A pure core earns its place by the number of decisions in the core.** (`R7-C06`, `R7-C07`) Four
 routing rules and three effects earn one. Compute a plan, then apply the plan. One f-string does
@@ -206,7 +209,7 @@ not. Build the line where you emit it.
 
 **Every case of a closed set is in one module, in an exhaustive `match`.** (`R7-A06`) A decorator
 that registers each handler at import inverts the import arrows and puts the dispatch table beyond
-the type checker's reach. Adding a member must fail the type check, not fail at runtime.
+the type checker's reach. Adding a member must fail the type check. A failure at runtime is too late.
 
 **Centralise a type before anything shares the type. Do not generalise behaviour before you need
 it.**
@@ -228,24 +231,25 @@ file.
 
 **One program-scoped config object reaches every module.** (`R7-E03`) Per-module slices make
 consumers re-derive a local version, and each version is new surface. There is one config for the whole
-program. Unlike every other bundle, the config gets no wrapping class with behaviour.
+program. Unlike every other bundle, the config doesn't get a wrapping class with behaviour.
 
-**The config object is a module-level singleton, not a parameter.** (`R8-D09-resolved`) Parse the
+**The config object is a module-level singleton.** Don't pass the config object as a
+parameter. (`R8-D09-resolved`) Parse the
 config once at import into a frozen record and import that name where that name is needed. A frozen
-config has nothing to close, so the singleton rule above already allows a frozen config. Not allowed
+config doesn't need a close, so the singleton rule above already allows a frozen config. Not allowed
 under that rule: a *hardcoded default* invented in a module. A default belongs in the config file.
 The singleton is **assigned once and never rebound.** A function that reassigns it mutates module
 state and owes a `global`, and fails `NAR001`.
 
 **Leaf modules import the constants they need**, when those constants exist at import time.
 (`R7-A07`) Thread the config object instead when the program resolves the config object at run
-time. *No tool checks this, and both forms work.*
+time. *The tools don't check this, and both forms work.*
 
 **Pass a flag no further down than the function that branches on the flag.** (`R7-C04`) A flag may
 go further inside a named config.
 
 **The clock goes inside the function that reads the clock.** (`R7-E04`) Test through the real clock
-and assert on ordering and bounds, not on an instant. Inject it only for a measured speedup on a hot
+and assert on ordering and bounds. Don't assert on an instant. Inject it only for a measured speedup on a hot
 loop. Then justify it.
 
 ## Third-party code
@@ -253,17 +257,17 @@ loop. Then justify it.
 Two steps, often mistaken for one.
 
 **Take the dependency when it is simpler at the call site.** (`R7-D02`) **The dependency must be
-simpler there.** `json`, `struct`, `sqlite3`, `pathlib` and `dataclasses` already read well, and no
-package improves on them. At equal ergonomics, use the standard library, because it costs nothing to
-install. (`R7-D02-stdlib`)
+simpler there.** `json`, `struct`, `sqlite3`, `pathlib` and `dataclasses` already read well, and a
+package doesn't improve on them. When the ergonomics are equal, use the standard library, because the
+standard library is free to install. (`R7-D02-stdlib`)
 
 **Then contain it.** (`R7-D03`, `R7-D01`) One module imports the library. Everything downstream gets
 a domain type.
 
-**Contain handles, not values.** (`R7-D01-D03-containment`) **A handle is a thing that must be
+**Contain handles, and let values cross.** (`R7-D01-D03-containment`) **A handle is a thing that must be
 closed:** a connection, a client, a socket, an open file. (`R7-D01-D03-handle`) `datetime`,
-`Decimal` and an array cross freely, because wrapping them buys nothing and costs a conversion at
-every boundary.
+`Decimal` and an array cross freely, because a wrapper adds a conversion at every boundary
+and doesn't add anything else.
 
 **Depend rather than vendor or reimplement**, weighted by adoption: downloads, age, dependents.
 (`R7-D05`, `R7-D05-trust`) Reimplement when you must change the thing wholesale. Vendor only when
@@ -280,22 +284,23 @@ constraint everyone's.
 so the formatter emits `module`, `lineno` and `funcName` to locate the record instead.
 (`R7-E02-fields`)
 
-**Shared code goes in the shared library**, not in whichever program used the code first. (`R7-E06`)
+**Shared code goes in the shared library**, even when one program used the code first. (`R7-E06`)
 
 **The source pushes and the service follows**, when the source can push. (`R7-E07`) A poll loop
-is the fallback, not the shape. This was decided for instruments on a socket, and it extends to any
+is the fallback. This was decided for instruments on a socket, and it extends to any
 source with notifications, such as a queue, a filesystem watch or a webhook. It does **not** reach a
 source that can only be asked, such as an HTTP endpoint you do not control. There, polling is the
 shape and not a defeat.
 
-Without rounds there is no natural batch, so the reporting unit becomes a **time window**. `Q24` then
+When a program doesn't run in rounds, the program doesn't have a natural batch, so the reporting unit
+becomes a **time window**. `Q24` then
 aggregates over a window rather than over a batch.
 
 ## Where degrade-and-report splits
 
 **The module doing the work collects per-item failures, and the module above logs the aggregate.**
 (`Q24`, `R7-A08`) The rule is in `SKILL.md`. This is the only thing a module boundary adds to the
-rule. Real dependencies in tests (`R2-02`, `R7-C08`) need no adjustment at module scale at all.
+rule. Real dependencies in tests (`R2-02`, `R7-C08`) don't need an adjustment at module scale.
 
 ## Comments
 
@@ -311,26 +316,26 @@ of `checks.py` itself. A name from the same program is not a citation.
 **Name the value of the last return.** (`R7-return-naming`) At the end of a long function, the name of
 the returned value is enough, and the reader does not scroll to the signature. Early returns and
 guard exits are exempt, because a name on those produces near-identical pairs and creates the rote
-diffing banned by `R2b-P0`. `RET504` stays disabled, so this form is legal. *No size threshold is
-set. Apply it where the signature is off the screen.*
+diffing banned by `R2b-P0`. `RET504` stays disabled, so this form is legal. *The rule doesn't set a
+size threshold. Apply it where the signature is off the screen.*
 
 **Order module constants by who changes the value.** (`R7-A05-ordering`) Operator-tunable first,
 developer-only bindings last. Where execution order forces a constant later in the block, the
 constant joins the block rather than leading the block. Do not contort around it (`R4-03`).
 
 **Take `ruff format`'s signature indentation.** (`R7-indent`, `R7-indent-resolved`) PEP 8 allows a
-hanging double indent, and the indent reads better. `ruff format` rewrites the indent, and has no
+hanging double indent, and the indent reads better. `ruff format` rewrites the indent, and doesn't have a
 setting to turn the rewrite off. Accept the constraint rather than work around it.
 
-## What no tool can check
+## What the tools can't check
 
 Stated plainly, as `SKILL.md` does for constant placement.
 
-- **Dependency direction.** No layer table, no directory rule. (`R7-A05-levels`)
+- **Dependency direction.** There isn't a layer table or a directory rule. (`R7-A05-levels`)
 - **Where a fact belongs.** Ownership is a judgement about meaning. (`R7-A05-property`)
 - **The split axis, and whether a concern is coherent.** (`R7-B02`, `R7-B01-B03-criterion`)
 - **Whether a bundle is a real thing.** (`R7-C05-naming`)
 
-Four more are checkable in principle and **no checker for them exists**, so they are review
+Four more are checkable in principle and **the tools don't have a checker for them**, so they are review
 judgement too: import cycles, a cross-module import of an underscore-prefixed name, an `__all__`
 with an undefined name, and a handle type in a signature outside the handle type's owning module.

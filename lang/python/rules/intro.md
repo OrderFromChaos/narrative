@@ -28,10 +28,10 @@ docstrings apply to each module of a package exactly as they apply to a single-f
 `architecture.md` adds what happens **between** files: which module may import which, where a shared
 type belongs, when one file becomes several, and which modules may import a third-party dependency.
 Read it when the program spans more than one module or imports a third-party package. Skip it for a
-single-file program, where none of `architecture.md` applies.
+single-file program, where `architecture.md` doesn't apply.
 
 The reason for each rule is in the rule's text, so read the text and not the id after the rule. The
 ids are provenance. They resolve in `benchmark/decisions.jsonl` in the source repository,
 `github.com/OrderFromChaos/narrative`. That repository does not ship with the skill. **A rule
-with no id and no linter behind the rule does not belong here.**
+without an id or a linter behind the rule does not belong here.**
 

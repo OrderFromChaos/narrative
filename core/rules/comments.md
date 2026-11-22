@@ -7,8 +7,8 @@ localisation files. `verify.py` lists comments and docstrings only, so read mess
 localisation files by hand. (R10-docstrings, R10-message-scope)
 
 **Comments are not thinking traces.** While writing, you reasoned through edge cases, alternatives
-and spec gaps. That reasoning is a thinking trace. It belongs in your report to the user, not in
-the code. (R10-stance)
+and spec gaps. That reasoning is a thinking trace. Put the reasoning in your report to the user, and leave the
+reasoning out of the code. (R10-stance)
 
 **Cut a comment whose content a smart reader would get from the code below the comment (including
 variable names), no matter how the comment is phrased or what rule category the comment seems to
@@ -24,8 +24,8 @@ fits.** (R10-cleanup-rewrite)
 1. List the facts in the existing comment.
 2. Check each fact against its source where you can: the code for a fact about the code, and the
    documentation of the language or the library, a spec or a vendor's documentation for a fact from
-   outside the code. Some facts have no source you can check, such as a business decision. Keep
-   those.
+   outside the code. You can't check the source of some facts, such as a business decision. Keep
+   those facts.
 3. Drop a fact only when you find the fact false. When you find the fact false, and at the same
    source you find the correct answer to the same question, keep the correct answer in place of the
    false fact. For `the config is read once, at startup`, where the code reads the config on each
@@ -64,7 +64,7 @@ retry` or a similar phrase at the end. `with no retry` makes the same claim abou
 
 **Don't describe what a function's callers do.** (R11-callers)
 
-A developer who changes a caller has no reason to read this comment, so a sentence about what the
+A developer who changes a caller doesn't have a reason to read this comment, so a sentence about what the
 callers do becomes false when they change. When the reader needs the reason for a requirement, state
 a fact about what the function returns or changes. Not `Return a frozen mapping. The pricing
 functions call this on each request`, but `Return a frozen mapping: the rates don't change while the
@@ -102,15 +102,16 @@ changes. (J1-pr-base-comments)
   cosmetic difference doesn't count, and neither does adding a feature. Name the step the code takes
   because of the fact. (R10-Q20, R10-Q42, R10-Q44, R10-Q45, R10-Q50, R10-Q53, R10-Q55,
   R10-fence-consequence)
-  - `the API returns 200 with an error body for a bad key. Check the body too`, not `the API returns
-    200 with an error body for a bad key`
+  - `the API returns 200 with an error body for a bad key` → `the API returns 200 with an error
+    body for a bad key. Check the body too`
   - `constant-time comparison to avoid timing attacks`
   - `we want to make sure deleting an item doesn't shift the unvisited indices. Therefore, walk
     backwards`
   - `migrate before load. load reads the account_id column`
-  - not `file can change between calls, so not cached`. A cache is a feature, not a simplification
+  - `file can change between calls, so not cached` isn't a Fence. A cache is a feature, and the
+    test of a Fence is about a simplification
 - **Decoding aid**: a line a smart reader would need docs or a worked example to read. Test: you'd
-  look it up. State the intent, not the mechanism. A decoding aid is about a construct of the
+  look it up. State the intent, and leave out the mechanism. A decoding aid is about a construct of the
   code, so the examples are under **Decoding aids** in **Comments in <language>**, in the skill
   `nar:<language>`. (R10-Q42, R10-Q46)
   - a regex gets a string the regex matches, and one the regex rejects where the boundary is
@@ -151,12 +152,12 @@ changes. (J1-pr-base-comments)
   (R12-no-constant-values)
 - alternatives never in the code (`rather than`, `instead of`), except in architecture discussion (R10-Q07, R10-rather-than)
 - risks far outside the task's scale, and decisions too inconsequential for a later reader to reconsider (R10-Q13, R10-rating)
-- future needs nobody has documented or planned (R10-Q15)
+- a future need that isn't in a document or a plan (R10-Q15)
 - reassurance that a weakness is fine, such as `deliberately` or `on purpose` (R10-candor, R10-Q20, `NAR014`)
 - guarantees about other modules or functions. Put a module's guarantee in the project's
   architecture document. Where the code depends on another function's guarantee and the check is
-  cheap, check the guarantee in the code: test for an empty cache in the loop condition, not
-  `store() rejects an oversized item, so the cache is never empty` (R10-Q24, R10-Q11, R10-other-modules,
+  cheap, check the guarantee in the code: `store() rejects an oversized item, so the cache is never empty` →
+  test for an empty cache in the loop condition (R10-Q24, R10-Q11, R10-other-modules,
   R10-check-invariant)
 - how one function uses a type, written on the type: `member order is the order plan.json lists a
   snapshot's rules` belongs with the function that writes plan.json, or nowhere if the order is
@@ -173,12 +174,12 @@ A one-line comment stays one clause, or two short sentences. (R10-Q16, R10-seed-
 R10-depth-example, R10-period-join)
 
 **Sentence form:**
-- a one-line comment has a lowercase start and no final period. Several lines, and every docstring, are sentences. (R10-Q26, R10-Q35, R10-docstrings)
-- two sentences over a connective such as `which`, `since`, `as` or `, where`. With a connective,
-  the reader may attach the second clause to the wrong noun. `migrate before load, which reads the
+- a one-line comment has a lowercase start, and doesn't end with a period. Several lines, and every docstring, are sentences. (R10-Q26, R10-Q35, R10-docstrings)
+- two sentences over a connective such as `which`, `since`, `as` or `, where`. A reader can attach
+  the clause after a connective to the wrong noun. `migrate before load, which reads the
   account_id column` → `migrate before load. load reads the account_id column`. A comparison with
   `as` to other code states no fact: `a float, as in the parser` → `the parser computes in float
-  too`. `NAR021` flags `as in`, a sentence that opens with `As` and has no verb, `as the X verbs
+  too`. `NAR021` flags `as in`, a sentence that opens with `As` and doesn't have a verb, `as the X verbs
   it`, and `, where` (R10-period-join, R11-connective-as-where)
 - no free modifier. A free modifier is a phrase without a verb that follows a comma: `, in one
   list for each tenant`, `, measured,` or `, with the row number in the error`. The reader can
@@ -189,7 +190,8 @@ R10-depth-example, R10-period-join)
   - `export() stops at the first bad row, with the row number in the error` → `export() stops at
     the first bad row. The row number is in the error message`
   The fourth review list of `verify.py` has every sentence with a free modifier (R12-no-free-modifier)
-- terse. Drop articles where nothing is lost, never the subject or the verb (R10-seed-10, R10-terse-narrow)
+- terse. Drop an article when the meaning stays the same. Keep the subject and the verb (R10-seed-10,
+  R10-terse-narrow)
 - every clause has a subject and a verb. A label for the thing is fine: `least recently used
   first`, `Exact, case-sensitive comparison.` A predicate with the subject cut is not:
   `Bound to one machine` → `The modifier is bound to one machine`, and
@@ -212,7 +214,7 @@ R10-depth-example, R10-period-join)
     for, or split the sentence: `QuotaLedger extends Store, and it caches every read` → `QuotaLedger
     extends Store, and Store caches every read`. `NAR022` flags this form (R11-pronoun-grammar)
   (R10-referent)
-- the concrete thing, not `what the X does to the Y`: `Say what the fact requires of the code` →
+- the concrete thing. A phrase such as `what the X does to the Y` is abstract: `Say what the fact requires of the code` →
   `Name the step the code takes because of the fact` (R10-nominal-chain)
 - a claim is true in every case that reaches the claim. Otherwise, name the case in the sentence.
   List the paths that reach the sentence:
@@ -227,18 +229,18 @@ R10-depth-example, R10-period-join)
   (R10-case-coverage)
 - when a comment moves from one approach to another, mark the switch with `Alternatively,`:
   `opening the file for writing would empty the file before the write. Alternatively, write a
-  temporary file and rename the temporary file over the original`. Without the marker, the second
-  sentence reads as more about the first approach (R10-alternative-marker)
+  temporary file and rename the temporary file over the original`. When the marker is missing,
+  the second sentence reads as more about the first approach (R10-alternative-marker)
 - possessives and noun compounds over relative clauses: `the archive's collections`, `in read order` (R10-seed-1, R10-seed-9, R10-Q32)
 - trade terms over paraphrase: `doesn't have side effects`. Modifiers before the noun: `JSONL logs`. (R10-seed-3, R10-seed-4)
-- the conclusion, not the derivation. State what the code means, not how the code gets there.
-  `empty when malformed`, not `empty when a malformed line names no customer as a string`. Cut a
+- the conclusion. State what the code means, and leave out how the code gets there: `empty when a
+  malformed line names no customer as a string` → `empty when malformed`. Cut a
   clause about an internal check, structure or attribute unless the reader needs the clause to act.
   (R10-conclusion)
 - no intensifiers. Drop a word that only stresses, such as `exactly`, `always`, `precisely` or
   `simply`. Keep it when the sentence means something else without the word: `exactly two decimal
   places`. (R10-intensifiers)
-- the full term when a short form is ambiguous: `timezone`, not `zone` (R10-clipped-terms)
+- the full term when a short form is ambiguous: `zone` → `timezone` (R10-clipped-terms)
 - contractions and the imperative (R10-Q28, R10-Q29, R10-we)
 - a negation is on the verb: `doesn't`, `isn't`, `can't`. Don't put `no`, `nothing` or `none` on
   the subject or the object of a verb, or after `is`:
@@ -273,22 +275,22 @@ R10-depth-example, R10-period-join)
   (R12-no-name-phrase)
 - callables as `name()`, and no article before an identifier (R10-Q30, R10-Q35)
 - only names the reader can resolve from the comment's position (R10-Q22, R10-Q21)
-- with code or an abstract noun as the subject, only verbs for what code literally does: `returns`,
+- only verbs for what code literally does, when the subject is code or an abstract noun: `returns`,
   `raises`, `reads`, `writes`, `calls`, `skips`. Never agency or containment: `finds`, `knows`,
-  `holds`, `carries`, `keeps its`, `costs`. Write `a module has one function`, not
-  `a module holding one function`. These words are examples. The test is whether the subject can
+  `holds`, `carries`, `keeps its`, `costs`. `a module holding one function` →
+  `a module has one function`. These words are examples. The test is whether the subject can
   perform the verb. (R10-Q31, R10-Q39, R10-seed-1, R10-seed-6, R10-seed-15, R10-skill-gaps)
 - no `is what`, no `its own` (R10-Q40, R10-Q41, `NAR018`)
-- the general case: `records are separated by blank lines`, not `two records` (R10-Q40)
+- the general case: `two records` → `records are separated by blank lines` (R10-Q40)
 - a worked example matches what the code does for every case in the example: not `with a->b and
   b->c, a and c compare unequal` when a and b also compare unequal (R10-worked-example)
 - no semicolon and no dash. Write two sentences (R10-no-semicolon, `NAR013`)
 - a comment line over the line limit is wrapped onto the next line. Never change the wording to fit (R11-wrap-not-reword)
-- **re-wrap with `verify.py`, not by hand.** Before the checks, `verify.py` fills each paragraph of a
+- **re-wrap with `verify.py`.** Before the checks, `verify.py` fills each paragraph of a
   comment or doc comment up to column 120, in every language, and under `--since` only a paragraph
   with a changed line. The line breaks of a blank comment line, a list item, a block tag, a sample
-  and the strings under `matches:` stay as written. With `--no-fix`, `NAR125` flags each paragraph
-  that the re-wrap would change. The re-wrap moves line breaks only, never words (R11-rewrap-fill)
+  and the strings under `matches:` stay as written. When `--no-fix` is given, `NAR125` flags
+  each paragraph that the re-wrap would change. The re-wrap moves line breaks only, never words (R11-rewrap-fill)
 - a Fence is the fact the code depends on, then the step the code takes because of that fact:
   `the vendor rounds tax per line, not per invoice. Round each line before the sum`. Write `X would`
   only when X is an alternative the code does not use, such as a read of the whole file into
@@ -300,13 +302,13 @@ R10-depth-example, R10-period-join)
 - a comment on one branch of a `match`, `switch` or `if` chain is about what only that branch does. A reason
   that covers every branch goes above them once. Cut it when a name such as `local` already makes
   the reason obvious (R10-branch-comment)
-- directly above the statement it concerns, not above its enclosing block. Comments inside a try
-  block go above the call the comment concerns, not above the `try`. A comment on an argument goes
-  above the call that passes the argument, not below the try block. End-of-line for a short note. (R10-Q34, R10-locality, R10-fence-form,
+- directly above the statement it concerns. Above the enclosing block is too far. Put a comment
+  inside a try block above the call the comment concerns, and keep the comment off the `try` line.
+  Put a comment on an argument above the call that passes the argument. End-of-line for a short note. (R10-Q34, R10-locality, R10-fence-form,
   R10-argument-placement)
 
 `NAR012` to `NAR016` and `NAR018` flag six wording faults in comments and docstrings, and a clean
-run is no evidence about the rest of these lists. Check every comment and docstring you write or
+run isn't evidence about the rest of these lists. Check every comment and docstring you write or
 touch against them. A dash after a list-item term is allowed. `NAR015` also flags `no longer` about
 data. Such a sentence usually has data as the subject of an agent verb, so reword the sentence.
 (R10-lint, R10-skill-gaps, R10-list-dash, R10-nar015-scope,
@@ -315,7 +317,7 @@ R10-nar016, R10-nar018)
 `NAR017` is an agent verb on a subject that cannot act, meaning a noun that is not a person, with a
 verb for something only a person does: thought or speech (`a period ranks`, `the report names it`,
 `a policy can judge`), or, with an object, a deliberate act (`the default config sends the job to a
-queue`, `the fallback places the file`). Documents get no exception. Write `named in the report`. A
+queue`, `the fallback places the file`). The rule is the same for documents. Write `named in the report`. A
 table, figure or example on the page can show what is in the table, figure or example: `the table
 below shows the totals`.
 It comes from `agentverbs.py`, which `verify.py` runs. The check parses each sentence, and
@@ -358,7 +360,7 @@ tool error goes in your report with the file and line. When the user decides to 
 only that finding, and only in that pass. (R11-no-filter)
 
 **Never add a `noqa` yourself.** The exceptions are under **noqa** in **Comments in <language>**, in
-the skill `nar:<language>`. For a sentence left under case 1, 2 or 3, add no `noqa`: leave the
+the skill `nar:<language>`. For a sentence left under case 1, 2 or 3, don't add a `noqa`: leave the
 sentence and the finding, and list the sentence in your report. Rewrite a sentence from a review
 list only when the sentence fails a step of **Prose review**. (R11-findings, R11-noqa-leave)
 

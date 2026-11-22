@@ -4,18 +4,18 @@ Use this instead of calling the tools by hand. A hand-rolled loop counts finding
 or misresolved binary produces empty output and reads as a pass. This script resolves every tool to an absolute path and
 exits 2 if any one of them is absent, so a green result means the tools ran.
 
-This is the whole pipeline. Give it any path, and every Python file below the path is checked, so no workflow is chosen
-at run time. A Markdown, HTML or plain text file named on the command line, such as a README or a published page, gets
-the two prose checks only: the wording checks of checks.py and agentverbs.py. pyproject.toml is required only when
-Python files are checked. A path of `-` is a page read from stdin, Markdown, or the suffix given with --stdin-suffix.
-The page is saved in the cache directory as `stdin` with that suffix, and each finding is reported at the path of the
-saved page.
+This is the whole pipeline. Give it any path, and every Python file below the path is checked, so the caller doesn't
+choose a workflow at run time. A Markdown, HTML or plain text file named on the command line, such as a README or a
+published page, gets the two prose checks only: the wording checks of checks.py and agentverbs.py. pyproject.toml is
+required only when Python files are checked. A path of `-` is a page read from stdin, Markdown, or the suffix given with
+--stdin-suffix. The page is saved in the cache directory as `stdin` with that suffix, and each finding is reported at
+the path of the saved page.
 
-Unless nothing was checked, verify.py writes four review lists, over the Python files and the pages, to review-lists.txt
-in the cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every subject that
-cannot act paired with the subject's verb, every sentence with a pronoun, and every sentence with a free modifier. The
-path of the file and the number of entries in each list are on the last line of the output, so `tail -1` shows them.
-Without --since, each list stops after 1000 entries, with the command for the next 1000.
+When a file or a page was checked, verify.py writes four review lists, over the Python files and the pages, to
+review-lists.txt in the cache directory, .narrative_cache or the directory given with --cache-dir: every sentence, every
+subject that cannot act paired with the subject's verb, every sentence with a pronoun, and every sentence with a free
+modifier. The path of the file and the number of entries in each list are on the last line of the output, so `tail -1`
+shows them. Without --since, each list stops after 1000 entries, with the command for the next 1000.
 
 With --since REF, only the Python files and pages that the diff against merge-base(HEAD, REF) adds or changes are
 checked, and only the findings and list entries on changed lines are reported. A finding on a `def` or `class` line
@@ -175,7 +175,8 @@ def main() -> int:
 
     failed = [r for r in results if not r.passed]
     if failed:
-        # nobody should need to re-run a tool by hand to see why the tool failed
+        # print the output of each failed tool, so a developer doesn't re-run the tool by hand to learn why the tool
+        # failed
         for result in failed:
             print(f'\n--- {result.tool} ---')
             print(result.detail.rstrip() or '(no output)')
@@ -340,9 +341,9 @@ def runCodeTools(
 def fixChangedLines(ruff: str, ruff_config: list[str], targets: list[str], *, changed: ChangedLines) -> None:
     """Apply each safe fix of `ruff check` that edits a changed line, and no other fix.
 
-    `ruff check --fix` has no line range. So each file is checked through stdin, and each fix of the JSON output is
-    applied whole or not at all, the same as with `ruff check --fix`. A fix can leave a new finding with a fix, so the
-    check runs again, up to FIX_ROUNDS times.
+    `ruff check --fix` doesn't take a line range. So each file is checked through stdin, and each fix of the JSON output
+    is applied whole or not at all, the same as with `ruff check --fix`. A fix can leave a new finding with a fix, so
+    the check runs again, up to FIX_ROUNDS times.
     """
     for target in targets:
         path = Path(target)

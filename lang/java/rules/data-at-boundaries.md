@@ -8,8 +8,8 @@
   component skips an absent value. **Never substitute a plausible default**, because the output then
   contains a fact that the file does not. (R9-01)
 
-- **A record is the default for data.** A class that is just data is the record, not a wrapper
-  around a nested one. On jabel and Java 8, the record has the form of **Rules by level** in
+- **A record is the default for data.** A class that is just data is the record. Don't wrap a
+  nested record in a class. In a jabel or Java 8 build, the record has the form of **Rules by level** in
   **Scope**. In other classes, a field is `final` unless code reassigns the field.
   `NAR141` flags a field that could be final. (J1-P21, R8-D11-resolved)
 

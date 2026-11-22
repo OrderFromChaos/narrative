@@ -6,7 +6,7 @@ HTML. Inline code stays in backticks, so it is read as code and not as a sentenc
 source file are read by the codeprose.py of the file's language, into the same Passage type.
 
 A finding in a page is silenced with an HTML comment on the same line, `<!-- noqa: NAR017 -->`, or `<!-- noqa -->` for
-every code. Markdown renders no such comment.
+every code. Markdown doesn't render an HTML comment.
 
 Usage, from a script in this directory:
     from prose import PROSE_SUFFIXES, readPassages
@@ -153,11 +153,6 @@ def frontMatterEnd(lines: list[str]) -> int:
 
 
 def inlineText(markdown: str) -> str:
-    """Strip images, link targets and emphasis markers from one line of Markdown, keeping backticks.
-
-    Returns:
-        The line without Markdown syntax.
-    """
     return EMPHASIS.sub('', LINK.sub(r'\1', IMAGE.sub('', markdown))).strip()
 
 

@@ -1,13 +1,13 @@
 ## The module docstring
 
-**Every module opens with a docstring. Anything runnable has a usage example.** A reader meets it
-first, before `main()`, so it is about what the program is *for*, not how the program works.
+**Every module opens with a docstring. Anything runnable has a usage example.** A reader meets the
+docstring first, before `main()`, so the docstring says what the program is *for*. The code shows how the program works.
 (R5-02, NAR009)
 
 **Write for a professional developer who has the file open.** That reader knows the language and the
 vocabulary of the trade, so `API`, `idempotent` and `tuple` are the right words and a plain-English
 circumlocution around them is worse. One idea per sentence. **One word for one thing, and the word
-is the identifier the code uses.** With `unassigned` in a docstring where the code has
+is the identifier the code uses.** When a docstring has `unassigned` and the code has
 `unattributed`, a reader greps for something that is not there. (R9-09)
 
 The prose rules for comments and docstrings are in **Comments**.
