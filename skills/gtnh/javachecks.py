@@ -45,9 +45,9 @@ list stops after 1000 entries, and the last line of the list is the command for 
 --from-pair, --from-pronoun and --from-modifier print only the list they name, from the given entry. --since and
 --all-sentences remove the limit.
 
-NAR116 isn't a finding. When --method-list PATH is given, javachecks.py writes each hit of the NAR116 rule of
-pmd-ruleset.xml, a method over 20 body lines, to PATH, with or without a javadoc. verify.py adds the file to the review
-lists. For a method with a javadoc, each `throw new X` without a `@throws X` line is a NAR117 finding.
+NAR116 isn't a finding. --method-list PATH writes the NAR116 review list to PATH: each method with a javadoc and a body
+of more than one line, and each method over 20 body lines without a javadoc. verify.py adds the file to the review
+lists. For a method on the list with a javadoc, each `throw new X` without a `@throws X` line is a NAR117 finding.
 
 --keep FILE:LINE:CODE adds a finding that the user approved to the keep-list. A finding in a Java source isn't silenced
 with `// noqa`, because the maintainer of an upstream project must delete each `// noqa` from a PR. The keep-list is
@@ -92,6 +92,8 @@ SKIPPED_DIRS = frozenset({'.git', '.gradle', 'build', 'run', 'out', 'bin'})
 CODE = r'NAR\d{3}(?:-[a-z]+)?'
 # the file name of the keep-list, in the info directory of the common git directory
 KEEP_LIST_NAME = 'narrative-keep'
+# a method without a javadoc is on the NAR116 review list when the method has more body lines than this
+LONG_METHOD_LINES = 20
 # Checkstyle check name, without the Check suffix: the NAR code
 CHECKSTYLE_CODES = {
     'MethodName': 'NAR130',
@@ -136,7 +138,11 @@ def main() -> int:
     paging.add_argument('--from-modifier', type=int, help='with --prose, list only the free modifiers, from this one')
     parser.add_argument('--all-sentences', action='store_true', help='with --prose, list every entry of every list')
     parser.add_argument('--cache', type=Path, help='a file that keeps the spaCy results between runs')
-    parser.add_argument('--method-list', type=Path, help='write each method over 20 body lines to this file (NAR116)')
+    parser.add_argument(
+        '--method-list',
+        type=Path,
+        help='write the NAR116 review list to this file: each method with a javadoc or over 20 body lines',
+    )
     parser.add_argument('--rewrap', action='store_true', help='fill the javadoc and // comments again, in place')
     parser.add_argument(
         '--keep',
@@ -538,10 +544,13 @@ def checkFile(
     candidates.extend((finding, frozenset({finding.line})) for finding in constant_values)
     masked = maskLiterals(source) if any(tool_finding.code == 'NAR116' for tool_finding in tool_findings) else ''
     for tool_finding in tool_findings:
-        # a PMD violation of a method is at the method name. The end of a NAR116 method is found by the method's braces
-        last_line = (
-            methodEndLine(masked, tool_finding.first_line) if tool_finding.code == 'NAR116' else tool_finding.last_line
-        )
+        last_line = tool_finding.last_line
+        if tool_finding.code == 'NAR116':
+            # a PMD violation of a method is at the method name, so the body is found by the method's braces
+            opening_line, last_line = methodBraceLines(masked, tool_finding.first_line)
+            is_long = last_line - opening_line - 1 > LONG_METHOD_LINES
+            if not is_long and javadocAbove(reading, lines, tool_finding.first_line) is None:
+                continue
         span = frozenset(range(tool_finding.first_line, last_line + 1))
         line_span = span if tool_finding.scope is Scope.SPAN else frozenset({tool_finding.first_line})
         located = ToolFinding(
@@ -612,18 +621,19 @@ def maskLiterals(source: str) -> str:
     return JAVA_TOKEN.sub(lambda token: re.sub(r'[^\n]', ' ', token[0]), source)
 
 
-def methodEndLine(masked: str, first_line: int) -> int:
-    """Return the line of the brace that closes the method declared at `first_line`.
+def methodBraceLines(masked: str, first_line: int) -> tuple[int, int]:
+    """Return the lines of the braces that open and close the method declared at `first_line`.
 
-    A method with no body ends at the semicolon.
+    For a method without a body, both lines are the line of the semicolon.
     """
     offset = sum(len(line) + 1 for line in masked.split('\n')[: first_line - 1])
     opening = min(
         (position for position in (masked.find('{', offset), masked.find(';', offset)) if position >= 0),
         default=-1,
     )
+    opening_line = masked.count('\n', 0, max(opening, offset)) + 1
     if opening < 0 or masked[opening] == ';':
-        return masked.count('\n', 0, max(opening, offset)) + 1
+        return opening_line, opening_line
 
     depth = 0
     for position in range(opening, len(masked)):
@@ -632,8 +642,8 @@ def methodEndLine(masked: str, first_line: int) -> int:
         elif masked[position] == '}':
             depth -= 1
             if depth == 0:
-                return masked.count('\n', 0, position) + 1
-    return masked.count('\n') + 1
+                return opening_line, masked.count('\n', 0, position) + 1
+    return opening_line, masked.count('\n') + 1
 
 
 def readComments(source: str) -> CommentReading:
@@ -781,9 +791,9 @@ def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: Com
     - NAR110: a mutable static field. The finding is dropped when a comment for the reason is above the field, or after
       the field on the same line
     - NAR023: a method of one line. When a javadoc is above the method, the finding is reported
-    - NAR116: a method over 20 body lines, an entry of the NAR116 review list. When a javadoc is above the method,
-      NAR117 is reported for each `throw new X` in the method where X is absent from the throws clause and from the
-      `@throws` lines of the javadoc
+    - NAR116: a method with a javadoc or over LONG_METHOD_LINES body lines, an entry of the NAR116 review list. When a
+      javadoc is above the method, NAR117 is reported for each `throw new X` in the method where X is absent from the
+      throws clause and from the `@throws` lines of the javadoc
 
     Returns:
         No finding for NAR110 with a reason comment, else one finding or more.

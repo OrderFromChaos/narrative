@@ -420,7 +420,7 @@ an operation of code. A verb such as `reads` or `runs` is an operation of code o
 object and code as the verb's subject: `PlanLoader reads the plan file` is one, and `the spec reads` isn't. The
 third has every sentence with `it`, `its` or a standalone `that`, each after the sentence before. The fourth has every
 sentence with a free modifier: write the phrase as a clause or a separate sentence, or cut the phrase
-(R12-no-free-modifier). In Java, a fifth list has each method over 20 body lines (`NAR116`). Take these steps for each
+(R12-no-free-modifier). In Java, a fifth list has each method with a javadoc, and each method over 20 body lines (`NAR116`). Take these steps for each
 sentence. (R10-prose-inventory, R10-closing-review, R11-pronoun-list,
 R11-literal-review)
 

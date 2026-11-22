@@ -24,6 +24,10 @@ the rules too.
 - **Rule 10.** `NAR027` flags a number in a comment when the number is the value of a constant that the comment names, or
   of a constant on the 3 lines below the comment. The 2 rule units are config comment strings with the constants in
   another class, so `NAR027` doesn't reach them.
+- **Rule 11.** The `NAR116` list has each method with a javadoc and a body of more than one line, and each method over
+  20 body lines without a javadoc. A javadoc on a body of one line is `NAR023`. On `MobOverlayScan.java` and
+  `MobOverlayDisplayList.java` of NEI at commit 308febf, the list has the 6 javadocs that you cut by hand on
+  2026-11-22, on methods of 2 to 19 body lines. A list of methods over 20 body lines only had none of the 6.
 - **Rule 13.** The fourth review list of `verify.py` has each sentence with a free modifier. `, such as X` is left out,
   because you asked for more research on the form.
 - **Rule 15.** `NAR023` leaves out a stub: a body of `...`, `pass` or `raise NotImplementedError`, and a function under

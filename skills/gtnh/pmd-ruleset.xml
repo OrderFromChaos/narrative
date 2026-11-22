@@ -292,16 +292,17 @@
     </rule>
 
     <rule name="NAR116" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
-          message="method over 20 body lines">
+          message="method with a body of more than one line">
         <description>
-            P34 and R12-nar116-review: a method over 20 body lines. javachecks.py writes each hit to the
-            NAR116 review list, with or without a javadoc, and checks the @throws lines of a javadoc (NAR117).
+            P34 and R12-nar116-review: a method with a body of more than one line. A body of one line is NAR023.
+            javachecks.py writes a hit to the NAR116 review list when a javadoc is above the method or the body
+            is over 20 lines, and checks the @throws lines of the javadoc (NAR117).
         </description>
         <priority>3</priority>
         <properties>
             <property name="xpath">
                 <value><![CDATA[
-//(MethodDeclaration | ConstructorDeclaration)[Block[@EndLine - @BeginLine - 1 > 20]]
+//(MethodDeclaration | ConstructorDeclaration)[Block][not(Block[count(*) = 1][*[1][@BeginLine = @EndLine]])]
 ]]></value>
             </property>
         </properties>

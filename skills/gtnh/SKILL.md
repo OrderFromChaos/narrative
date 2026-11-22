@@ -895,7 +895,7 @@ javac, then Checkstyle and PMD with the configs beside `verify.py`, at every lev
 `javachecks.py` then reads the comments, runs the prose checks, and merges the three reports into
 one list with NAR codes. A run with exit 0 or 1 writes five lists to `.narrative_cache/review-lists.txt`, the input to **Prose
 review**: every sentence of every comment, javadoc and named page, every verb whose subject cannot
-act, every sentence with a pronoun, every sentence with a free modifier, and every method over 20 body lines (`NAR116`).
+act, every sentence with a pronoun, every sentence with a free modifier, and every method with a javadoc or over 20 body lines (`NAR116`).
 The list of methods comes from the PMD report, so a run with `--prose-only` doesn't list methods. The file and the number of entries in each list are
 on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` doesn't
 write the lists, because `javachecks.py` has not read the comments yet. When `--since` is given, the
