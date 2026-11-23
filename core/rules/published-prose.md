@@ -1,11 +1,11 @@
 ### Published prose
 
 A README, a doc page or an HTML report that you write follows the prose rules of this skill, as a
-comment does. When you rewrite part of a page, the rules cover the section you changed. If the
-rest of the page is clearly written by an LLM, suggest cleaning the rest, and do not change the
-rest unasked. A page that a person wrote and you did not change is left as it is, unless the user
-asks for it to be checked. Name each page to the `verify.py` of the language skill. The command is
-under **Pages** in **Comments in <language>**, in the skill `nar:<language>`.
+comment does. Which part of a page the rules cover depends on the skill loaded with this one:
+**Scope of a change** in `nar:repo` for a page in a code repository, and **Verify a page** in
+`nar:page` for a page outside one. Name each page to the `verify.py` of that skill. For a page in a
+repository, the command is under **Pages** in **Comments in <language>**, in the skill
+`nar:<language>`.
 
 Write a page about the current code and data, with no changelog wording such as `now`, `no longer`,
 or `was changed to`. Changelog wording belongs only in a changelog file that already exists in the

@@ -1,13 +1,15 @@
 ---
 name: core
-description: The Narrative rules for comments, docstrings, javadoc, error messages, help text and published pages such as a README, in every language. Load with nar:python or nar:gtnh whenever code is written or reviewed, and alone to write or review a page.
+description: The Narrative rules for comments, docstrings, javadoc, error messages, help text and published pages such as a README, in every language. Load with nar:repo and a language skill whenever code is written or reviewed, and with nar:page to write or review a page.
 ---
 
 # Narrative comments and prose
 
 These rules cover comments, docstrings, javadoc, error messages, help text and published pages, in
-every language of Narrative. Load this skill together with the skill of the language, such as
-`nar:python` or `nar:gtnh`. The checks run through the `verify.py` of the language skill.
+every language of Narrative. For code, load this skill together with `nar:repo` and the skill of the
+language, such as `nar:python` or `nar:gtnh`. For a page outside a code repository, load this skill
+together with `nar:page`. The checks run through the `verify.py` of the language skill or of
+`nar:page`.
 
 **The steps, in short. The details are in Procedures, the last section of `nar:<language>`.**
 (R11-steps-summary)
@@ -517,11 +519,11 @@ options.
 ### Published prose
 
 A README, a doc page or an HTML report that you write follows the prose rules of this skill, as a
-comment does. When you rewrite part of a page, the rules cover the section you changed. If the
-rest of the page is clearly written by an LLM, suggest cleaning the rest, and do not change the
-rest unasked. A page that a person wrote and you did not change is left as it is, unless the user
-asks for it to be checked. Name each page to the `verify.py` of the language skill. The command is
-under **Pages** in **Comments in <language>**, in the skill `nar:<language>`.
+comment does. Which part of a page the rules cover depends on the skill loaded with this one:
+**Scope of a change** in `nar:repo` for a page in a code repository, and **Verify a page** in
+`nar:page` for a page outside one. Name each page to the `verify.py` of that skill. For a page in a
+repository, the command is under **Pages** in **Comments in <language>**, in the skill
+`nar:<language>`.
 
 Write a page about the current code and data, with no changelog wording such as `now`, `no longer`,
 or `was changed to`. Changelog wording belongs only in a changelog file that already exists in the

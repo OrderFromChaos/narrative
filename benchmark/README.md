@@ -22,6 +22,7 @@ round8/                  red team: 35 defects from four fresh-context agents, pl
 round9/                  the skill read as a text: four defects in it, and V4 as the held-out test
 round10/                 comments: the corpus, the profile against human code, 13 cycles of agent runs and ratings
 round12/                 rules from the Claudish inbox: the drafts, the user's labels, the measurements of sentence shape
+round13/                 page rules from the user's feedback on pages, with anonymized examples
 validation/              held-out tasks for the blind skill-vs-doc comparison
 java/                    narrative-java round j1: the Java mapping, the toolchain spikes, the GT5 run feedback
 java-merge/              the merge of narrative-java: the drift between the two copies of the shared rules, the rulings, the example rewrites
@@ -90,6 +91,11 @@ directory when the round produces material a later reader must see to judge the 
 12. **Round 12**: rules from the Claudish inbox, `eval/units/claudish_inbox.jsonl`, the sentences that the
     user flagged as Claude-style prose. Each rule is tested on fresh agents with a full copy of the skill
     before the rule reaches `core/` or `lang/`. The decisions are `R12-*`. Directory: `round12/`.
+
+13. **Round 13**: the base rules for pages, the rules for three kinds of page, and the scope of a
+    change in a repository, from the user's feedback on pages that agents wrote in local sessions. Each
+    example is rewritten in another domain. The rules are in `page/` and `repo/`. The decisions are
+    `R13-*`. Directory: `round13/`.
 
 ## decisions.jsonl schema
 

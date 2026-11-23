@@ -2,10 +2,10 @@
 name: gtnh
 description: Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods, on Java 25 with jvmDowngrader, on jabel and on Java 8. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, when planning a change, and when reviewing a Java diff against this style. For Python files in the same repository, load nar:python too, or load nar:code in place of both. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages.
 ---
-**Before you write or review anything, load the skill `nar:core` with the Skill tool**, unless
-`nar:core` is loaded already. `nar:core` has the rules for comments, javadoc, error messages, and
-published pages, and the steps of **Writing a comment** and **Prose review** that **Procedures**
-names.
+**Before you write or review anything, load the skills `nar:core` and `nar:repo` with the Skill
+tool**, unless they are loaded already. `nar:core` has the rules for comments, javadoc, error messages,
+and pages, and the steps of **Writing a comment** and **Prose review** that **Procedures** names.
+`nar:repo` has the scope of a change in a code repository.
 
 
 # Narrative Java
