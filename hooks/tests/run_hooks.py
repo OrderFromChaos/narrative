@@ -43,6 +43,8 @@ REFUSED_COMMANDS = [
     'uv run pylint src',
     './gradlew spotlessApply',
     'cd mod && ./gradlew --offline checkstyleMain pmdMain',
+    'python3 /x/skills/page/verify.py docs/report.html --no-fix | head -40',
+    'python3 ~/.claude/skills/narrative-page/verify.py - 2>&1 | grep NAR',
 ]
 ALLOWED_COMMANDS = [
     'python3 /x/skills/python/verify.py . > out.txt; echo exit=$?',
@@ -78,6 +80,9 @@ def commandCases() -> list[Case]:
     other_skill = Call('pre-tool', {'tool_name': 'Skill', 'tool_input': {'skill': 'pdf'}})
     pipe = bash('python3 /x/skills/python/verify.py . | tail -5')
     cases.append(Case('no skill loaded: allow a pipe', [pipe], None))
+    for skill in ('nar:brief', 'narrative-runbook', 'nar:repo'):
+        load = Call('pre-tool', {'tool_name': 'Skill', 'tool_input': {'skill': skill}})
+        cases.append(Case(f'{skill} loaded: refuse a pipe', [load, pipe], 'deny'))
     cases.append(Case('another skill loaded: allow a pipe', [other_skill, pipe], None))
     by_hand = [SKILL_LOAD, bash('ruff check core/')]
     cases.append(Case('narrative repository: allow a check by hand', by_hand, None, in_narrative=True))
@@ -90,6 +95,7 @@ def commandCases() -> list[Case]:
 def sessionCases() -> list[Case]:
     """List the cases of edits, `verify.py` runs, reads of the review lists, turn ends and compaction."""
     verify = bash('python3 /x/skills/python/verify.py .')
+    page = bash('python3 /x/skills/page/verify.py docs/report.html --no-fix')
     java = bash('python3 /x/skills/gtnh/verify.py --since HEAD')
     by_variable = bash('python3 "${CLAUDE_SKILL_DIR}/verify.py" 2>&1')
     lists = writeLists('.narrative_cache')
@@ -165,6 +171,9 @@ def sessionCases() -> list[Case]:
         ),
         Case('no skill loaded: allow the end', [edit('src/a.py'), STOP], None),
         Case('edit of a page: allow the end', [SKILL_LOAD, edit('README.md'), STOP], None),
+        Case('Python edit, page verify: refuse the end', [SKILL_LOAD, edit('src/a.py'), page, STOP], 'block'),
+        Case('page verify, unread lists: refuse the end', [PAGE_LOAD, page, lists, STOP], 'block'),
+        Case('page verify, Read lists: allow the end', [PAGE_LOAD, page, lists, read_lists, STOP], None),
         Case('edit outside the project: allow the end', [SKILL_LOAD, outside, STOP], None),
         Case('compaction after a skill load: name the skill', [SKILL_LOAD, compact], 'context'),
         Case('compaction with no skill: nothing', [compact], None),
@@ -296,6 +305,7 @@ class Case:
 
 
 SKILL_LOAD = Call('pre-tool', {'tool_name': 'Skill', 'tool_input': {'skill': 'nar:python'}})
+PAGE_LOAD = Call('pre-tool', {'tool_name': 'Skill', 'tool_input': {'skill': 'nar:page'}})
 STOP = Call('stop', {'stop_hook_active': False})
 STOP_AGAIN = Call('stop', {'stop_hook_active': True})
 

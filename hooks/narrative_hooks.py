@@ -10,9 +10,9 @@ ends are refused:
   `--help`
 - at the end of a turn: a `.py` or `.java` file of the project edited in this turn after the last `verify.py` run for
   the language of the file, or the review lists of a run of this turn never opened. For a `.py` file, only a run of
-  nar:python counts. For a `.java` file, only a run of nar:gtnh without --prose-only counts. Lists that the run did not
-  write, such as after an exit 2 or during a run in the background, need no read. A second end of the same turn is
-  allowed, so the agent can stop a turn to ask the user a question
+  nar:python counts. For a `.java` file, only a run of nar:gtnh without --prose-only counts. A run of nar:page counts
+  for neither. Lists that the run did not write, such as after an exit 2 or during a run in the background, need no
+  read. A second end of the same turn is allowed, so the agent can stop a turn to ask the user a question
 - after compaction: a reminder to load the Narrative skills again, because the summary has no rules
 
 A `verify.py` run is a Python run of the `verify.py` in the folder of a Narrative skill. A script of the project named
@@ -53,7 +53,10 @@ from pathlib import Path
 ### standard library only. Claude Code runs this script with the python3 of the machine
 
 # the skill names of the plugin `nar` and of install.sh
-NARRATIVE_SKILL = re.compile(r'^(?:nar:(?:python|gtnh|core|code)|narrative-(?:python|java|gtnh|core))$')
+NARRATIVE_SKILL = re.compile(
+    r'^(?:nar:(?:python|gtnh|core|code|repo|page|proposal|brief|runbook)'
+    r'|narrative-(?:python|java|gtnh|core|repo|page|proposal|brief|runbook))$',
+)
 CHECKED_SUFFIXES = frozenset({'.py', '.java'})
 # the files at the root of the narrative repository
 NARRATIVE_SOURCE_FILES = ('skills.toml', 'assemble.py', 'build_skills.py')
@@ -75,18 +78,21 @@ CACHE_DIR = re.compile(r'--cache-dir[\s=]+' + PATH_ARGUMENT)
 
 # a redirect of one stream into another, such as `2>&1`. The `&` of such a redirect is not a command separator
 STREAM_REDIRECT = re.compile(r'\d*>&\d+')
-# a Python interpreter, then a script in the folder of a Narrative skill: skills/python or skills/gtnh of the plugin and
-# of the repository, a folder of install.sh, or the skill folder variable of SKILL.md
+# a Python interpreter, then a script in the folder of a Narrative skill: skills/python, skills/gtnh or skills/page of
+# the plugin and of the repository, a folder of install.sh, or the skill folder variable of SKILL.md
 SKILL_SCRIPT = (
     r'\bpython[\d.]*(?:\.exe)?\s+(?:-\w+\s+)*["\']?\S*?'
-    r'(?P<folder>skills[/\\](?:python|gtnh)|narrative-(?:python|java|gtnh)|\$\{?CLAUDE_SKILL_DIR\}?)[/\\]'
+    r'(?P<folder>skills[/\\](?:python|gtnh|page)|narrative-(?:python|java|gtnh|page)|\$\{?CLAUDE_SKILL_DIR\}?)[/\\]'
 )
 # the suffix of the source files that the verify.py of a skill folder checks. `${CLAUDE_SKILL_DIR}` is the folder of
-# nar:python or of nar:gtnh, so a run through `${CLAUDE_SKILL_DIR}` counts for both suffixes
+# nar:python, nar:gtnh or nar:page. A run through `${CLAUDE_SKILL_DIR}` can be a run of any of the three skills, so the
+# run counts for both suffixes
 CHECKED_SUFFIXES_OF_FOLDER = {
     'python': ('.py',),
     'gtnh': ('.java',),
     'java': ('.java',),
+    # the verify.py of nar:page checks pages, so a run of nar:page doesn't check a source file
+    'page': (),
 }
 # the option of the verify.py of nar:gtnh that skips Gradle. The verify.py of nar:python has no such option
 PROSE_ONLY = re.compile(r'--prose-only\b')
