@@ -2,10 +2,10 @@
 name: python
 description: Write or review Python in the Narrative house style, with mixedCase functions, main() first with types last, parse-at-the-boundary dataclasses, no ORM that re-validates what the database checks, explicit global on mutation, exhaustive match without a fallback arm, and a verified ruff/pylint/mypy toolchain. Covers multi-module architecture too. Which module may import which, when one file becomes several, what goes in a package __init__.py, where a shared type belongs, and when to take or contain a third-party dependency. Use for any Python written in or for this codebase, when planning a change, when laying out modules or packages, and when reviewing a diff against this style. Always load nar:core with this skill: nar:core has the rules for comments, docstrings and error messages.
 ---
-**Before you write or review anything, load the skill `nar:core` with the Skill tool**, unless
-`nar:core` is loaded already. `nar:core` has the rules for comments, docstrings, error messages, and
-published pages, and the steps of **Writing a comment** and **Prose review** that **Procedures**
-names.
+**Before you write or review anything, load the skills `nar:core` and `nar:repo` with the Skill
+tool**, unless they are loaded already. `nar:core` has the rules for comments, docstrings, error messages,
+and pages, and the steps of **Writing a comment** and **Prose review** that **Procedures** names.
+`nar:repo` has the scope of a change in a code repository.
 
 
 # Narrative Python

@@ -19,7 +19,12 @@
         "./skills/python",
         "./skills/gtnh",
         "./skills/core",
-        "./skills/code"
+        "./skills/repo",
+        "./skills/code",
+        "./skills/page",
+        "./skills/proposal",
+        "./skills/brief",
+        "./skills/runbook"
       ]
     }
   ]

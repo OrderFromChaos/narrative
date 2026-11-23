@@ -2,8 +2,10 @@
 # Narrative comments and prose
 
 These rules cover comments, docstrings, javadoc, error messages, help text and published pages, in
-every language of Narrative. Load this skill together with the skill of the language, such as
-`nar:python` or `nar:gtnh`. The checks run through the `verify.py` of the language skill.
+every language of Narrative. For code, load this skill together with `nar:repo` and the skill of the
+language, such as `nar:python` or `nar:gtnh`. For a page outside a code repository, load this skill
+together with `nar:page`. The checks run through the `verify.py` of the language skill or of
+`nar:page`.
 
 **The steps, in short. The details are in Procedures, the last section of `nar:<language>`.**
 (R11-steps-summary)

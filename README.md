@@ -77,9 +77,47 @@ Some examples of (2):
 ## Usage
 
 - Python: `/nar:python`
-- Docs/pages: `/nar:core`
 - GTNH Java: `/nar:gtnh`
 - Mixed languages: `/nar:code`
+- A README or a doc in a code repository: the skill of the language, which loads `nar:repo`
+- A page outside a code repository: `/nar:page`, or the skill of the kind of page: `/nar:proposal`,
+  `/nar:brief` or `/nar:runbook`
+
+Each arrow points from a skill to a skill that the first skill loads.
+
+```mermaid
+flowchart TD
+    code["<b>nar:code</b><br/>repos with several languages"]
+    python["<b>nar:python</b>"]
+    gtnh["<b>nar:gtnh</b><br/>Java in GTNH mods"]
+    repo["<b>nar:repo</b>"]
+    proposal["<b>nar:proposal</b><br/>recommendations to a decision-maker"]
+    brief["<b>nar:brief</b><br/>investigations and RCA"]
+    runbook["<b>nar:runbook</b><br/>step-by-step manuals"]
+    page["<b>nar:page</b><br/>base rules for pages"]
+    core["<b>nar:core</b><br/>comments and sentences"]
+    code --> python
+    code --> gtnh
+    python --> repo
+    gtnh --> repo
+    repo --> core
+    proposal --> page
+    brief --> page
+    runbook --> page
+    page --> core
+    subgraph legend [Legend]
+        direction LR
+        lcode["code skill"]
+        lpage["page skill"]
+        lcore["shared by both"]
+    end
+    classDef code fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+    classDef page fill:#fef3c7,stroke:#b45309,color:#78350f
+    classDef core fill:#e5e7eb,stroke:#374151,color:#111827
+    class code,python,gtnh,repo,lcode code
+    class proposal,brief,runbook,page,lpage page
+    class core,lcore core
+```
 
 ## Install
 

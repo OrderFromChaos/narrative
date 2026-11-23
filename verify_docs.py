@@ -37,10 +37,10 @@ DECISION_FIELDS = (
     'scope',
 )
 DECISION_ROUNDS = frozenset(
-    {'1', '2', '2b', '3', '3a', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'validation', 'j1'},
+    {'1', '2', '2b', '3', '3a', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', 'validation', 'j1'},
 )
 # where a decision applies: every language, one language, or the benchmark and the project itself
-DECISION_SCOPES = frozenset({'core', 'python', 'java', 'project'})
+DECISION_SCOPES = frozenset({'core', 'python', 'java', 'page', 'project'})
 DECISION_KINDS = frozenset({'control', 'gap', 'provocation', 'derived'})
 DECISION_STRENGTHS = frozenset({'strong', 'weak'})
 NULLABLE_FIELDS = frozenset({'condition', 'note', 'strength'})
@@ -66,9 +66,11 @@ CITABLE_SCOPES = {
     ('core', 'rules'): frozenset({'core', 'project'}),
     ('lang', 'python'): frozenset({'core', 'python', 'project'}),
     ('lang', 'java'): frozenset({'core', 'java', 'project'}),
+    ('page',): frozenset({'core', 'page', 'project'}),
+    ('repo',): frozenset({'core', 'project'}),
 }
 # the directories of the documents of the current rules
-SKILL_SOURCE_DIRECTORIES = frozenset({'core', 'lang', 'mode', 'skills'})
+SKILL_SOURCE_DIRECTORIES = frozenset({'core', 'lang', 'mode', 'page', 'repo', 'skills'})
 
 
 def schemaProblems(decisions: list[dict[str, object]]) -> list[str]:

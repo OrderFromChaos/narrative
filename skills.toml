@@ -53,11 +53,11 @@ files = [
     "core/tools/requirements-lock.txt",
 ]
 suffixes = [".py"]
-requires = ["core"]
+requires = ["core", "repo"]
 
 
 [core]
-description = "The Narrative rules for comments, docstrings, javadoc, error messages, help text and published pages such as a README, in every language. Load with nar:python or nar:gtnh whenever code is written or reviewed, and alone to write or review a page."
+description = "The Narrative rules for comments, docstrings, javadoc, error messages, help text and published pages such as a README, in every language. Load with nar:repo and a language skill whenever code is written or reviewed, and with nar:page to write or review a page."
 modules = [
     "core/rules/intro.md",
     "core/rules/comments.md",
@@ -65,6 +65,109 @@ modules = [
     "core/rules/prose-review.md",
     "core/rules/published-prose.md",
 ]
+
+[page]
+description = "The base Narrative rules for each page that people read, such as a report, a proposal or a README. The rules cover the target audience, the scope and the structure of a page, executive summaries, titles and headings as noun phrases, plain wording without marketing copy or rhetorical setups, coined and overloaded terms, and charts and diagrams. Load with nar:core to write or review a page. A category skill such as nar:proposal, nar:brief or nar:runbook loads this skill and adds the rules for one kind of page."
+modules = [
+    "page/rules/load-core.md",
+    "page/rules/intro.md",
+    "page/rules/reader.md",
+    "page/rules/scope.md",
+    "page/rules/structure.md",
+    "page/rules/titles.md",
+    "page/rules/register.md",
+    "page/rules/rhetoric.md",
+    "page/rules/terms.md",
+    "page/rules/charts.md",
+    "page/rules/diagrams.md",
+    "page/rules/tables.md",
+    "page/rules/verify.md",
+]
+files = [
+    "lang/python/tools/checks.py",
+    "lang/python/tools/codeprose.py",
+    "core/tools/rewrap.py",
+    "lang/python/tools/verify.py",
+    "lang/python/tools/pyproject-snippet.toml",
+    "core/tools/agentverbs.py",
+    "core/tools/prose.py",
+    "core/tools/wording.py",
+    "core/tools/words.json",
+    "core/tools/requirements-lock.txt",
+]
+requires = ["core"]
+
+[proposal]
+description = "Write or review a proposal in the Narrative house style: a page that recommends a course of action to a decision-maker, such as a refund policy for a finance director. Suggestions, not decisions or prohibitions, no mechanism the rule works without, schedules as guidelines, a weaknesses section, and an order by the reader's role. Loads nar:page and nar:core."
+modules = [
+    "page/categories/load-page.md",
+    "page/categories/proposal.md",
+    "page/categories/verify.md",
+]
+files = [
+    "lang/python/tools/checks.py",
+    "lang/python/tools/codeprose.py",
+    "core/tools/rewrap.py",
+    "lang/python/tools/verify.py",
+    "lang/python/tools/pyproject-snippet.toml",
+    "core/tools/agentverbs.py",
+    "core/tools/prose.py",
+    "core/tools/wording.py",
+    "core/tools/words.json",
+    "core/tools/requirements-lock.txt",
+]
+requires = ["page"]
+
+[brief]
+description = "Write or review a findings brief in the Narrative house style: a page on an investigation in progress, such as a root-cause analysis, kept current. Current best understanding only, a status on each claim, data sources first, an executive summary, one fact on one page, and next steps. Loads nar:page and nar:core."
+modules = [
+    "page/categories/load-page.md",
+    "page/categories/brief.md",
+    "page/categories/verify.md",
+]
+files = [
+    "lang/python/tools/checks.py",
+    "lang/python/tools/codeprose.py",
+    "core/tools/rewrap.py",
+    "lang/python/tools/verify.py",
+    "lang/python/tools/pyproject-snippet.toml",
+    "core/tools/agentverbs.py",
+    "core/tools/prose.py",
+    "core/tools/wording.py",
+    "core/tools/words.json",
+    "core/tools/requirements-lock.txt",
+]
+requires = ["page"]
+
+
+[runbook]
+description = "Write or review a runbook in the Narrative house style: a step-by-step manual for a reader who acts on each step, with equipment or data at risk. No reader work, terse steps, one path in order, checks with actions, and hazards first. Loads nar:page and nar:core."
+modules = [
+    "page/categories/load-page.md",
+    "page/categories/runbook.md",
+    "page/categories/verify.md",
+]
+files = [
+    "lang/python/tools/checks.py",
+    "lang/python/tools/codeprose.py",
+    "core/tools/rewrap.py",
+    "lang/python/tools/verify.py",
+    "lang/python/tools/pyproject-snippet.toml",
+    "core/tools/agentverbs.py",
+    "core/tools/prose.py",
+    "core/tools/wording.py",
+    "core/tools/words.json",
+    "core/tools/requirements-lock.txt",
+]
+requires = ["page"]
+
+[repo]
+description = "The Narrative rules for a change in a code repository, such as a change to code, comments, docstrings, error messages or a README. The rules cover the scope of a change, and apply to the lines you changed, checked with verify.py --since. nar:python and nar:gtnh load this skill between nar:core and the rules of the language."
+modules = [
+    "repo/rules/load-core.md",
+    "repo/rules/intro.md",
+]
+requires = ["core"]
 
 [gtnh]
 description = "Write or review Java in the Narrative house style for GTNH (GregTech New Horizons) Minecraft 1.7.10 mods, on Java 25 with jvmDowngrader, on jabel and on Java 8. Covers caller-before-callee order, records for data, an exhaustive switch with no default arm, checked exceptions at boundaries, localized user-facing text, no allocation per frame, the comment and javadoc rules of nar:core with their NLP checks, and a verified spotless/javac/Checkstyle/PMD toolchain with a --since mode for upstream PRs. Also multi-package architecture and optional-mod containment. Use for any Java written in or for a GTNH mod, when planning a change, and when reviewing a Java diff against this style. For Python files in the same repository, load nar:python too, or load nar:code in place of both. Always load nar:core with this skill: nar:core has the rules for comments, javadoc and error messages."
@@ -112,7 +215,7 @@ files = [
 suffixes = [".java"]
 # a GTNH build applies the GTNH settings plugin in settings.gradle or settings.gradle.kts
 marker = { files = ["settings.gradle", "settings.gradle.kts"], contains = "com.gtnewhorizons.gtnhsettingsconvention" }
-requires = ["core"]
+requires = ["core", "repo"]
 
 [code]
 description = "Write or review code in the Narrative house style in a repository with more than one language, such as a GTNH mod with Python scripts. Loads the rules of each language the repository has: Python, and Java in a GTNH build. Use when a change spans languages; for one language, nar:python or nar:gtnh load less."
