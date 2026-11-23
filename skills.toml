@@ -104,18 +104,6 @@ modules = [
     "page/categories/proposal.md",
     "page/categories/verify.md",
 ]
-files = [
-    "lang/python/tools/checks.py",
-    "lang/python/tools/codeprose.py",
-    "core/tools/rewrap.py",
-    "lang/python/tools/verify.py",
-    "lang/python/tools/pyproject-snippet.toml",
-    "core/tools/agentverbs.py",
-    "core/tools/prose.py",
-    "core/tools/wording.py",
-    "core/tools/words.json",
-    "core/tools/requirements-lock.txt",
-]
 requires = ["page"]
 
 [brief]
@@ -125,20 +113,7 @@ modules = [
     "page/categories/brief.md",
     "page/categories/verify.md",
 ]
-files = [
-    "lang/python/tools/checks.py",
-    "lang/python/tools/codeprose.py",
-    "core/tools/rewrap.py",
-    "lang/python/tools/verify.py",
-    "lang/python/tools/pyproject-snippet.toml",
-    "core/tools/agentverbs.py",
-    "core/tools/prose.py",
-    "core/tools/wording.py",
-    "core/tools/words.json",
-    "core/tools/requirements-lock.txt",
-]
 requires = ["page"]
-
 
 [runbook]
 description = "Write or review a runbook in the Narrative house style: a step-by-step manual for a reader who acts on each step, with equipment or data at risk. No reader work, terse steps, one path in order, checks with actions, and hazards first. Loads nar:page and nar:core."
@@ -146,18 +121,6 @@ modules = [
     "page/categories/load-page.md",
     "page/categories/runbook.md",
     "page/categories/verify.md",
-]
-files = [
-    "lang/python/tools/checks.py",
-    "lang/python/tools/codeprose.py",
-    "core/tools/rewrap.py",
-    "lang/python/tools/verify.py",
-    "lang/python/tools/pyproject-snippet.toml",
-    "core/tools/agentverbs.py",
-    "core/tools/prose.py",
-    "core/tools/wording.py",
-    "core/tools/words.json",
-    "core/tools/requirements-lock.txt",
 ]
 requires = ["page"]
 
