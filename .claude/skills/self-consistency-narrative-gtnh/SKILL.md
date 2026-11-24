@@ -41,10 +41,11 @@ nothing.
    is not covered. Read those by hand.
 
 4. **Python scripts**, with the toolchain of the Python skill, from a scratch directory whose
-   `pyproject.toml` is `lang/python/tools/pyproject-snippet.toml`:
+   `pyproject.toml` is `lang/python/tools/pyproject-snippet.toml`. The scripts import modules of
+   `core/tools/`, which the built skill copies beside them, so `MYPYPATH` names both directories:
 
    ```bash
-   cd <scratch> && PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skills/python/verify.py --venv <repo>/.lintenv <repo>/lang/java/tools/javachecks.py <repo>/lang/java/tools/codeprose.py <repo>/lang/java/tools/verify.py <repo>/lang/java/tests/run_fixtures.py <repo>/lang/java/tests/run_rewrap.py
+   cd <scratch> && MYPYPATH=<repo>/core/tools:<repo>/lang/java/tools PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skills/python/verify.py --venv <repo>/.lintenv <repo>/lang/java/tools/javachecks.py <repo>/lang/java/tools/codeprose.py <repo>/lang/java/tools/verify.py <repo>/lang/java/tests/run_fixtures.py <repo>/lang/java/tests/run_rewrap.py
    ```
 
    All 7 checks must pass.

@@ -15,6 +15,7 @@ Usage:
     $ python3 javachecks.py src/main/java --since origin/dev
     $ python3 javachecks.py src/main/java --pmd build/narrative/pmd.xml --checkstyle build/narrative/checkstyle.xml
     $ python3 javachecks.py src/main/java --pmd build/narrative/pmd.xml --method-list .narrative_cache/methods.txt
+    $ python3 javachecks.py src/main --checkstyle build/narrative/checkstyle.xml --parameter-list .narrative_cache/p.txt
     $ python3 javachecks.py src/main/java --prose
     $ python3 javachecks.py src/main/java --prose --from-sentence 1001
     $ python3 javachecks.py src/main/java --prose --from-pair 1001
@@ -49,6 +50,9 @@ NAR116 isn't a finding. --method-list PATH writes the NAR116 review list to PATH
 method with a javadoc or a comment, and each method over 20 body lines without a javadoc. A method with a body of one
 line is NAR023. verify.py adds the file to the review lists. For a method on the list with a javadoc, each `throw new X`
 without a `@throws X` line is a NAR117 finding.
+
+NAR131 isn't a finding either. --parameter-list PATH writes the NAR131 review list to PATH, with each method and
+constructor that has more than 3 parameters in the Checkstyle report. verify.py adds the file to the review lists.
 
 --keep FILE:LINE:CODE adds a finding that the user approved to the keep-list. A finding in a Java source isn't silenced
 with `// noqa`, because the maintainer of an upstream project must delete each `// noqa` from a PR. The keep-list is
@@ -147,6 +151,11 @@ def main() -> int:
             ' over 20 body lines'
         ),
     )
+    parser.add_argument(
+        '--parameter-list',
+        type=Path,
+        help='write each method and constructor with more than 3 parameters to this file, as the NAR131 review list',
+    )
     parser.add_argument('--rewrap', action='store_true', help='fill the javadoc and // comments again, in place')
     parser.add_argument(
         '--keep',
@@ -228,9 +237,12 @@ def main() -> int:
         checked.extend(checkPage(reader, page_path, changed))
     reader.save()
     methods = [finding for finding in checked if finding.code == 'NAR116']
-    checked = [finding for finding in checked if finding.code != 'NAR116']
+    parameters = [finding for finding in checked if finding.code == 'NAR131']
+    checked = [finding for finding in checked if finding.code not in {'NAR116', 'NAR131'}]
     if args.method_list is not None:
         args.method_list.write_text(''.join(f'{methodEntry(method)}\n' for method in methods), encoding='utf-8')
+    if args.parameter_list is not None:
+        args.parameter_list.write_text(''.join(f'{methodEntry(method)}\n' for method in parameters), encoding='utf-8')
     findings = [finding for finding in checked if not keep_list.keeps(finding)]
     for finding in findings:
         print(finding)
@@ -803,6 +815,8 @@ def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: Com
     - NAR116: a method with a javadoc or over LONG_METHOD_LINES body lines, an entry of the NAR116 review list. When a
       javadoc is above the method, NAR117 is reported for each `throw new X` in the method where X is absent from the
       throws clause and from the `@throws` lines of the javadoc
+    - NAR131: a method with more than 3 parameters, an entry of the NAR131 review list. The detail is the number of
+      parameters from the Checkstyle message
 
     Returns:
         No finding for NAR110 with a reason comment, else one finding or more.
@@ -835,12 +849,18 @@ def resolveToolFinding(tool_finding: ToolFinding, lines: list[str], reading: Com
                 return [JavaFinding(tool_finding.java_path, line, 'NAR116', 'without a javadoc')]
             entry = JavaFinding(tool_finding.java_path, line, 'NAR116', 'with a javadoc')
             return [entry, *missingThrowsTags(tool_finding, lines, javadoc)]
+        case 'NAR131':
+            # matches:
+            # `More than 3 parameters (found 4).`
+            found = re.search(r'\(found (\d+)\)', tool_finding.message)
+            detail = f'{found[1]} parameters' if found else tool_finding.message
+            return [JavaFinding(tool_finding.java_path, line, 'NAR131', detail)]
         case _:
             return [JavaFinding(tool_finding.java_path, line, tool_finding.code, tool_finding.message)]
 
 
 def methodEntry(method: JavaFinding) -> str:
-    """Format an entry of the NAR116 review list: the path, the line, the declaration, and the detail."""
+    """Format an entry of the NAR116 or the NAR131 review list: the path, the line, the declaration, and the detail."""
     lines = method.java_path.read_text(encoding='utf-8', errors='replace').splitlines()
     declaration = lines[method.line - 1].strip() if method.line <= len(lines) else ''
     return f'{method.java_path}:{method.line}: {declaration} ({method.detail})'
@@ -1000,7 +1020,6 @@ PMD_CODES = {
     'NAR116-member': ('NAR116-member', Scope.LINE),
     'NAR122': ('NAR122', Scope.SPAN),
     'NAR123': ('NAR123', Scope.SPAN),
-    'NAR124': ('NAR124-gtnh', Scope.LINE),
     'LooseCoupling': ('NAR140', Scope.SPAN),
     'ImmutableField': ('NAR141', Scope.SPAN),
     'AvoidCatchingGenericException': ('NAR142', Scope.SPAN),
@@ -1012,7 +1031,11 @@ BARE_CODES = {
     'NAR112-gtnh': 'NAR112',
     'NAR113-gtnh': 'NAR113',
     'NAR114-gtnh': 'NAR114',
-    'NAR124-gtnh': 'NAR124',
+}
+
+# the code of each removed Java check. The code is still in the pages of the benchmark history
+RETIRED = {
+    'NAR124': 'withdrawn: package-private is allowed (J1-A02-revised)',
 }
 
 

@@ -44,7 +44,8 @@
             <property name="max" value="3"/>
             <property name="ignoreOverriddenMethods" value="true"/>
         </module>
-        <!-- the parameters of an injector are the parameters of the target method, then CallbackInfo -->
+        <!-- ParameterNumber is the NAR131 review list, not a finding. The parameters of an injector are the parameters
+             of the target method, then CallbackInfo, so an injector isn't on the list -->
         <module name="SuppressionXpathSingleFilter">
             <property name="checks" value="ParameterNumber"/>
             <property name="query" value="//METHOD_DEF[./MODIFIERS/ANNOTATION/IDENT[@text = ('Overwrite', 'Inject', 'Redirect', 'ModifyArg', 'ModifyArgs', 'ModifyVariable', 'ModifyConstant', 'WrapOperation', 'WrapWithCondition', 'ModifyExpressionValue', 'ModifyReturnValue', 'ModifyReceiver')]]/(self::METHOD_DEF | IDENT)"/>

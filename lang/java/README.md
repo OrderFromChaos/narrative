@@ -15,7 +15,7 @@ for only the lines your PR adds or changes.
   - an optional mod behind one guarded class
   - checked exceptions at the file and packet boundaries
 - **Quiet on code you did not write.** A full run on PlanNH `origin/dev` has 1,682 findings in
-  upstream code. A run with `--since origin/dev` on a planted change reports only the 4 planted
+  upstream code. A run with `--since origin/dev` on a planted change reports only the 3 planted
   findings.
 - **No build change.** PMD and Checkstyle run through a Gradle init script, so `git status` stays
   clean and your PR doesn't change `dependencies.gradle`.
@@ -35,10 +35,9 @@ shortened):
 $ python3 ~/.claude/skills/narrative-gtnh/verify.py --since origin/dev
 gradle         spotless, compileJava, narrativeCheckstyle and narrativePmd ran
 ./src/main/java/com/sbancuz/plannh/Planted.java:3: NAR118 Planted doesn't have a javadoc. A top-level type has one of at least one sentence
-./src/main/java/com/sbancuz/plannh/Planted.java:5: NAR124-gtnh package-private member. Make it private or public
 ./src/main/java/com/sbancuz/plannh/data/MachineProfile.java:125: NAR017 'profile knows'
 ./src/main/java/com/sbancuz/plannh/data/MachineProfile.java:126: NAR104 fully-qualified name in code. Import the type
-4 findings, 0 warnings, 0 kept over 226 files
+3 findings, 0 warnings, 0 kept over 226 files
 ```
 
 ## Install

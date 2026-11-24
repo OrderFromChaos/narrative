@@ -89,7 +89,6 @@ These cases are exempt from the checks:
 - in a Mixin class:
   - `NAR130` on a member with the prefix `modid$`
   - `NAR106` on the abstract Mixin class
-  - `NAR131` on an injector method, because the parameter list must match the target method
   - `NAR140` on a `@Shadow`, `@Accessor`, or `@Invoker` member and on an injector signature, because
     each type must be the type in the target class
 

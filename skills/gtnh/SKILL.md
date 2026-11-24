@@ -148,11 +148,14 @@ public final class PlanFiles {
   `reject*()` helper that logs and returns the exception. The guards are two lines again and group:
   `throw rejectLine(raw_line, "no machine count");` (R4-05)
 
-- **Java doesn't have keyword arguments.** A call with more than 3 positional values, or with a `null` for
-  a skipped argument, is replaced by a builder, or by a parameter record. Where Lombok is present,
-  use `@Builder(toBuilder = true)`. An `@Override` has the signature of the platform. `NAR131`
-  flags a method with more than 3 parameters, and `NAR102` a call with two or more `null` arguments.
-  (J1-P03, R2b-B1, R5-06)
+- **More than 3 parameters is a question for review.** `verify.py` lists each method and constructor
+  with more than 3 parameters (`NAR131`). For each entry, ask whether the parameters are a group of
+  values that belongs in a record or a builder, or the method's real inputs. Values that callers
+  always pass together become a parameter record, or a builder where Lombok is present
+  (`@Builder(toBuilder = true)`). Real inputs stay parameters. Don't move them into a factory that
+  returns a lambda. An `@Override` has the signature of the platform and isn't on the list. `NAR102`
+  flags a call with two or more `null` arguments, because a `null` for a skipped argument is
+  replaced by a builder or a parameter record. (J1-P03-revised, R2b-B1, R5-06)
 
 - **Long strings.** In user-facing text, never `+` (J1-P04). Outside it, `+` joins a long one-line
   string. A text block is for multi-line data only. The incidental indent of a text block is removed
@@ -819,7 +822,6 @@ These cases are exempt from the checks:
 - in a Mixin class:
   - `NAR130` on a member with the prefix `modid$`
   - `NAR106` on the abstract Mixin class
-  - `NAR131` on an injector method, because the parameter list must match the target method
   - `NAR140` on a `@Shadow`, `@Accessor`, or `@Invoker` member and on an injector signature, because
     each type must be the type in the target class
 
@@ -918,7 +920,7 @@ level of **Scope**:
 3. Checkstyle and PMD with the configs beside `verify.py`
 
 `javachecks.py` then reads the comments, runs the prose checks, and merges the three reports into
-one list with NAR codes. A run with exit 0 or 1 writes five lists to
+one list with NAR codes. A run with exit 0 or 1 writes six lists to
 `.narrative_cache/review-lists.txt`, the input to **Prose review**:
 
 - every sentence of every comment, javadoc, and named page
@@ -926,9 +928,10 @@ one list with NAR codes. A run with exit 0 or 1 writes five lists to
 - every sentence with a pronoun
 - every sentence with a free modifier
 - each javadoc and member comment, and each method over 20 body lines (`NAR116`)
+- each method and constructor with more than 3 parameters (`NAR131`)
 
-The `NAR116` list comes from the PMD report, so a run with `--prose-only` doesn't have the `NAR116`
-list. The file and the number of entries in each list are on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` doesn't
+The `NAR116` list comes from the PMD report, and the `NAR131` list from the Checkstyle report, so a
+run with `--prose-only` doesn't have these two lists. The file and the number of entries in each list are on the last line of the output. When Gradle fails, such as on code that does not compile, `verify.py` doesn't
 write the lists, because `javachecks.py` has not read the comments yet. When `--since` is given, the
 lists cover only the changed lines of the code and the pages. Otherwise each list stops after 1000
 entries, with the command for the next 1000. (J1-F01, J1-F09, J1-F14, J1-F15, J1-F16, R11-same-workflow)

@@ -26,15 +26,20 @@ is done.
 
 --project DIR is the project directory. Each named path is read from the current directory.
 
-After the checks, verify.py writes five review lists over the Java sources and the pages to review-lists.txt in the
-cache directory, .narrative_cache, or the directory given with --cache-dir: every sentence, every subject that cannot
-act paired with the subject's verb, every sentence with a pronoun, every sentence with a free modifier, and every
-declaration with a javadoc or a comment and every method over 20 body lines (NAR116). The list of declarations is from
-the PMD report, so a run with --prose-only or with pages only doesn't have the list. The path of the file and the number
-of entries in each list are on the last line of the output, so `tail -1` shows them. verify.py doesn't write the lists
-on exit 2, or after a Gradle failure. Each list stops after 1000 entries, and the last line of the list is the command
-for the next 1000. --since removes the limit. --since also limits the checks and the lists to passages with a changed
-line.
+After the checks, verify.py writes six review lists over the Java sources and the pages to review-lists.txt in the cache
+directory, .narrative_cache, or the directory given with --cache-dir:
+- every sentence
+- every subject that cannot act, paired with the subject's verb
+- every sentence with a pronoun
+- every sentence with a free modifier
+- every declaration with a javadoc or a comment, and every method over 20 body lines (NAR116)
+- every method and constructor with more than 3 parameters (NAR131)
+
+The last two lists are from the PMD and the Checkstyle reports, so a run with --prose-only or with pages only doesn't
+have them. The path of the file and the number of entries in each list are on the last line of the output, so `tail -1`
+shows them. verify.py doesn't write the lists on exit 2, or after a Gradle failure. Each list stops after 1000 entries,
+and the last line of the list is the command for the next 1000. --since removes the limit. --since also limits the
+checks and the lists to passages with a changed line.
 
 --keep FILE:LINE:CODE adds the finding to the keep-list and doesn't run a check. A kept finding isn't printed in later
 runs. The keep-list is described in the docstring of javachecks.py.
@@ -85,8 +90,8 @@ GRADLEW = 'gradlew.bat' if sys.platform == 'win32' else 'gradlew'
 REPORT_DIR = Path('build/narrative')
 CHECK_TASKS = ('narrativeCheckstyle', 'narrativePmd')
 PASS_NOTE = 'These lint checks cover only some of the rules. Check the other rules by hand.'
-# the default cache directory: the spaCy results of a run without Gradle, a page read from stdin, and the three review
-# lists of the last run, for Prose review
+# the default cache directory: the spaCy results of a run without Gradle, a page read from stdin, and the review lists
+# of the last run, for Prose review
 CACHE_DIR = Path('.narrative_cache')
 LISTS_NAME = 'review-lists.txt'
 # the NAR116 review list that javachecks.py writes: each declaration with a javadoc or a comment, and each method over
@@ -96,6 +101,12 @@ METHODS_HEADING = (
     '--- each javadoc and member comment, and each method over 20 body lines (NAR116). A method without a javadoc: can'
     ' a reader learn from the name and the comments of the body what the method does? A javadoc or a comment: what does'
     ' a reader learn from the javadoc or the comment, and not from the name and the code? ---'
+)
+# the NAR131 review list that javachecks.py writes, of each method and constructor with more than 3 parameters
+PARAMETERS_NAME = 'parameters.txt'
+PARAMETERS_HEADING = (
+    '--- each method and constructor with more than 3 parameters (NAR131). Is this a group of values that belongs in a'
+    " record or a builder, or are these the method's real inputs? ---"
 )
 # the command-line path of a page read from stdin
 STDIN_PATH = Path('-')
@@ -277,8 +288,11 @@ def reportFindings(
     """
     methods_path = cache_dir / METHODS_NAME
     methods_path.unlink(missing_ok=True)
+    parameters_path = cache_dir / PARAMETERS_NAME
+    parameters_path.unlink(missing_ok=True)
+    list_files = ['--method-list', str(methods_path), '--parameter-list', str(parameters_path)]
     checked = subprocess.run(
-        [str(venv_python), str(SKILL_DIR / 'javachecks.py'), *check_arguments, '--method-list', str(methods_path)],
+        [str(venv_python), str(SKILL_DIR / 'javachecks.py'), *check_arguments, *list_files],
         stdout=subprocess.PIPE,
         text=True,
         check=False,
@@ -304,9 +318,11 @@ def reportFindings(
         return EXIT_NO_TOOLCHAIN
 
     methods = methods_path.read_text(encoding='utf-8').splitlines() if methods_path.is_file() else []
+    parameters = parameters_path.read_text(encoding='utf-8').splitlines() if parameters_path.is_file() else []
     with lists_path.open('a', encoding='utf-8') as lists_file:
         lists_file.write(METHODS_HEADING + '\n' + ''.join(f'{method}\n' for method in methods))
-    counts = f'{counts} and {len(methods)} declarations'
+        lists_file.write(PARAMETERS_HEADING + '\n' + ''.join(f'{method}\n' for method in parameters))
+    counts = f'{counts}, {len(methods)} declarations and {len(parameters)} methods with more than 3 parameters'
     if checked.returncode == EXIT_SUCCESS:
         print(f'Prose review: read the {counts} in {lists_path}')
         return EXIT_SUCCESS
@@ -641,7 +657,13 @@ class JavaLevel(Enum):
         'default arm in a switch over an enum. List every constant, and throw after the switch',
     )
 
-    def __init__(self, syntax_values: frozenset[str], toolchain: int, summary: str, nar107_message: str) -> None:
+    def __init__(
+        self,
+        syntax_values: frozenset[str],
+        toolchain: int,
+        summary: str,
+        nar107_message: str,
+    ) -> None:
         self.syntax_values = syntax_values
         self.toolchain = toolchain
         self.summary = summary

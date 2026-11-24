@@ -367,23 +367,6 @@
         </properties>
     </rule>
 
-    <rule name="NAR124" language="java" class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
-          message="package-private member. Make it private or public">
-        <description>A02: private or public only. Test sources are not analysed.</description>
-        <priority>3</priority>
-        <properties>
-            <property name="xpath">
-                <value><![CDATA[
-//(MethodDeclaration | FieldDeclaration | ConstructorDeclaration | ClassDeclaration | RecordDeclaration | EnumDeclaration)
-  [@Visibility = 'package']
-  [not(ancestor::ClassDeclaration[@Interface = true()])]
-  [not(self::ConstructorDeclaration and parent::EnumBody)]
-  [not(parent::EnumBody/parent::EnumDeclaration and self::ConstructorDeclaration)]
-]]></value>
-            </property>
-        </properties>
-    </rule>
-
     <!-- EnumMap(Map) and EnumSet.copyOf(Collection) throw on an empty argument of another type, so the
          enum types are part of the contract -->
     <!-- in a @Shadow, @Accessor or @Invoker member and in an injector signature, each type must be the type in the

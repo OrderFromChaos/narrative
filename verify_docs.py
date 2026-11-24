@@ -48,7 +48,7 @@ LIST_FIELDS = frozenset({'options', 'supersedes'})
 OPTIONAL_FIELDS = ('supersedes',)
 MIN_ROUND_PATH_PARTS = 2
 # the checkers whose RULES and RETIRED dicts list every NAR code
-RULE_REGISTRIES = ('core/tools/wording.py', 'lang/python/tools/checks.py')
+RULE_REGISTRIES = ('core/tools/wording.py', 'lang/python/tools/checks.py', 'lang/java/tools/javachecks.py')
 # the Java checks. Their NAR codes are read from the text of each file, such as a PMD rule name
 JAVA_CODE_SOURCES = ('lang/java/tools/javachecks.py', 'lang/java/tools/pmd-ruleset.xml')
 # matches:

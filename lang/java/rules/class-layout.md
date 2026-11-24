@@ -63,11 +63,14 @@ public final class PlanFiles {
   `reject*()` helper that logs and returns the exception. The guards are two lines again and group:
   `throw rejectLine(raw_line, "no machine count");` (R4-05)
 
-- **Java doesn't have keyword arguments.** A call with more than 3 positional values, or with a `null` for
-  a skipped argument, is replaced by a builder, or by a parameter record. Where Lombok is present,
-  use `@Builder(toBuilder = true)`. An `@Override` has the signature of the platform. `NAR131`
-  flags a method with more than 3 parameters, and `NAR102` a call with two or more `null` arguments.
-  (J1-P03, R2b-B1, R5-06)
+- **More than 3 parameters is a question for review.** `verify.py` lists each method and constructor
+  with more than 3 parameters (`NAR131`). For each entry, ask whether the parameters are a group of
+  values that belongs in a record or a builder, or the method's real inputs. Values that callers
+  always pass together become a parameter record, or a builder where Lombok is present
+  (`@Builder(toBuilder = true)`). Real inputs stay parameters. Don't move them into a factory that
+  returns a lambda. An `@Override` has the signature of the platform and isn't on the list. `NAR102`
+  flags a call with two or more `null` arguments, because a `null` for a skipped argument is
+  replaced by a builder or a parameter record. (J1-P03-revised, R2b-B1, R5-06)
 
 - **Long strings.** In user-facing text, never `+` (J1-P04). Outside it, `+` joins a long one-line
   string. A text block is for multi-line data only. The incidental indent of a text block is removed

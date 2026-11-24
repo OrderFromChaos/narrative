@@ -28,7 +28,7 @@ of the narrative repository, and `build_skills.py` copies them into `skills/gtnh
 |---|---|
 | spotless | all whitespace and line breaking, with the GTNH Eclipse config of the project |
 | javac `-Xlint:rawtypes,unchecked` | raw types and unchecked operations (`NAR121`) |
-| Checkstyle | naming (`NAR130`) and the parameter limit (`NAR131`), with `checkstyle.xml` |
+| Checkstyle | naming (`NAR130`) and the `NAR131` review list of methods with more than 3 parameters, with `checkstyle.xml` |
 | PMD | the structural checks, as XPath rules in `pmd-ruleset.xml`, plus four built-in rules |
 | `javachecks.py` | comments and javadoc with a lexer, the prose checks, the checks on comments (`NAR118` to `NAR120`, `NAR125`), the comment and javadoc lookups of `NAR110`, `NAR116`, and `NAR117`, then noqa, the keep-list, and `--since` over every finding. When `--rewrap` is given, `javachecks.py` re-wraps comments in place instead. `verify.py` runs the re-wrap before Gradle unless `--no-fix` is given |
 | `codeprose.py` | the lexer that reads Java comments and javadoc into passages for the prose checks, and into blocks of lines for the re-wrap |
@@ -51,7 +51,7 @@ silences a code on the same line.
 | `NAR012` to `NAR016`, `NAR018` | wording in comments and javadoc | `checks.py` |
 | `NAR017`, `NAR020`, `NAR021`, `NAR022` | an agent verb on a subject that cannot act, a clause with no subject before `, so`, a clause joined by `as` or `, where`, and `it` or `its` after two or more singular nouns in one sentence | `agentverbs.py` |
 | `NAR101` | a method above its first caller in the class (J1-P02) | PMD |
-| `NAR102` | two or more `null` arguments (J1-P03) | PMD |
+| `NAR102` | two or more `null` arguments (J1-P03-revised) | PMD |
 | `NAR103` | a stream inside a stream lambda (J1-P06) | PMD |
 | `NAR104` | a fully-qualified name outside the imports (J1-P08) | PMD |
 | `NAR105` | `ordinal()` in NBT, packet, or Gson code (J1-P17) | PMD |
@@ -73,10 +73,9 @@ silences a code on the same line.
 | `NAR121` | a raw-type or unchecked warning of javac (J1-P10) | javac |
 | `NAR122` | a type with more than 4 names below the outermost one (NAR005) | PMD |
 | `NAR123` | `&&` inside `\|\|` without parentheses (R2b-B4) | PMD |
-| `NAR124-gtnh` | a package-private member in main sources (J1-A02) | PMD |
 | `NAR125` | a paragraph of a javadoc or a whole-line `//` comment that is not filled up to column 120. `javachecks.py --rewrap` fills the paragraph with `rewrap.py` (R11-rewrap-fill) | `javachecks.py` |
 | `NAR130` | a name outside the Java convention (J1-P01) | Checkstyle |
-| `NAR131` | more than 3 parameters (J1-P03) | Checkstyle |
+| `NAR131` | a review list of each method and constructor with more than 3 parameters, not a finding (J1-P03-revised) | Checkstyle |
 | `NAR140` | a concrete collection type in a signature, a field or a local, except `EnumMap` and `EnumSet` (J1-P11, J1-F03) | PMD LooseCoupling, `allowedTypes` |
 | `NAR141` | a field that could be `final` (J1-P21) | PMD ImmutableField |
 | `NAR142` | a catch of `Exception`, `RuntimeException`, `NullPointerException`, `Throwable`, or `Error` (J1-P24, J1-F04) | PMD AvoidCatchingGenericException |
@@ -99,7 +98,8 @@ Below is *why* each non-obvious setting is there.
   `field_70170_p`, and `p_145827_0_`. They are allowed in the Checkstyle patterns, and ParameterName
   has `ignoreOverridden`.
 - **ParameterNumber** has `max = 3` and `ignoreOverriddenMethods`, because the signature of an
-  override comes from the platform.
+  override comes from the platform. `javachecks.py` puts each hit on the `NAR131` review list, not in
+  the findings.
 - The **LocalFinalVariableName** pattern has UPPER_SNAKE too, for the local compile-time constants of
   **Constants** in `SKILL.md`.
 - **NAR107** has the XPath comment `(: SEALED_TYPES :)`. `verify.py` replaces it with one
