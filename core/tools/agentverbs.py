@@ -282,7 +282,7 @@ def main() -> int:
     if args.score:
         return scoreLabels(reader, args.score)
     try:
-        changed = wording.readChangedLines(args.since, Path.cwd(), codeprose.GIT_PATTERN) if args.since else None
+        changed = wording.readChangedLines(args.since, Path.cwd(), *codeprose.GIT_PATTERNS) if args.since else None
     except wording.GitError as exc:
         print(f'agentverbs.py: {exc}', file=sys.stderr)
         return 2
@@ -406,7 +406,7 @@ def discoverFiles(paths: list[Path]) -> list[Path]:
     """
     files: list[Path] = []
     for target in paths:
-        files.extend(wording.findFiles(target, codeprose.GIT_PATTERN) if target.is_dir() else [target])
+        files.extend(wording.findFiles(target, *codeprose.GIT_PATTERNS) if target.is_dir() else [target])
     return files
 
 
@@ -428,7 +428,7 @@ def checkFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] 
         findings = passageFindings(reader, checked_file, passages, {}, page=True)
         return [f for f in findings if not (suppressed.get(f.line, set()) & {f.code, 'ALL'})]
     passages = changedPassages(
-        codeprose.passages(source),
+        codeprose.passages(source, checked_file.suffix),
         changed_lines,
     )
     codes = (CODE, FRAGMENT_CODE, CONNECTIVE_CODE, PRONOUN_CODE, NEGATION_CODE, OPENER_CODE)
@@ -485,7 +485,7 @@ def reviewFile(
         silenced = {number for number, codes in prose.suppressedCodes(source).items() if codes & {CODE, 'ALL'}}
     else:
         passages = changedPassages(
-            codeprose.passages(source),
+            codeprose.passages(source, checked_file.suffix),
             changed_lines,
         )
         silenced = silencedLines(source, CODE)
@@ -513,7 +513,7 @@ def pronounFile(reader: CachedReader, checked_file: Path, changed_lines: set[int
         passages = changedPassages(prose.readPassages(checked_file), changed_lines)
     else:
         passages = changedPassages(
-            codeprose.passages(source),
+            codeprose.passages(source, checked_file.suffix),
             changed_lines,
         )
     listed: list[PronounLine] = []
@@ -544,7 +544,7 @@ def freeModifierFile(
     if checked_file.suffix.lower() in prose.PROSE_SUFFIXES:
         passages = changedPassages(prose.readPassages(checked_file), changed_lines)
     else:
-        passages = changedPassages(codeprose.passages(source), changed_lines)
+        passages = changedPassages(codeprose.passages(source, checked_file.suffix), changed_lines)
     listed: list[tuple[int, str, str]] = []
     for passage in sorted(passages, key=lambda passage: passage.lines[0]):
         for phrase, sentence in reader.freeModifiers(passage.text):

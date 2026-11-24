@@ -1,0 +1,21 @@
+3 doc: Doxygen comments in a C file.
+5 doc: The rest of the description of the file.
+10 doc: A point on the grid, in cells.
+12 trailing doc: The column, from the left edge.
+13 trailing doc: The row, from the top edge.
+16 doc: The kinds of cell.
+18 trailing doc-line: A cell with nothing in it.
+19 trailing doc-line: A cell that blocks movement.
+20 trailing doc: A cell that blocks movement when closed.
+24 doc: Count the walls around a point.
+26 doc: the cells, row by row
+27 doc: the number of columns of `grid`
+28 doc: the point
+29 doc: the number of walls among the eight neighbours of `at`
+30 doc: when `at` is outside the grid
+35 doc-line: Reset every cell of `grid` to `CELL_EMPTY`.
+37 doc-line: the cells
+38 doc-line: the number of cells
+39-40 doc-line: The call writes count cells, starting at the first.
+43 block: A plain block comment with a @param tag. The tag is prose here.
+44 line: A plain line comment with \c markup, which is prose here too.

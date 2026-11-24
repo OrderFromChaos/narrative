@@ -14,6 +14,7 @@ Exit codes:
 from __future__ import annotations
 
 import dataclasses
+import importlib
 import json
 import os
 import shutil
@@ -26,6 +27,8 @@ from pathlib import Path
 
 # the launcher of hooks.json, which runs narrative_hooks.py with the first Python 3.11 on PATH
 LAUNCHER_PATH = Path(__file__).resolve().parents[1] / 'run.sh'
+HOOKS_DIR = Path(__file__).resolve().parents[1]
+CORE_TOOLS_DIR = Path(__file__).resolve().parents[2] / 'core' / 'tools'
 # resolved once, because some cases run the launcher with a PATH that has no sh
 SHELL_PATH = shutil.which('sh') or '/bin/sh'
 
@@ -34,6 +37,8 @@ REFUSED_COMMANDS = [
     'python3 /x/skills/gtnh/verify.py . 2>&1 | grep NAR',
     'python3 ~/.claude/skills/narrative-python/verify.py --since HEAD |& head -40',
     'python3 "${CLAUDE_SKILL_DIR}/verify.py" . | sed -n 1,20p',
+    'python3 /x/skills/core/verify.py src/ | tail',
+    'python3 ~/.claude/skills/narrative-core/agentverbs.py src/',
     'grep -v NAR101 out.txt',
     "grep -Ev 'NAR1(01|16)' out.txt",
     'python3 /x/skills/gtnh/javachecks.py src/',
@@ -58,6 +63,7 @@ ALLOWED_COMMANDS = [
     'cat mypy.ini',
     'python3 /x/skills/gtnh/javachecks.py --rewrap src/Plan.java',
     'python3 /x/skills/python/checks.py --help',
+    'python3 /x/skills/core/codeprose.py src/grid.cpp',
     './gradlew build',
     'cat .narrative_cache/review-lists.txt',
     'grep -n restock src/inventory.py',
@@ -68,9 +74,11 @@ ALLOWED_COMMANDS = [
 def main() -> int:
     cases = [*commandCases(), *sessionCases()]
     wrong = [case.name for case in cases if not passes(case)]
+    if not coreSuffixesEqual():
+        wrong.append('the core suffixes of narrative_hooks.py and the suffixes of codeprose.py differ')
     for name in wrong:
         print(f'wrong: {name}')
-    print(f'{len(wrong)} of {len(cases)} cases wrong')
+    print(f'{len(wrong)} of {len(cases) + 1} cases wrong')
     return 1 if wrong else 0
 
 
@@ -97,6 +105,7 @@ def sessionCases() -> list[Case]:
     verify = bash('python3 /x/skills/python/verify.py .')
     page = bash('python3 /x/skills/page/verify.py docs/report.html --no-fix')
     java = bash('python3 /x/skills/gtnh/verify.py --since HEAD')
+    core = bash('python3 /x/skills/core/verify.py src/')
     by_variable = bash('python3 "${CLAUDE_SKILL_DIR}/verify.py" 2>&1')
     lists = writeLists('.narrative_cache')
     read_verify = bash('cat /x/skills/python/verify.py')
@@ -154,6 +163,16 @@ def sessionCases() -> list[Case]:
             [SKILL_LOAD, edit('A.java'), bash('python3 /x/skills/gtnh/verify.py; echo --prose-only'), STOP],
             None,
         ),
+        Case('C++ edit, core verify: allow the end', [SKILL_LOAD, edit('src/grid.cpp'), core, STOP], None),
+        Case('C++ edit, no verify: refuse the end', [SKILL_LOAD, edit('src/grid.hpp'), STOP], 'block'),
+        Case('TSX edit, Python verify: refuse the end', [SKILL_LOAD, edit('web/App.tsx'), verify, STOP], 'block'),
+        Case('Python edit, core verify: refuse the end', [SKILL_LOAD, edit('src/a.py'), core, STOP], 'block'),
+        Case(
+            'Verilog edit, verify of install.sh core: allow the end',
+            [SKILL_LOAD, edit('rtl/fifo.sv'), bash('python3 ~/.claude/skills/narrative-core/verify.py rtl/'), STOP],
+            None,
+        ),
+        Case('upper-case .C edit, core verify: allow the end', [SKILL_LOAD, edit('src/grid.C'), core, STOP], None),
         Case('verify, lists, then edit: refuse the end', [SKILL_LOAD, verify, cat_lists, edit('a.py'), STOP], 'block'),
         Case('second end of the turn: allow', [SKILL_LOAD, edit('src/a.py'), STOP_AGAIN], None),
         Case('edit, cat verify.py: refuse the end', [SKILL_LOAD, edit('src/a.py'), read_verify, STOP], 'block'),
@@ -178,6 +197,17 @@ def sessionCases() -> list[Case]:
         Case('compaction after a skill load: name the skill', [SKILL_LOAD, compact], 'context'),
         Case('compaction with no skill: nothing', [compact], None),
     ]
+
+
+def coreSuffixesEqual() -> bool:
+    """Decide whether the nar:core suffixes of narrative_hooks.py are the suffixes that codeprose.py reads.
+
+    The list in narrative_hooks.py is a copy: narrative_hooks.py imports only the standard library.
+    """
+    sys.path[:0] = [str(HOOKS_DIR), str(CORE_TOOLS_DIR)]
+    hooks = importlib.import_module('narrative_hooks')
+    codeprose = importlib.import_module('codeprose')
+    return set(hooks.CHECKED_SUFFIXES_OF_FOLDER['core']) == set(codeprose.LANGUAGE_OF_SUFFIX)
 
 
 def passes(case: Case) -> bool:

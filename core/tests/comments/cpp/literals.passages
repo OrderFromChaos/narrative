@@ -1,0 +1,33 @@
+4 trailing line: after a string with slashes
+5 trailing line: after a double quote in a character literal
+6 trailing line: after an escaped apostrophe
+7 trailing line: after an escaped backslash
+9 trailing line: after a raw string with slashes
+10 trailing line: after a raw string whose text has a parenthesis and a quote
+11 trailing line: after a UTF-8 raw string with a block closer
+12 trailing line: after a wide raw string with a block opener
+13 trailing line: after a raw string that ends in a backslash
+14 trailing line: after a raw string of one quote
+19 trailing line: after a raw string over several lines
+21 trailing line: after a raw string with a backslash at the end of a line
+22 trailing line: after an identifier that ends in R then a string
+24 trailing line: after digit separators
+25 trailing line: after a separator in a hex number
+26 trailing line: after a separator in a binary number
+27 trailing line: after a separator in an exponent
+28 trailing line: after a number then a character
+29 trailing line: after a wide character
+30 trailing line: after a UTF-16 character
+31 trailing line: after a UTF-32 character
+32 trailing line: after a UTF-8 character
+33 trailing line: after a character literal of two characters
+37 trailing line: after a user-defined literal with a separator
+38 trailing line: after a character with a suffix
+39 trailing line: after strings of comment openers
+40 trailing line: after a character literal of two slashes
+41 trailing line: after a UTF-8 string: naïve café
+42 block: it's a block comment with an apostrophe
+42 trailing line: after the block comment
+43 line: it's a line comment with an apostrophe and a "quote
+44 trailing line: after the line comment
+45 trailing line: after an empty string and a wide string

@@ -1,0 +1,6 @@
+1 line: Decorators, an enum and a namespace, which node cannot strip
+10 trailing line: after a decorator call
+14 trailing line: division in an enum
+17 trailing line: after an enum
+19 trailing line: division in a namespace
+21 trailing line: after a namespace

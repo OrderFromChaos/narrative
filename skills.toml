@@ -65,6 +65,28 @@ modules = [
     "core/rules/prose-review.md",
     "core/rules/published-prose.md",
 ]
+files = [
+    "core/tools/verify.py",
+    "core/tools/codeprose.py",
+    "core/tools/slashcomments.py",
+    "core/tools/ccomments.py",
+    "core/tools/jscomments.py",
+    "core/tools/verilogcomments.py",
+    "core/tools/rewrap.py",
+    "core/tools/agentverbs.py",
+    "core/tools/prose.py",
+    "core/tools/wording.py",
+    "core/tools/words.json",
+    "core/tools/requirements-lock.txt",
+]
+# the suffixes that codeprose.py of nar:core reads, for nar:code. core/tests/run_comments.py fails when the two lists
+# differ
+suffixes = [
+    ".c", ".C", ".c++", ".cc", ".cpp", ".cppm", ".cu", ".cuh", ".cxx", ".h", ".h++", ".hh", ".hpp", ".hxx", ".inl",
+    ".ipp", ".ixx", ".tcc", ".tpp",
+    ".cjs", ".js", ".jsx", ".mjs", ".cts", ".mts", ".ts", ".tsx",
+    ".sv", ".svh", ".v", ".vh",
+]
 
 [page]
 description = "The base Narrative rules for each page that people read, such as a report, a proposal or a README. The rules cover the target audience, the scope and the structure of a page, executive summaries, titles and headings as noun phrases, plain wording without marketing copy or rhetorical setups, coined and overloaded terms, and charts and diagrams. Load with nar:core to write or review a page. A category skill such as nar:proposal, nar:brief or nar:runbook loads this skill and adds the rules for one kind of page."
@@ -125,7 +147,7 @@ modules = [
 requires = ["page"]
 
 [repo]
-description = "The Narrative rules for a change in a code repository, such as a change to code, comments, docstrings, error messages or a README. The rules cover the scope of a change, and apply to the lines you changed, checked with verify.py --since. nar:python and nar:gtnh load this skill between nar:core and the rules of the language."
+description = "The Narrative rules for a change in a code repository, such as a change to code, comments, docstrings, error messages or a README. The rules cover the scope of a change, and apply to the lines you changed, checked with verify.py --since. nar:python and nar:gtnh load this skill between nar:core and the rules of the language. For C, C++, JavaScript, TypeScript, or Verilog, load this skill directly, and run the verify.py of nar:core."
 modules = [
     "repo/rules/load-core.md",
     "repo/rules/intro.md",
@@ -181,5 +203,5 @@ marker = { files = ["settings.gradle", "settings.gradle.kts"], contains = "com.g
 requires = ["core", "repo"]
 
 [code]
-description = "Write or review code in the Narrative house style in a repository with more than one language, such as a GTNH mod with Python scripts. Loads the rules of each language the repository has: Python, and Java in a GTNH build. Use when a change spans languages; for one language, nar:python or nar:gtnh load less."
+description = "Write or review code in the Narrative house style in a repository with more than one language, such as a GTNH mod with Python scripts. Loads the rules of each language the repository has: Python, and Java in a GTNH build. Use when a change spans languages; for one language, nar:python or nar:gtnh load less. For C, C++, JavaScript, TypeScript, or Verilog files, nar:code also loads nar:repo and names the verify.py of nar:core."
 combines = ["python", "gtnh"]

@@ -1,0 +1,12 @@
+1 line: Template literals whose text holds `//` and `/*`
+3 trailing line: after a template
+4 trailing line: after nested templates
+5 trailing line: after an object literal in a template expression
+6 trailing block: a block comment in an expression
+6 trailing line: a line comment in an expression
+7 trailing line: after comments in template expressions
+9 trailing block: inside a nested expression
+9 trailing line: after a template over two lines
+12 trailing line: after a function body in a template expression
+13 trailing line: after a tagged template with an escaped backtick
+14 trailing line: division after a template

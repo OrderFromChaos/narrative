@@ -1,0 +1,27 @@
+1 line: Each slash below divides. Read as a regex, the slash would run up to the comment and hide it.
+4 trailing line: after a name
+5 trailing line: after a number
+6 trailing line: after a hex number
+7 trailing line: after a number with no integer part
+8 trailing line: after a property
+9 trailing line: after a parenthesis
+10 trailing line: after a bracket
+11 trailing line: after a postfix increment
+12 trailing line: after a postfix decrement
+14 trailing line: after a line break, which ends no statement before a slash
+16 trailing line: a / b / g, three names and two divisions
+17 trailing line: after an object literal in parentheses
+18 trailing line: after a call whose argument is a function
+19 trailing line: after a function expression
+20 trailing line: after a class expression
+21 trailing line: after an object literal
+22 trailing line: after an object literal in a ternary
+23 trailing line: after a template
+24 trailing line: after a string
+25 trailing line: after a regex
+26 trailing line: after true
+27 trailing line: after null
+28 trailing line: after a property named like a keyword
+29 trailing line: after optional chaining
+30 trailing line: after a division assignment
+38 trailing line: after this and super

@@ -1,0 +1,9 @@
+4 trailing line: the width of a word
+6 line: a macro over three lines, with comments in the body
+8 line: the larger value wins
+10 line: a second comment line
+12 trailing line: a trailing comment of the macro
+15-16 block: the first line of a block comment the second line
+19 trailing line: a string in the macro text
+21 trailing line: nothing in the macro text
+23 trailing line: MACROS_VH

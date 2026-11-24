@@ -1,0 +1,19 @@
+3 line: Type syntax around regexes and divisions
+7 trailing line: after an interface with type parameters
+9 trailing line: after a generic type
+11 trailing line: division after a type assertion
+12 trailing line: a regex after a type assertion
+13 trailing line: division after a non-null assertion
+15 trailing line: division after a non-null assertion on a name
+19 trailing line: a generic arrow function
+20 trailing line: a generic arrow function, which is no JSX in a .ts file
+21 trailing line: division after a call with a type argument
+25 trailing line: after a function whose return type is an object type
+31 trailing line: after overloads
+34 trailing line: division in a field initializer
+39 trailing line: after a generic class
+40 trailing line: after satisfies
+41 trailing line: after as const
+42 trailing line: after a conditional type
+46 trailing line: after a module declaration
+47 trailing line: after an optional parameter

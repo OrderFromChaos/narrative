@@ -1,0 +1,8 @@
+1 line: gcc -fpreprocessed reads a // in a header name as a comment, so run_comments.py has no oracle for this suffix
+2 trailing line: after a header name with two slashes
+3 trailing line: after a header name with a block opener
+4 trailing line: after a header name in __has_include
+5 trailing line: after a header name in include_next
+7 trailing line: time.h> // after a macro whose text is not a header name
+8 trailing line: after a less-than sign
+9 trailing line: after a header name in a directive that opens with the digraph of #

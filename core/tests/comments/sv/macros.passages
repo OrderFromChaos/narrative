@@ -1,0 +1,8 @@
+1 line: Macros with SystemVerilog macro strings.
+2 trailing line: after the macro string
+3 trailing line: after the escaped quotes
+4 trailing line: after a lone escaped quote
+5 trailing line: after a token paste
+9 line: a comment line in the body
+11 trailing line: a default argument
+13 trailing line: a macro call

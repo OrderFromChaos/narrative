@@ -1,6 +1,6 @@
 ---
 name: code
-description: Write or review code in the Narrative house style in a repository with more than one language, such as a GTNH mod with Python scripts. Loads the rules of each language the repository has: Python, and Java in a GTNH build. Use when a change spans languages; for one language, nar:python or nar:gtnh load less.
+description: Write or review code in the Narrative house style in a repository with more than one language, such as a GTNH mod with Python scripts. Loads the rules of each language the repository has: Python, and Java in a GTNH build. Use when a change spans languages; for one language, nar:python or nar:gtnh load less. For C, C++, JavaScript, TypeScript, or Verilog files, nar:code also loads nar:repo and names the verify.py of nar:core.
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/assemble.py *)
 ---
 

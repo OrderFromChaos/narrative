@@ -1,0 +1,10 @@
+1 trailing line: pack the structs below with no padding
+2 trailing line: a quoted header name is a string
+3 trailing block: a block comment after a macro
+5 trailing block: inside the macro
+6 trailing line: after the macro
+9 line: A line comment in a group that is not compiled.
+10-11 block: A block comment in a group that is not compiled.
+16 trailing block: a block comment after a directive
+19 trailing line: NEVER_DEFINED
+21-23 line: a line comment that ends in a backslash continues on the next line, and the line after

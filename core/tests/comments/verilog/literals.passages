@@ -1,0 +1,21 @@
+1 trailing line: one nanosecond units
+2 trailing line: the shared header
+5-6 line: The adder of the test bench. A second line of the same block.
+8 line: strings
+11 trailing line: a comment after an escaped backslash
+12 trailing line: integer division
+14 line: escaped identifiers end at whitespace
+16 trailing line: after the escaped identifier
+17 trailing line: a quote inside an escaped identifier
+18 trailing line: an apostrophe inside an escaped identifier
+20 line: based and sized literals
+21 trailing line: it's "quoted" in a comment
+22 trailing line: a sized literal with z and x
+24 line: attributes
+28 trailing line: a space before the parenthesis
+30 trailing block: after an attribute
+32-33 block: a block comment over two lines // with a slash pair inside
+34 block: not /* nested
+35 line: a line comment with /* an opener
+36 trailing line: and */ a closer
+37 trailing line: a division then a comment

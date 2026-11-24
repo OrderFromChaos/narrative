@@ -5,7 +5,12 @@ These rules cover comments, docstrings, javadoc, error messages, help text and p
 every language of Narrative. For code, load this skill together with `nar:repo` and the skill of the
 language, such as `nar:python` or `nar:gtnh`. For a page outside a code repository, load this skill
 together with `nar:page`. The checks run through the `verify.py` of the language skill or of
-`nar:page`.
+`nar:page`. For a language without a Narrative skill, such as C, C++, JavaScript, or Verilog, load
+this skill together with `nar:repo`, and run the `verify.py` of this skill:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/verify.py" . --since origin/main
+```
 
 **The steps, in short. The details are in Procedures, the last section of `nar:<language>`.**
 (R11-steps-summary)

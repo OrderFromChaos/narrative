@@ -1,0 +1,13 @@
+3-4 doc: Paragraphs of comments with short lines.
+7-8 line: The first paragraph of a run of line comments, broken after a few words on each line, which the re-wrap fills up to column 120 with no word changed.
+10-11 line: The second paragraph starts after a blank comment line.
+13 line: A pragma ends the paragraph above it.
+17-18 block: A block comment with a star margin, broken short.
+20-21 block: - the first item of a list, which hangs under the text of the item
+22 block: - the second item
+27-28 doc: Count the cells of a grid.
+30-31 doc: the cells, row by row
+32-33 doc: the number of cells
+38 doc: the count
+42 trailing line: a trailing comment is never re-wrapped, even when it is long enough that its words would fill another line
+43-44 line: a line comment continued by a backslash is never re-wrapped

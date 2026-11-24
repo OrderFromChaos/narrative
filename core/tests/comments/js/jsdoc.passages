@@ -1,0 +1,23 @@
+2 doc: Read and write the plan files of a factory.
+6 doc: A plan of one factory: the machines and the recipes they run.
+8-10 doc: The plan is read from `readPlan` and written by the writer. See the format and `Plan.machines`, or the published format.
+13 doc: The name of the factory.
+14 doc: The machines, in build order.
+15 doc: The corner of the plan on the map.
+19 doc: Read a plan file.
+21-22 doc: Unlike `JSON.parse`, the reader keeps the order of the keys. It returns a Promise<Plan> for the parsed file, with every machine in it.
+24 doc: - A missing file gives an empty plan.
+25 doc: - A malformed file throws.
+27 doc: Where the plan file is.
+28 doc: How to read the file.
+29 doc: Whether an unknown key is an error.
+31-32 doc: The plan, with the machines in file order.
+33 doc: When the file is not JSON.
+34 doc: Use `openPlan` instead.
+49 doc: Write a plan file.
+56 doc: The writer replaces the file.
+58 doc: The plan.
+61 doc: The type of the plan.
+71 doc: The number of plans read so far.
+75 doc: The number of plans.
+82 block: A plain block comment. A @param tag here is prose.

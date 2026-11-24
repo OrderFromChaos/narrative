@@ -1,0 +1,6 @@
+1 line: JSX elements, whose text is not code
+4 trailing line: after a ternary of elements
+7 line: a comment between attributes
+8 trailing block: another comment between attributes
+15 trailing block: a comment in an expression container
+23 trailing line: division after a name

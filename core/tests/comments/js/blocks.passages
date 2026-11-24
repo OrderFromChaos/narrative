@@ -1,0 +1,11 @@
+1 line: A slash after a closing brace opens a regex after a block, and divides after an operand
+6 trailing line: after an if block
+10 trailing line: after a labelled block
+15 trailing line: after a block in a case
+19 trailing line: after a key in an object literal that follows return
+22 trailing line: after a function declaration
+24 trailing line: after the block body of an arrow function
+30 trailing line: after a class declaration
+34 trailing line: after a return with no value
+37 trailing line: after a function expression called in parentheses
+43 trailing line: after a finally block

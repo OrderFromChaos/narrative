@@ -1,0 +1,6 @@
+1 line: Strings with quotes, backslashes and slashes
+2 trailing line: after a single-quoted string
+3 trailing line: after a double-quoted string
+4 trailing line: after an escaped backslash
+6 trailing line: after a line continuation
+7 trailing line: after quotes in quotes

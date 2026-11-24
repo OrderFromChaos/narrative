@@ -1,0 +1,2 @@
+1-3 line: Known limits of the reader in TypeScript. A type literal at the end of a type alias is read as an object literal, so the slash on the next line divides. The `"` in the regex then opens a string up to the end of the line, and the comment on that line is not found.
+6 line: The `>` of a type is read as an operator, so a slash after `Array<number>` opens a regex where TypeScript divides.

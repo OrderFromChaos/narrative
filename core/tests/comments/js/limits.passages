@@ -1,0 +1,2 @@
+1-3 line: Known limits of the reader, in a sloppy-mode script. In a script, `await`, `yield` and `let` can be names, so the slash after each divides. The reader reads the word as a keyword and the slash as a regex up to the comment, so the comment on each of the next three lines is not found.
+8 line: An HTML-like comment of Annex B is read as operators, so the text of the comment is not a passage.

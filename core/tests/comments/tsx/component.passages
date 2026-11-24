@@ -1,0 +1,10 @@
+1 line: JSX text and attributes with `//` and `/*`, and comments in JSX expressions
+3 trailing line: a generic arrow function, not an element
+4 trailing line: a constrained generic arrow function
+5 trailing line: a const type parameter
+9 trailing block: a comment in a JSX expression
+12 trailing line: a line comment in a JSX expression
+14 trailing block: after a call
+22 trailing line: after an element in parentheses
+26 trailing line: after an element with a type argument
+27 trailing line: division after a name

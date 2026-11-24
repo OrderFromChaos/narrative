@@ -1,8 +1,9 @@
-"""Fill the paragraphs of comments again up to column 120, for the re-wrap of every language.
+"""Re-wrap the comments of every language: fill each paragraph again up to the last column.
 
 The prose checks read each comment as one joined text. After an edit of that text, the line breaks of the first draft
 remain: `The product is` / `a` / `float, …`. The re-wrap joins the lines of each paragraph and fills them again, so that
-the first word of each next line would pass column 120 on the line before. The re-wrap changes only the line breaks.
+the first word of each next line would pass the last column on the line before. The re-wrap changes only the line
+breaks.
 
 The codeprose.py of each language reads the comments of one source file into blocks of `Line`: the margin before the
 text, such as `    # ` or `     * `, and the text. A block is a run of comment lines that can share paragraphs, such as
@@ -29,8 +30,8 @@ from dataclasses import dataclass
 
 ### standard library only. checks.py and javachecks.py import this, and both run wherever python3 does
 
-# the last column of a comment line, counted from column 0 of the line. The GTNH Eclipse formatter splits a comment line
-# past this column, and a Python line past this column is a ruff E501 finding
+# the default last column of a comment line. Column 0 is the first column of the line. The GTNH Eclipse formatter splits
+# a comment line past this column, and a Python line past this column is a ruff E501 finding
 WIDTH = 120
 # a code span or an inline tag such as `{@link Plan#read}` is not split, so a word is the whole span or tag. The spaces
 # inside a span stay as written
@@ -61,8 +62,9 @@ RULE = 'NAR125'
 DETAIL = f'paragraph not filled up to column {WIDTH}. verify.py re-wraps the paragraph'
 
 
-def rewrapSource(source: str, blocks: list[list[Line]], changed_lines: set[int] | None) -> str:
-    """Fill each paragraph of the blocks again. `changed_lines` limits the fill to paragraphs with a changed line.
+def rewrapSource(source: str, blocks: list[list[Line]], changed_lines: set[int] | None, *, width: int = WIDTH) -> str:
+    """Fill each paragraph of the blocks again up to column `width`. `changed_lines` limits the fill to paragraphs with
+    a changed line.
 
     Returns:
         The source, with only the line breaks of the filled paragraphs changed.
@@ -71,7 +73,7 @@ def rewrapSource(source: str, blocks: list[list[Line]], changed_lines: set[int] 
     replacements = [
         replacement
         for paragraph in paragraphsOf(blocks, changed_lines)
-        if (replacement := refill(lines, paragraph)) is not None
+        if (replacement := refill(lines, paragraph, width)) is not None
     ]
     # replace from the bottom up, because a replacement can change the number of every later line
     for replacement in sorted(replacements, key=lambda replacement: replacement.first_line, reverse=True):
@@ -79,7 +81,13 @@ def rewrapSource(source: str, blocks: list[list[Line]], changed_lines: set[int] 
     return '\n'.join(lines)
 
 
-def unfilledLines(source: str, blocks: list[list[Line]], changed_lines: set[int] | None) -> list[int]:
+def unfilledLines(
+    source: str,
+    blocks: list[list[Line]],
+    changed_lines: set[int] | None,
+    *,
+    width: int = WIDTH,
+) -> list[int]:
     """List the first line of each paragraph that the re-wrap would change.
 
     Returns:
@@ -89,7 +97,7 @@ def unfilledLines(source: str, blocks: list[list[Line]], changed_lines: set[int]
     return [
         replacement.first_line
         for paragraph in paragraphsOf(blocks, changed_lines)
-        if (replacement := refill(lines, paragraph)) is not None
+        if (replacement := refill(lines, paragraph, width)) is not None
     ]
 
 
@@ -153,8 +161,8 @@ def fixedLines(block: list[Line]) -> set[int]:
     return fixed
 
 
-def refill(lines: list[str], paragraph: Paragraph) -> Replacement | None:
-    """Fill one paragraph greedily, with no line past column WIDTH. A longer word is alone on a line.
+def refill(lines: list[str], paragraph: Paragraph, width: int) -> Replacement | None:
+    """Fill one paragraph greedily up to column `width`. A word longer than the width is alone on a line.
 
     Returns:
         The replacement, or None when the filled lines are the lines as written.
@@ -166,7 +174,7 @@ def refill(lines: list[str], paragraph: Paragraph) -> Replacement | None:
     for word in words:
         if not current:
             current = f'{paragraph.lines[0].margin if not filled else margin}{word}'
-        elif len(current) + 1 + len(word) > WIDTH:
+        elif len(current) + 1 + len(word) > width:
             filled.append(current)
             current = f'{margin}{word}'
         else:

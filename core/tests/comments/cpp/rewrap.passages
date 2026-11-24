@@ -1,0 +1,12 @@
+2-3 doc-line: Doc comments with short lines.
+7-8 doc-line: Count the walls around a point.
+10-11 doc-line: the cells, row by row
+12 doc-line: the count
+17-18 doc-line: The paragraph after the sample.
+21-23 doc-line: An indented doc comment whose first line is long enough to need a second line once the third line joins, at column one hundred and twenty.
+27-28 doc: A doc comment with no star margin, broken short.
+30-31 doc: - the first step, broken short
+32 doc: - the second step
+36 trailing line: a trailing comment
+37 trailing line: and a trailing comment on the next line are never joined
+39 trailing line: namespace grid

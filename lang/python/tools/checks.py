@@ -128,7 +128,7 @@ def main() -> int:
     for target in args.paths:
         targets.extend(sorted(discoverPython(target)) if target.is_dir() else [target])
     try:
-        changed = readChangedLines(args.since, Path.cwd(), codeprose.GIT_PATTERN) if args.since else None
+        changed = readChangedLines(args.since, Path.cwd(), *codeprose.GIT_PATTERNS) if args.since else None
     except GitError as exc:
         print(f'checks.py: {exc}', file=sys.stderr)
         return 2

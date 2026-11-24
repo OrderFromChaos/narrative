@@ -1,0 +1,5 @@
+1 line: Comparisons and shifts that look like JSX tags, in a file that can hold JSX
+3 trailing line: a < b > c, after a name
+4 trailing line: shifts
+5 trailing line: division after a comparison in the head of an if
+6 trailing line: a regex after less than

@@ -4,10 +4,12 @@ Each language of Narrative has a module named codeprose.py, and the language's s
 agentverbs.py and wording.py. The prose checks read source files only through the names below, so the checks run on any
 language with a codeprose.py.
 
-- `GIT_PATTERN`: the git pathspec of a source file of the language
-- `passages()`: the comments and doc comments of one source file, as passages
+- `GIT_PATTERNS`: the git pathspecs of the source files of the language
+- `passages()`: the comments and doc comments of one source file, as passages. The second argument is the suffix of the
+  file, for a codeprose.py that reads several languages
 - `NOQA`: the comment that silences a finding on one line
-- `commentBlocks()`: the comments and doc comments of one source file, as blocks of lines for the re-wrap of rewrap.py
+- `commentBlocks()`: the comments and doc comments of one source file, as blocks of lines for the re-wrap of rewrap.py.
+  The second argument is the suffix, as for `passages()`
 
 In a Java file, a passage comes from one comment block: a run of whole-line `//` comments on consecutive lines at one
 column, one trailing comment, one block comment, or one javadoc. A blank line, a pragma, a divider, a list item, `<p>`,
@@ -33,7 +35,7 @@ from rewrap import Line
 
 ### standard library only. javachecks.py imports this, and javachecks.py runs wherever python3 does
 
-GIT_PATTERN = '*.java'
+GIT_PATTERNS = ('*.java',)
 # matches:
 # `// noqa`
 # `// noqa: NAR017, NAR020`
@@ -72,7 +74,7 @@ JAVA_TOKEN = re.compile(
 )
 
 
-def passages(source: str) -> list[Passage]:
+def passages(source: str, _suffix: str = '.java') -> list[Passage]:
     return [passage for block in groupBlocks(lexComments(source)) for passage in blockPassages(block)]
 
 
@@ -217,7 +219,7 @@ def splitMarkup(text: str, *, javadoc: bool) -> tuple[bool, bool, str]:
     return breaks, list_item, ' '.join(text.split())
 
 
-def commentBlocks(source: str) -> list[list[Line]]:
+def commentBlocks(source: str, _suffix: str = '.java') -> list[list[Line]]:
     """Read the whole-line comments and javadoc of one Java source as blocks of lines, for the re-wrap."""
     lines = source.split('\n')
     blocks: list[list[Line]] = []

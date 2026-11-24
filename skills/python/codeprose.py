@@ -4,11 +4,13 @@ Each language of Narrative has a module named codeprose.py, and the language's s
 agentverbs.py and wording.py. The prose checks read source files only through the names below, so the checks run on any
 language with a codeprose.py.
 
-- `GIT_PATTERN`: the git pathspec of a source file of the language
-- `passages()`: the comments and doc comments of one source file, as passages
+- `GIT_PATTERNS`: the git pathspecs of the source files of the language
+- `passages()`: the comments and doc comments of one source file, as passages. The second argument is the suffix of the
+  file, for a codeprose.py that reads several languages
 - `NOQA`: the comment that silences a finding on one line
 - `changeSpans()`: the lines that count for --since, by line
-- `commentBlocks()`: the comments and doc comments of one source file, as blocks of lines for the re-wrap of rewrap.py
+- `commentBlocks()`: the comments and doc comments of one source file, as blocks of lines for the re-wrap of rewrap.py.
+  The second argument is the suffix, as for `passages()`
 
 In a Python file, a passage is a run of whole-line comments at one column, one trailing comment, or a run of docstring
 lines. A block for the re-wrap is a run of whole-line comments at one column, or one docstring. A trailing comment is
@@ -34,7 +36,7 @@ from wording import Spans
 
 ### standard library only. checks.py imports this, and checks.py runs wherever python3 does
 
-GIT_PATTERN = '*.py'
+GIT_PATTERNS = ('*.py',)
 # matches:
 # `# noqa`
 # `# noqa: NAR017, NAR020`
@@ -47,7 +49,7 @@ SECTION_HEADER = re.compile(r'(?:Args|Arguments|Returns|Yields|Raises|Attributes
 NAMED_SECTION = re.compile(r'(?:Args|Arguments|Raises|Attributes):$')
 
 
-def passages(source: str) -> list[Passage]:
+def passages(source: str, _suffix: str = '.py') -> list[Passage]:
     """Read every comment passage and every docstring passage of one Python file.
 
     For a file that does not parse, such as a file in the middle of an edit, the list has only the comment passages.
@@ -192,7 +194,7 @@ def changeSpans(checked_file: Path) -> Spans:
     return spans
 
 
-def commentBlocks(source: str) -> list[list[Line]]:
+def commentBlocks(source: str, _suffix: str = '.py') -> list[list[Line]]:
     """Read the comments and docstrings of one Python file as blocks of lines, for the re-wrap.
 
     For a file that does not parse, the list has only the comment blocks.

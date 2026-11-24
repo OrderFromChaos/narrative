@@ -1,0 +1,9 @@
+1-3 line: This run of line comments is broken early, and the re-wrap fills each paragraph up to column 120 without changing a word of the text, so the second line ends earlier.
+5 line: A list after a blank comment line:
+6-7 line: - the first item of the list, which is long enough that the re-wrap has to break it before the last column of the line
+8-9 line: - the second item
+10 trailing line: a trailing comment is never re-wrapped,
+15-16 doc: Read a plan file. This description is broken early too.
+18-19 doc: Where the plan file is.
+20 doc: The plan.
+31-32 block: A block comment over several lines.

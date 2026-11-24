@@ -36,6 +36,9 @@ ROOT = Path(__file__).resolve().parent
 MANIFEST_PATH = ROOT / 'skills.toml'
 # the plugin's name, before the colon of a skill command such as /nar:python
 PLUGIN_NAME = 'nar'
+# the languages of the `suffixes` of core. Narrative doesn't have a skill for these languages. For their files,
+# loadList() adds repo to the skills to load, and the verify.py of core checks the comments
+CORE_LANGUAGES = 'C, C++, JavaScript, TypeScript, or Verilog'
 # the directories left out of a walk of a directory with no git repository
 SKIPPED_DIRECTORIES = frozenset({'.git', '.gradle', 'build', 'node_modules', '.venv', '__pycache__'})
 # the largest number of files in a walk, so the load time of a skill on a large directory with no git
@@ -146,14 +149,18 @@ def loadList(manifest: Manifest, combined: CombinedSkill, directory: Path) -> st
     skills = [manifest.modular[name] for name in combined.combines]
     counted = [(sum(counts[suffix] for suffix in skill.suffixes), skill) for skill in skills]
     found = sorted(((count, skill) for count, skill in counted if count), key=lambda pair: -pair[0])
-    if not found:
-        return f'No source file of {" or ".join(combined.combines)} is below {directory}.\n'
+    core_count = sum(counts[suffix] for suffix in manifest.modular['core'].suffixes)
+    if not (found or core_count):
+        combined_names = ' or '.join(combined.combines)
+        return f'No source file of {combined_names}, and no {CORE_LANGUAGES} file, is below {directory}.\n'
 
     to_load: list[str] = []
     for _count, skill in found:
         for name in [*skill.requires, skill.name] if hasMarker(skill, directory) else skill.requires:
             if name not in to_load:
                 to_load.append(name)
+    if core_count:
+        to_load.extend(name for name in (*manifest.modular['repo'].requires, 'repo') if name not in to_load)
     fitting = [(count, skill) for count, skill in found if hasMarker(skill, directory)]
     listed = ', '.join(f'{skill.name} ({count} files)' for count, skill in fitting)
     paragraph = f'This repository has source files of {listed}. ' if fitting else ''
@@ -164,6 +171,11 @@ def loadList(manifest: Manifest, combined: CombinedSkill, directory: Path) -> st
                 f' {" or ".join(marker.files)} in the current directory contains `{marker.contains}`, so'
                 f' `{PLUGIN_NAME}:{skill.name}` does not fit those files. Do not load `{PLUGIN_NAME}:{skill.name}`. '
             )
+    if core_count:
+        paragraph += (
+            f'The repository has {core_count} {CORE_LANGUAGES} files. After an edit of one of those files, run the'
+            f' verify.py of `{PLUGIN_NAME}:core` with --since. '
+        )
     commands = ', '.join(f'`{PLUGIN_NAME}:{name}`' for name in to_load)
     return (
         f'{paragraph}Before you write or review anything, load each of these skills with the Skill tool,'
@@ -229,7 +241,8 @@ class ModularSkill:
     description: str
     modules: tuple[str, ...]
     files: tuple[str, ...]
-    # the suffixes of the language's source files, for a combined skill. Empty for a skill of no language
+    # the suffixes that loadList() counts for the skill: the language of a combined skill, or the languages that the
+    # verify.py of core checks. Empty for every other skill
     suffixes: tuple[str, ...]
     # the skills to load before this one, such as core
     requires: tuple[str, ...]

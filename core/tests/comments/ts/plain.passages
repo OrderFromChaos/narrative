@@ -1,0 +1,5 @@
+1 line: A TypeScript file of plain JavaScript, which node checks as written
+4 trailing line: comparisons, not type arguments and not JSX
+5 trailing line: shifts
+6 trailing line: a regex after less than
+7 trailing line: divisions

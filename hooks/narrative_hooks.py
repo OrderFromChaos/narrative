@@ -8,11 +8,12 @@ ends are refused:
   `agentverbs.py`, `ruff check`, `ruff format`, `mypy`, `pylint`, `vermin`, and the spotless, Checkstyle and PMD tasks
   of Gradle. The skill prescribes `javachecks.py --rewrap` and `checks.py --rewrap`, so both are allowed, and so is
   `--help`
-- at the end of a turn: a `.py` or `.java` file of the project edited in this turn after the last `verify.py` run for
-  the language of the file, or the review lists of a run of this turn never opened. For a `.py` file, only a run of
-  nar:python counts. For a `.java` file, only a run of nar:gtnh without --prose-only counts. A run of nar:page counts
-  for neither. Lists that the run did not write, such as after an exit 2 or during a run in the background, need no
-  read. A second end of the same turn is allowed, so the agent can stop a turn to ask the user a question
+- at the end of a turn: a source file of the project edited in this turn after the last `verify.py` run for the language
+  of the file, or the review lists of a run of this turn never opened. For a `.py` file, only a run of nar:python
+  counts. For a `.java` file, only a run of nar:gtnh without --prose-only counts. For a C, C++, JavaScript, TypeScript,
+  Verilog, or SystemVerilog file, only a run of nar:core counts. A run of nar:page checks no source file. Lists that the
+  run did not write, such as after an exit 2 or during a run in the background, need no read. A second end of the same
+  turn is allowed, so the agent can stop a turn to ask the user a question
 - after compaction: a reminder to load the Narrative skills again, because the summary has no rules
 
 A `verify.py` run is a Python run of the `verify.py` in the folder of a Narrative skill. A script of the project named
@@ -57,7 +58,24 @@ NARRATIVE_SKILL = re.compile(
     r'^(?:nar:(?:python|gtnh|core|code|repo|page|proposal|brief|runbook)'
     r'|narrative-(?:python|java|gtnh|core|repo|page|proposal|brief|runbook))$',
 )
-CHECKED_SUFFIXES = frozenset({'.py', '.java'})
+# the suffixes of the source files that the verify.py of each skill folder checks. The suffixes of `core` are the keys
+# of LANGUAGE_OF_SUFFIX in codeprose.py of nar:core, and hooks/tests/run_hooks.py fails when the two lists differ
+# fmt: off
+CHECKED_SUFFIXES_OF_FOLDER = {
+    'python': ('.py',),
+    'gtnh': ('.java',),
+    'java': ('.java',),
+    'core': (
+        '.c', '.C', '.c++', '.cc', '.cpp', '.cppm', '.cu', '.cuh', '.cxx', '.h', '.h++', '.hh', '.hpp', '.hxx', '.inl',
+        '.ipp', '.ixx', '.tcc', '.tpp',
+        '.cjs', '.js', '.jsx', '.mjs', '.cts', '.mts', '.ts', '.tsx',
+        '.sv', '.svh', '.v', '.vh',
+    ),
+    # the verify.py of nar:page checks pages, so a run of nar:page doesn't check a source file
+    'page': (),
+}
+# fmt: on
+CHECKED_SUFFIXES = frozenset(suffix for suffixes in CHECKED_SUFFIXES_OF_FOLDER.values() for suffix in suffixes)
 # the files at the root of the narrative repository
 NARRATIVE_SOURCE_FILES = ('skills.toml', 'assemble.py', 'build_skills.py')
 # the data directory when Claude Code sets no CLAUDE_PLUGIN_DATA, such as a hook in settings.json
@@ -78,23 +96,16 @@ CACHE_DIR = re.compile(r'--cache-dir[\s=]+' + PATH_ARGUMENT)
 
 # a redirect of one stream into another, such as `2>&1`. The `&` of such a redirect is not a command separator
 STREAM_REDIRECT = re.compile(r'\d*>&\d+')
-# a Python interpreter, then a script in the folder of a Narrative skill: skills/python, skills/gtnh or skills/page of
-# the plugin and of the repository, a folder of install.sh, or the skill folder variable of SKILL.md
+# a Python interpreter, then a script in the folder of a Narrative skill: skills/python, skills/gtnh, skills/core, or
+# skills/page of the plugin and of the repository, a folder of install.sh, or the skill folder variable of SKILL.md.
+# `${CLAUDE_SKILL_DIR}` is the folder of nar:python, nar:gtnh, nar:core, or nar:page, so a run through
+# `${CLAUDE_SKILL_DIR}` counts for every suffix of CHECKED_SUFFIXES
 SKILL_SCRIPT = (
     r'\bpython[\d.]*(?:\.exe)?\s+(?:-\w+\s+)*["\']?\S*?'
-    r'(?P<folder>skills[/\\](?:python|gtnh|page)|narrative-(?:python|java|gtnh|page)|\$\{?CLAUDE_SKILL_DIR\}?)[/\\]'
+    r'(?P<folder>skills[/\\](?:python|gtnh|core|page)|narrative-(?:python|java|gtnh|core|page)'
+    r'|\$\{?CLAUDE_SKILL_DIR\}?)[/\\]'
 )
-# the suffix of the source files that the verify.py of a skill folder checks. `${CLAUDE_SKILL_DIR}` is the folder of
-# nar:python, nar:gtnh or nar:page. A run through `${CLAUDE_SKILL_DIR}` can be a run of any of the three skills, so the
-# run counts for both suffixes
-CHECKED_SUFFIXES_OF_FOLDER = {
-    'python': ('.py',),
-    'gtnh': ('.java',),
-    'java': ('.java',),
-    # the verify.py of nar:page checks pages, so a run of nar:page doesn't check a source file
-    'page': (),
-}
-# the option of the verify.py of nar:gtnh that skips Gradle. The verify.py of nar:python has no such option
+# the option of the verify.py of nar:gtnh that skips Gradle. The verify.py of nar:python doesn't have the option
 PROSE_ONLY = re.compile(r'--prose-only\b')
 # matches:
 # `python3 "${CLAUDE_SKILL_DIR}/verify.py" .`
@@ -156,9 +167,9 @@ BY_HAND_REASON = (
     ' --prose-only to verify.py.'
 )
 EDIT_REASON = (
-    'Narrative: {path} changed after the last verify.py run that checks {suffix} files. Run the verify.py of the skill'
-    ' for {suffix} files once for the batch of edits, as in Procedures, then read the review lists. If you stop this'
-    ' turn to ask the user a question before the work is done, say so in one line and end the turn again.'
+    'Narrative: {path} changed after the last verify.py run that checks {suffix} files. Run the verify.py of {skill}'
+    ' once for the batch of edits, as in Procedures, then read the review lists. If you stop this turn to ask the user'
+    ' a question before the work is done, say so in one line and end the turn again.'
 )
 PROSE_ONLY_REASON = (
     'Narrative: {path} changed after the last verify.py run without --prose-only. A run with --prose-only checks no'
@@ -336,7 +347,10 @@ def stop(session: Session, hook_input: dict[str, object]) -> dict[str, object] |
         path = Path(str(events[edit].get('path')))
         prose_only = any(entry.get('event') == 'verify' and entry.get('prose_only') for entry in events[edit + 1 :])
         reason = PROSE_ONLY_REASON if prose_only else EDIT_REASON
-        return {'decision': 'block', 'reason': reason.format(path=events[edit].get('path'), suffix=path.suffix)}
+        return {
+            'decision': 'block',
+            'reason': reason.format(path=events[edit].get('path'), suffix=path.suffix, skill=skillOf(path.suffix)),
+        }
     verify = session.lastIndex(events, 'verify', this_turn=True)
     if verify > session.lastIndex(events, 'lists', this_turn=False) and wroteLists(events[verify]):
         return {'decision': 'block', 'reason': LISTS_REASON}
@@ -346,8 +360,9 @@ def stop(session: Session, hook_input: dict[str, object]) -> dict[str, object] |
 def uncheckedEdit(session: Session, events: list[dict[str, object]]) -> int:
     """Return the index of the last edit of this turn with no later `verify.py` run that checks the file, or -1.
 
-    A run of nar:python checks `.py` files, and a run of nar:gtnh without --prose-only checks `.java` files. A run that
-    an older version of this script recorded has no list of checked suffixes, and counts for both.
+    A run of nar:python checks `.py` files, a run of nar:gtnh without --prose-only checks `.java` files, and a run of
+    nar:core checks the files of CHECKED_SUFFIXES_OF_FOLDER['core']. A run that an older version of this script recorded
+    doesn't have a list of checked suffixes, and counts for every suffix.
     """
     unchecked = -1
     for index, entry in enumerate(events):
@@ -363,6 +378,12 @@ def checksSuffix(entry: dict[str, object], suffix: str) -> bool:
     """Decide whether an event is a `verify.py` run that checks the source files with a suffix."""
     checks = entry.get('checks', sorted(CHECKED_SUFFIXES))
     return entry.get('event') == 'verify' and isinstance(checks, list) and suffix in checks
+
+
+def skillOf(suffix: str) -> str:
+    """Return the name in the plugin `nar` of the skill whose `verify.py` checks the source files with a suffix."""
+    folder = next(folder for folder, suffixes in CHECKED_SUFFIXES_OF_FOLDER.items() if suffix in suffixes)
+    return f'nar:{folder}'
 
 
 def wroteLists(verify: dict[str, object]) -> bool:

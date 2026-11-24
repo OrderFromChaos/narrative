@@ -1,0 +1,17 @@
+1 line: SystemVerilog literals that hold a slash pair.
+3 trailing line: all zeros
+4 trailing line: fill literals
+5 trailing line: an assignment pattern
+6 trailing line: a cast, then a division
+8 trailing line: a named assignment pattern
+11 trailing line: after the triple-quoted string
+13 trailing line: after the escaped triple quote
+14 trailing line: after an empty string
+15 trailing line: after an escaped backslash
+17 trailing line: after an angle-bracket include
+18 trailing line: display
+19 trailing line: a named block
+21 line: a comment with a closing */ in it
+22 trailing line: power and division
+23 trailing line: a cycle delay
+24 trailing line: an iff qualifier

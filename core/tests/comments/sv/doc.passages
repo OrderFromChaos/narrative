@@ -1,0 +1,9 @@
+2-3 doc: A synchronous FIFO with one clock.
+4-5 doc: the width of one word
+12 trailing doc-line: the clock of both ports
+15-17 doc-line: The storage of the FIFO, read at the read pointer. The `rd_ptr` wraps at the depth.
+19 doc-line: The write pointer.
+20 doc-line: The pointer advances on each write.
+22-23 doc-line: @(posedge clk) samples din and \bus_a is an escaped identifier.
+24 doc: The read pointer.
+28 line: a plain comment after an empty one

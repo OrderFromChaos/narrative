@@ -1,0 +1,41 @@
+1 line: Each regex below holds a `//` or a `/*`. Read as a division, the regex would open a comment.
+2 trailing line: after a class with a slash and a star
+3 trailing line: after an escaped slash
+4 trailing line: after a method call on a regex
+5 trailing line: after an escaped bracket in a class
+8 trailing line: after typeof
+10 trailing line: after case
+15 trailing line: after yield
+16 trailing line: after void
+17 trailing line: after delete
+18 trailing line: after in
+19 trailing line: after of
+20 trailing line: after new
+21 trailing line: after instanceof
+22 trailing line: after throw
+23 trailing line: after return
+27 trailing line: after await
+31 trailing line: after a parenthesis
+32 trailing line: after a bracket and a comma
+33 trailing line: after not
+34 trailing line: after and
+35 trailing line: after or
+36 trailing line: after nullish coalescing
+37 trailing line: after a question mark and a colon
+38 trailing line: after a brace and a key
+39 trailing line: after the brace that opens a block
+40 trailing line: after the brace that closes a block
+41 trailing line: after a semicolon
+42 trailing line: after an arrow
+43 trailing line: at the start of a statement
+44 trailing line: after the head of an if
+45 trailing line: after the head of a while
+46 trailing line: after the head of a for
+47 trailing line: after do
+48 trailing line: after else
+49 trailing line: after a binary operator
+50 trailing line: after a comparison
+51 trailing line: after less than
+52 trailing line: after greater than
+53 trailing line: after an assignment operator
+54 trailing line: after the start of a template expression

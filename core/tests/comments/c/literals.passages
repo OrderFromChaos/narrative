@@ -1,0 +1,30 @@
+1 trailing line: stdio for puts
+2 trailing line: a quoted header name is a string
+4 trailing line: after a string with slashes
+5 trailing line: after a double quote in a character literal
+6 trailing line: after an escaped apostrophe
+7 trailing line: after an escaped backslash
+8 trailing line: after a string with a block opener
+9 trailing line: after an escaped double quote
+12 trailing line: after a string with a line splice
+14 trailing line: after a wide character
+15 trailing line: after a UTF-16 character
+16 trailing line: after a UTF-32 character
+17 trailing line: after a UTF-8 character
+18 trailing line: after a UTF-8 string
+19 trailing line: after two adjacent strings
+21 trailing line: C23 digit separators
+22 trailing line: a separator in a hex number
+23 trailing line: a separator in a binary number
+24 trailing line: a separator after an exponent sign
+25 trailing line: a number that starts with a point
+26 trailing line: a character after a number
+28 block: a // b inside a block comment
+29 block: /* a block comment does not nest
+30 trailing block: the line comment opener //* is inside
+31 trailing line: division is not a comment
+32 trailing block: / a comment that opens with a slash and star
+33 trailing line: **/2
+36-37 line: a line comment continued by a backslash at the end of the line
+42 block: but a block comment in the group is a comment
+50 trailing line: after the macro with the quotes

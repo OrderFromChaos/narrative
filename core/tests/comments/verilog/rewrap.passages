@@ -1,0 +1,7 @@
+1-4 line: The arbiter grants the bus to one master at a time. The grant follows a fixed priority.
+6-9 line: The request lines are sampled on the rising edge of the clock, and a request that drops before the edge is not seen by the arbiter at all, so the masters hold their requests.
+11-12 line: The checker below runs in simulation only.
+16-17 block: The grant register holds the last grant for one cycle.
+19 trailing line: the lowest set bit of the request, which a long trailing comment never re-wraps
+22-23 line: the lowest set bit of the request vector wins the bus, and the masters with a higher index wait for a later cycle of the clock
+26-28 block: The first line of a block comment with no stars in the margin, over three lines

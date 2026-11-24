@@ -1,0 +1,32 @@
+7 doc: Doxygen comments in a C++ file.
+16-17 doc-line: The cells of a grid, row by row. A second line of the same brief.
+21 doc: Read one cell.
+23-24 doc: Reads the cell at `row` and `column` of `cells`. See the checked accessor and the grid class. A `std::vector<int>` is not copied.
+26 doc: the type of the index
+27 doc: the cells
+28 doc: the row, then the next row
+29 doc: the column
+30 doc: the cell, or `-1` when the point is outside
+31 doc: when `row` is negative
+32 doc: never
+33 doc: `cells` is not empty.
+34 doc: The call is not thread-safe.
+35 doc: Use Grid::at() instead.
+39 doc: Usage:
+46 doc: The steps:
+47 doc: -# check `row`
+48 doc: -# read the cell
+49 doc: the first item
+50 doc: the second item
+51 doc: - a Markdown item
+54 doc: Constant time.
+55 doc: Escapes such as \c, @ref and & are text. The command ends a line.
+61 trailing doc-line: Return the cell, or throw.
+62 trailing doc: The number of columns.
+63 trailing doc-line: The number of rows.
+64 doc: A trailing doc comment alone on its line.
+72 doc: The area of a grid of `width` by `height` cells:
+82 doc: the size, in cells
+90 doc-line: A paragraph after an empty doc line.
+96 block: A banner of stars around a plain block comment.
+100 doc-line: A doc comment under a divider of slashes.

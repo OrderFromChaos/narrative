@@ -183,8 +183,9 @@ def listPage(
     return page
 
 
-def readChangedLines(since: str, any_repo_path: Path, pattern: str) -> ChangedLines:
-    """List the lines that the diff against merge-base(HEAD, since) adds or changes, per page and per `pattern` file.
+def readChangedLines(since: str, any_repo_path: Path, *patterns: str) -> ChangedLines:
+    """List the lines that the diff against merge-base(HEAD, since) adds or changes in each page and in each file that
+    `patterns` matches.
 
     For a hunk that only deletes lines, the line below the deleted lines is listed, so a finding on that line is
     reported under --since. Every line of an untracked file is listed.
@@ -198,7 +199,7 @@ def readChangedLines(since: str, any_repo_path: Path, pattern: str) -> ChangedLi
     HUNK = re.compile(r'^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@')
     repo_root = Path(runGit(['rev-parse', '--show-toplevel'], any_repo_path).strip())
     base = runGit(['merge-base', 'HEAD', since], repo_root).strip()
-    patterns = [pattern, *PAGE_PATTERNS]
+    patterns = (*patterns, *PAGE_PATTERNS)
     changed: ChangedLines = {}
     current: Path | None = None
     for diff_line in runGit(['diff', '-M', '--unified=0', base, '--', *patterns], repo_root).splitlines():
@@ -240,8 +241,8 @@ def countEntries(listed: list[str]) -> int:
     return len(entries)
 
 
-def findFiles(directory: Path, pattern: str) -> list[Path]:
-    """Find the files below a directory whose names match a glob.
+def findFiles(directory: Path, *patterns: str) -> list[Path]:
+    """Find the files below a directory whose names match one of the globs.
 
     A directory below with a `.git` entry is another checkout, such as the worktree of another branch in
     .claude/worktrees/, or a submodule. The files of another checkout are not the files of this one, so the walk does
@@ -253,7 +254,9 @@ def findFiles(directory: Path, pattern: str) -> list[Path]:
     found: list[Path] = []
     for current, subdirectories, names in os.walk(directory):
         subdirectories[:] = [name for name in subdirectories if not (Path(current) / name / '.git').exists()]
-        found.extend(Path(current) / name for name in fnmatch.filter(names, pattern))
+        found.extend(
+            Path(current) / name for name in names if any(fnmatch.fnmatch(name, pattern) for pattern in patterns)
+        )
     return sorted(found)
 
 

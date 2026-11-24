@@ -78,6 +78,7 @@ Some examples of (2):
 
 - Python: `/nar:python`
 - GTNH Java: `/nar:gtnh`
+- C, C++, JavaScript/TypeScript, or Verilog: `/nar:repo`, then the `verify.py` of `nar:core`
 - Mixed languages: `/nar:code`
 - A README or a doc in a code repository: the skill of the language, which loads `nar:repo`
 - A page outside a code repository: `/nar:page`, or the skill of the kind of page: `/nar:proposal`,
@@ -95,9 +96,10 @@ flowchart TD
     brief["<b>nar:brief</b><br/>investigations and RCA"]
     runbook["<b>nar:runbook</b><br/>step-by-step manuals"]
     page["<b>nar:page</b><br/>base rules for pages"]
-    core["<b>nar:core</b><br/>comments and sentences"]
+    core["<b>nar:core</b><br/>comments and sentences<br/>verify.py for C, C++, JS/TS, Verilog"]
     code --> python
     code --> gtnh
+    code --> repo
     python --> repo
     gtnh --> repo
     repo --> core
@@ -162,10 +164,11 @@ loads one of the skills. After that, these are refused:
 
 - `verify.py` output piped into `grep`, `head`, `tail` or another filter, and `grep -v` over finding codes
 - a check run by hand that `verify.py` also runs, such as `ruff check`, `mypy` or `./gradlew spotlessApply`
-- the end of a turn with an edit of a `.py` or `.java` file in that turn and without a `verify.py` run for that language
-  since the edit, or with the review lists of a run of that turn unread. For a `.py` file, only the `verify.py` of
-  `nar:python` counts. For a `.java` file, only the `verify.py` of `nar:gtnh` without `--prose-only` counts. The
-  second end of the same turn is allowed, so Claude can still stop to ask you a question
+- the end of a turn with an edit of a source file in that turn and without a `verify.py` run for that language since
+  the edit, or with the review lists of a run of that turn unread. For a `.py` file, only the `verify.py` of
+  `nar:python` counts. For a `.java` file, only the `verify.py` of `nar:gtnh` without `--prose-only` counts. For a C,
+  C++, JavaScript, TypeScript, or Verilog file, only the `verify.py` of `nar:core` counts. The second end of the same
+  turn is allowed, so Claude can still stop to ask you a question
 
 Only the `verify.py`, `checks.py`, `javachecks.py` and `agentverbs.py` in the folder of a Narrative skill count, so a
 script of your project with one of those names is not affected. Claude doesn't need to read a `verify.py` run that
