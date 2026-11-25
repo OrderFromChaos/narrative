@@ -14,7 +14,7 @@ Second principle, for representation choices: **prefer what the type checker and
 even when a looser form is more flexible. State in a `dict[str, Any]` passes `mypy --strict` only
 with a `cast()` or a key lookup at every use. Typed attributes pass with neither. (R3-P2-rank)
 
-**The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
+**Take these steps in order.** (R11-steps-summary) The details are in **Procedures**, the last section.
 1. Load `nar:core` and this skill before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
 3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head`, or

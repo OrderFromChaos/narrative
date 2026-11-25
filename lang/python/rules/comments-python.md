@@ -20,7 +20,7 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 ### Decoding aids
 
 - `SIZE_PATTERN = re.compile(...)  # number, then an optional binary unit suffix`
-- `# fsum() for accurate floating point math`
+- `# fsum() adds floats without the rounding error of sum()`
 - a regex, with a string the regex matches and one the regex rejects:
   ```python
   # matches:
@@ -39,8 +39,8 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 - `# isdigit() admits non-ASCII digits such as '²'. Check isascii() too`
 - the `X would` form in full:
   ```python
-  # Here read_bytes() is used. The alternative, read_text(), would turn \r\n and \r into \n, even
-  # inside a quoted CSV field.
+  # Here read_bytes() is used. The alternative, read_text(), would turn \r\n and \r into \n, even inside a quoted CSV
+  # field.
   csv_bytes = csv_path.read_bytes()
   ```
 
@@ -49,8 +49,8 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 ### Depth
 
 ```python
-# The vendor API returns at most 100 rows per page, and doesn't return a total count.
-# Keep requesting until a page comes back short.
+# The vendor API returns at most 100 rows per page, and doesn't return a total count. Keep requesting until a page comes
+# back short.
 while len(page := fetchPage(cursor)) == PAGE_SIZE:
 ```
 

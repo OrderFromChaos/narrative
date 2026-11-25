@@ -9,16 +9,21 @@ The steps, in order:
 1. Each paragraph of a comment is filled again up to the line limit of the file. --since limits the re-wrap to
    paragraphs with a changed line. --no-fix skips the re-wrap, and each paragraph that the re-wrap would change is a
    NAR125 finding.
-2. The wording checks NAR012 to NAR016 and NAR018 of wording.py run over the comment passages and the pages.
+2. The wording checks NAR012 to NAR016, NAR018 and NAR024 of wording.py run over the comment passages and the pages, and
+   NAR028 runs over the pages.
 3. agentverbs.py runs with the interpreter of the lint venv.
-4. verify.py writes four review lists to review-lists.txt in the cache directory. The path of the file and the number of
+4. verify.py writes the review lists to review-lists.txt in the cache directory. The path of the file and the number of
    entries in each list are on the last line of the output.
 
-The four review lists:
+The review lists:
 - every sentence
 - every subject that cannot act and the subject's verb
 - every sentence with a pronoun
 - every sentence with a free modifier
+- when a page was named, each section of each page with the section's words and lines
+
+--cleanup prints the words of each named page, and the words of the page at HEAD, or at merge-base(HEAD, REF) with
+--since. Pass --cleanup when the user asks for a cleanup of a page.
 
 verify.py looks for the line limit of a file in the directory of the file and in each directory above the file up to the
 repository root. The limit comes from the first of these directories with one of these files:
@@ -39,6 +44,7 @@ Usage:
     $ python3 verify.py src/engine.cpp README.md
     $ python3 verify.py . --since origin/main
     $ python3 verify.py . --no-fix               # report only, change nothing
+    $ python3 verify.py README.md --cleanup      # and the words of README.md against HEAD
     $ printf '%s\\n' "$DRAFT" | python3 verify.py - --cache-dir /tmp/narrative     # a page from stdin
 
 Exit codes:
@@ -112,6 +118,11 @@ def main() -> int:
     parser.add_argument('--since', help='report only lines changed since merge-base(HEAD, SINCE)')
     parser.add_argument('--cache-dir', type=Path, default=CACHE_DIR, help=f'the cache directory (default: {CACHE_DIR})')
     parser.add_argument('--stdin-suffix', default='.md', help='the suffix of a page read from stdin (default: .md)')
+    parser.add_argument(
+        '--cleanup',
+        action='store_true',
+        help='print the words of each page, and the words at HEAD, or at the --since base',
+    )
     args = parser.parse_args()
     print(f'narrative skill: {readInstalledVersion()}')
 
@@ -169,11 +180,16 @@ def main() -> int:
         print(f'\n--- {result.tool} ---')
         print(result.detail.rstrip() or '(no output)')
     print(f'\n{len(failed)} of {len(results)} checks failed' if failed else f'\nall {len(results)} checks passed')
+    if args.cleanup:
+        print()
+        for page in pages:
+            print(wording.pageSize(page, args.since))
 
     lists_path = cache_dir / LISTS_NAME
     review = ReviewRun(
         python=str(python),
         paths=[*sources, *pages],
+        pages=pages,
         options=[*since, *cache],
         from_sentence=args.from_sentence,
         all_sentences=args.all_sentences,
@@ -411,7 +427,8 @@ def prettierWidth(directory: Path) -> int | None:
 
 
 def writeReviewLists(review: ReviewRun, lists_path: Path) -> str | None:
-    """Write the four lists of Prose review to `lists_path`: sentences, agent verbs, pronouns, and free modifiers.
+    """Write the lists of Prose review to `lists_path`: sentences, agent verbs, pronouns, free modifiers, and the
+    sections of the pages when a page was named.
 
     Returns:
         The number of entries in each list, such as
@@ -431,7 +448,7 @@ def writeReviewLists(review: ReviewRun, lists_path: Path) -> str | None:
             option=option,
             arguments=targets,
         )
-    review_lists = (
+    review_lists = [
         (
             'sentences',
             '--- every sentence of every comment and page: read each against nar:core, Comments ---',
@@ -453,7 +470,14 @@ def writeReviewLists(review: ReviewRun, lists_path: Path) -> str | None:
             ' clause or a separate sentence, or cut the phrase ---',
             run([review.python, str(agent_verbs), '--free-modifiers', *every, *targets, *review.options]),
         ),
-    )
+    ]
+    if review.pages:
+        sections = [
+            entry
+            for page in review.pages
+            for entry in wording.listSections(page, wording.changedLinesOf(review.changed, page))
+        ]
+        review_lists.append(('sections', wording.SECTIONS_HEADING, Output(0, '\n'.join(sections))))
     if any(listed.code != 0 for _unit, _heading, listed in review_lists):
         return None
 
@@ -562,6 +586,7 @@ class ReviewRun:
 
     python: str
     paths: list[Path]
+    pages: list[Path]
     options: list[str]
     from_sentence: int
     all_sentences: bool

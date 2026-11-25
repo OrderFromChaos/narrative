@@ -12,8 +12,8 @@ this skill together with `nar:repo`, and run the `verify.py` of this skill:
 python3 "${CLAUDE_SKILL_DIR}/verify.py" . --since origin/main
 ```
 
-**The steps, in short. The details are in Procedures, the last section of `nar:<language>`.**
-(R11-steps-summary)
+**Take these steps in order.** (R11-steps-summary) The details are in **Procedures**, the last section of
+`nar:<language>`.
 1. Load this skill and `nar:<language>` before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
 3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head`, or

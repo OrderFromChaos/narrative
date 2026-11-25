@@ -9,7 +9,7 @@ public final class Flagged {
         compound.setInteger("size", size.ordinal());
     }
 
-    /** The size of a plan. */
+    /** Each plan has one size. */
     public enum Size {
         SMALL,
         LARGE

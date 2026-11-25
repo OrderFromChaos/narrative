@@ -387,7 +387,7 @@ def plainJsdoc(text: str) -> str:
 
 
 class Context(Enum):
-    """An open bracket, a `function` or `class` keyword before the body, or the code of a whole frame.
+    """Each `Context` is an open bracket, a `function` or `class` keyword before the body, or the code of a whole frame.
 
     The code of a whole file is TOP, and the code of a `${}` or a JSX `{}` is EMBEDDED.
 
@@ -418,7 +418,7 @@ CLOSING_CONTEXTS = {
 
 
 class Frame:
-    """The state of the code of a whole file, or of one `${}` or JSX `{}` expression.
+    """A `Frame` is the state of the code of a whole file, or of one `${}` or JSX `{}` expression.
 
     `previous` is the keyword or punctuator before the offset, or empty after a name or a literal. `expression_allowed`
     is whether an expression can start at the offset, so that a `/` opens a regex. `statement_start` is whether a

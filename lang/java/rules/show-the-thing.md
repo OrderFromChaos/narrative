@@ -20,7 +20,7 @@ sample. Keep it small, and re-paste the sample when the output changes.
  *     Centrifuge         4    0.25/s
  * </pre>
  *
- * A machine with no rate shows {@code -} in the RATE column.
+ * The RATE column has {@code -} for a machine without a rate.
  */
 ```
 

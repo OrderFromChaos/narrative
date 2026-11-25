@@ -10,12 +10,12 @@ public final class FlaggedSealed {
         };
     }
 
-    /** A shape on the canvas. */
+    /** {@code Square} and {@code Circle} are the shapes of the canvas. */
     public sealed interface Shape permits Square, Circle {}
 
-    /** A square shape. */
+    /** Each {@code Square} has a side length. */
     public record Square(int side) implements Shape {}
 
-    /** A circle shape. */
+    /** Each {@code Circle} has a radius. */
     public record Circle(int radius) implements Shape {}
 }

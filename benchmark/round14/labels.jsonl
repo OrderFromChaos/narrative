@@ -1,0 +1,30 @@
+{"id": "P01", "lines": "3-5", "unit": "Opening: what the board does", "label": "keep", "action": "learns that the board checks the licence and the bus before an assignment", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P02", "lines": "7-13", "unit": "Why we built Depot Board", "label": "cut", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P03", "lines": "15-18", "unit": "Install: open the URL and sign in", "label": "keep", "action": "opens the board", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P04", "lines": "20-26", "unit": "Server install: Docker Compose", "label": "move", "reader": "IT staff", "destination": "a new install or development page", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P05", "lines": "28-35", "unit": "Morning assignment steps", "label": "keep", "action": "assigns and publishes the duties", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P06", "lines": "37-38", "unit": "Sync every 30 seconds", "label": "keep", "action": "waits for a late duty without a reload", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P07", "lines": "42-43", "unit": "Swap and reason codes", "label": "keep", "action": "swaps two drivers with a reason code", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P08", "lines": "45-46", "unit": "Sick call steps", "label": "keep", "action": "records a sick call", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P09", "lines": "46-47", "unit": "Old sick calls have no caller", "label": "move", "reader": "operations auditor", "destination": "AUDIT.md", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P10", "lines": "51-57", "unit": "Board colours table", "label": "keep", "action": "acts on each colour", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P11", "lines": "59-60", "unit": "Paragraph with the colour table in words", "label": "cut", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P12", "lines": "62-72", "unit": "What Depot Board records: table", "label": "move", "reader": "operations auditor", "destination": "AUDIT.md", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P13", "lines": "74-105", "unit": "Export format: columns, file format and API", "label": "move", "reader": "integrator", "destination": "a new export format page", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P14", "lines": "107-110", "unit": "Timing: two times per record", "label": "move", "reader": "integrator", "destination": "the export format page", "ambiguous": true, "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P15", "lines": "114-115", "unit": "Limit: no working-time check", "label": "keep", "action": "checks the rest break of a driver after a late duty", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P16", "lines": "116-117", "unit": "Limit: a repaired bus is accepted", "label": "keep", "action": "accepts a bus after the yard marks the repair", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P17", "lines": "118", "unit": "Limit: reminder fired early in older builds", "label": "cut", "note": "no dispatcher runs a build before 1.2.0", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P18", "lines": "119", "unit": "Limit: refresh only on F5 in older builds", "label": "cut", "note": "false: CHANGELOG 1.0.0 has the refresh every 2 minutes", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P19", "lines": "120", "unit": "Limit: assigned_at is the drop time", "label": "move", "reader": "integrator", "destination": "the export format page", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P20", "lines": "121", "unit": "Limit: count split shifts by duty_id", "label": "move", "reader": "integrator", "destination": "the export format page", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P21", "lines": "122", "unit": "Limit: a deleted duty stays red until the next sync", "label": "keep", "action": "leaves a red duty that the planners deleted", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P22", "lines": "123-124", "unit": "Limit: an export blocks the board", "label": "keep", "action": "runs an export outside the morning assignment", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P23", "lines": "126-132", "unit": "FAQ", "label": "cut", "note": "each answer is on the page already", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P24", "lines": "134-141", "unit": "Development", "label": "move", "reader": "developer", "destination": "a new development page", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "P25", "lines": "143-151", "unit": "Performance: load test table", "label": "move", "reader": "developer", "destination": "the development page", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "D01", "lines": "37", "unit": "The current version", "label": "date", "release": "2.1.0", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "D02", "lines": "42", "unit": "Since this version", "label": "date", "release": "2.0.0", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "D03", "lines": "46-47", "unit": "Sick calls from earlier versions", "label": "date", "release": "before 1.1.0", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "D04", "lines": "81-82", "unit": "Earlier versions wrote local times", "label": "date", "release": "before 2.0.0", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}
+{"id": "D05", "lines": "85", "unit": "Exports before this version", "label": "date", "release": "before 1.1.0", "tier": "bronze", "labeller": "claude", "date": "2026-11-24"}

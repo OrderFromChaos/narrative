@@ -25,6 +25,23 @@ export against the April export. Put the source of each reading in a footnote. W
 series for the March export, the reader learned from the dots of that series only that the reads
 came from another export.
 
+**Style an HTML page in one dark theme, unless the user asks for a light theme.** (R14-dark-only) Leave out the light
+colours and the `prefers-color-scheme` rules, and check the contrast of each colour against the dark background only.
+
+**Highlight the syntax of each code block on an HTML page.** (R14-code-highlight) Name the language of each block,
+such as `class="language-java"`, load highlight.js 11.9.0 from cdnjs, and paste `${CLAUDE_SKILL_DIR}/a11y-dark.css`
+into the `<style>` of the page. Each colour of the `a11y-dark` theme has a contrast of at least 7:1 on the theme's
+background.
+
+**Keep the standard colour of a value, such as green for added lines and red for removed lines of a diff.**
+(R14-standard-colour) GitHub and `git diff` show added lines in green and removed lines in red, so a reader expects
+those colours on a count of changed lines. Write `+363 −67` with `+363` in green and `−67` in red. A failed test in
+red and a passed test in green follow the same rule.
+
+**Give each item of a set one colour, and use that colour for the item in the cards, the tables and the charts of the
+page.** (R14-item-colour) Four causes of late buses get four colours, and `late starts` has one colour on the card,
+the table and the chart.
+
 **Give each data series a colour of the series' own.** (R13-series-colour) Keep the colour of each
 series far in hue from the colour of each other series on the page. Next to red breakdown markers, a
 reader takes an orange delay line for part of the same series. A colour for a status, such as red

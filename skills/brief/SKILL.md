@@ -29,7 +29,7 @@ isn't a fact.
 digest of the sections. (R13-brief-summary)
 
 **State a fact on one page, and link to that page from the other pages.** (R13-brief-one-page) The
-GPS charts, route maps and fault codes live on the depot logs page. The brief has the conclusions
+GPS charts, route maps and fault codes are on the depot logs page. The brief has the conclusions
 and links to the depot logs page.
 
 **List the next investigation steps, and record what the user ruled out.** (R13-brief-next) Don't
@@ -50,6 +50,8 @@ conditions, such as `Flour and proof` into `Flour` and `Proof`.
 | Steam test | yes | yes | yes | yes | no | not yet | |
 
 ## Verify the page
+
+For a cleanup, take steps 1 to 4 of **To clean up a page** in `nar:page` before you run `verify.py`.
 
 Run the `verify.py` of `nar:page` on the page, with the command under **Verify a page** in
 `nar:page`. The folder of this skill doesn't have a `verify.py`. Take **Prose review** of `nar:core`

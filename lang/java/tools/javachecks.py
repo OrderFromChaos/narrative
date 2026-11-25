@@ -2,9 +2,9 @@
 
 Comments and javadoc are read with a lexer, so the comments of a file are read even when the file uses syntax newer than
 a Java grammar. The prose checks are the ones of every language: the wording checks of wording.py (NAR012 to NAR016,
-NAR018, NAR024) and the agent-verb checks of agentverbs.py (NAR017, NAR020, NAR021, NAR022, NAR025, NAR026). The value
-of a constant in a comment is a NAR027 finding. The structural checks are PMD XPath rules in pmd-ruleset.xml. Every tool
-finding is mapped to a NAR code here.
+NAR018, NAR024) and the agent-verb checks of agentverbs.py (NAR017, NAR020, NAR021, NAR022, NAR025, NAR026, NAR029). The
+value of a constant in a comment is a NAR027 finding. The structural checks are PMD XPath rules in pmd-ruleset.xml.
+Every tool finding is mapped to a NAR code here.
 
 --rewrap runs rewrap.py and doesn't run a check. rewrap.py fills each paragraph of javadoc and whole-line // comments
 again up to column 120, and rewrites the file. --since limits the re-wrap to paragraphs with a changed line. A run
@@ -418,8 +418,8 @@ def proseInventory(
     changed: ChangedLines | None,
     list_page: ListPage | None,
 ) -> list[str]:
-    """List every sentence of every comment and page, the review pairs that aren't a NAR017 finding, the pronouns, and
-    the free modifiers.
+    """List every sentence of every comment and page, the review pairs that aren't a NAR017 finding, the pronouns, the
+    free modifiers, and each section of each page.
 
     `list_page` stops each list after wording.LIST_PAGE entries, and the last line of the list is the command for the
     next entries. `changed` limits the lists to passages with a changed line.
@@ -448,43 +448,58 @@ def proseInventory(
                     f'{file_path}:{passage.lineOf(phrase.lstrip(", "))}: {phrase!r}: {sentence!r}'
                     for phrase, sentence in reader.freeModifiers(passage.text)
                 )
-    review_lists = (
-        (
+    review_lists = [
+        ReviewList(
             '--from-sentence',
             'sentences',
             '--- every sentence of every comment, javadoc and page: read each against SKILL.md, Comments ---',
             sentences,
         ),
-        (
+        ReviewList(
             '--from-pair',
             'pairs',
             '--- every subject that cannot act, with its verb: can that subject perform that verb? ---',
             pairs,
         ),
-        (
+        ReviewList(
             '--from-pronoun',
             'pronoun sentences',
             '--- every sentence with a pronoun, after the one before it: which noun does each pronoun stand for? ---',
             pronouns,
         ),
-        (
+        ReviewList(
             '--from-modifier',
             'free modifier sentences',
             '--- every sentence with a free modifier, a phrase without a verb after a comma: write the phrase as a'
             ' clause or a separate sentence, or cut the phrase ---',
             modifiers,
         ),
-    )
+    ]
+    if page_paths:
+        sections = [
+            entry
+            for page_path in page_paths
+            for entry in wording.listSections(page_path, wording.changedLinesOf(changed, page_path))
+        ]
+        # the section list is short, so listPage() doesn't cut the list, and javachecks.py has a --from option for the
+        # other lists only
+        review_lists.append(ReviewList(None, 'sections', wording.SECTIONS_HEADING, sections))
     listed: list[str] = []
-    for flag, unit, heading, entries in review_lists:
-        if list_page is not None and list_page.flag not in {None, flag}:
+    for review_list in review_lists:
+        if list_page is not None and list_page.flag not in {None, review_list.flag}:
             continue
-        shown = entries
-        if list_page is not None:
-            first = list_page.first if list_page.flag == flag else 1
-            option = ['javachecks.py', '--prose', flag]
-            shown = wording.listPage(entries, first, unit=unit, option=option, arguments=list_page.arguments)
-        listed.extend([heading, *(shown or ['(none)'])])
+        shown = review_list.entries
+        if list_page is not None and review_list.flag is not None:
+            first = list_page.first if list_page.flag == review_list.flag else 1
+            option = ['javachecks.py', '--prose', review_list.flag]
+            shown = wording.listPage(
+                review_list.entries,
+                first,
+                unit=review_list.unit,
+                option=option,
+                arguments=list_page.arguments,
+            )
+        listed.extend([review_list.heading, *(shown or ['(none)'])])
     return listed
 
 
@@ -541,6 +556,7 @@ def checkFile(
     for worded in wording.wordingFindings(prose_lines, reading.list_items, java_path):
         finding = JavaFinding(java_path, worded.line, worded.code, worded.detail)
         candidates.append((finding, passage_lines.get(worded.line, frozenset({worded.line}))))
+    sentence_passages = agentverbs.sentencePassages(source, passages)
     for passage in passages:
         coded_hits = (
             (agentverbs.CODE, reader.agentVerbs(passage.text)),
@@ -549,6 +565,7 @@ def checkFile(
             (agentverbs.PRONOUN_CODE, reader.ambiguousPronouns(passage.text)),
             (agentverbs.NEGATION_CODE, reader.negations(passage.text)),
             (agentverbs.OPENER_CODE, agentverbs.conditionOpeners(passage.text)),
+            (agentverbs.VERBLESS_CODE, reader.verbless(passage.text) if passage in sentence_passages else []),
         )
         for code, hits in coded_hits:
             for hit in hits:
@@ -1105,8 +1122,19 @@ class JavaFinding:
 
 
 @dataclass(frozen=True)
+class ReviewList:
+    """One list of --prose. `flag` is the --from option of the list, or None for a list without the option."""
+
+    flag: str | None
+    # the entries in the plural, such as `sentences`, for the line on the entries left out
+    unit: str
+    heading: str
+    entries: list[str]
+
+
+@dataclass(frozen=True)
 class ListPage:
-    """The part of the four lists that --prose prints.
+    """A `ListPage` is the part of the lists that --prose prints.
 
     `flag` is the option of the one list to print, from entry `first`, or None for every list from entry 1. The
     arguments are the paths and the cache, for the command of the next entries.

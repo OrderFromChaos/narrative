@@ -18,6 +18,12 @@ NAR026 is a condition as a phrase after `at`, `with`, `without`, `beside`, `agai
 comma, at the start of a sentence: `With a full disk, export() deletes the partial file`. To fix a NAR026 finding, write
 the condition as a clause after `when` or `if`. An opener with a platform, such as `On Windows,`, is left out.
 
+NAR029 is a sentence without a verb in a comment or a docstring: `Such as an upgrade chip.`, `In tooltip order.`,
+`The parser and the word lists, loaded once per run.` on a class. A sentence that opens with a verb, such as
+`Returns the cached copy.`, has a verb. A passage on a field or a constant, a list item, the text of a `@param`,
+`@return` or `@throws` tag, and an entry under `Args:` or `Returns:` are left out, and so are a label before a colon, a
+parenthesis and a divider. To fix a NAR029 finding, write a sentence with a subject and a verb, or cut the sentence.
+
 NAR022 is `it` or `its` after two or more singular nouns in one sentence:
 `PumpController extends MachineBase, and it ticks every second`. A reader can take the pronoun for either noun, even
 when only one of the nouns makes sense. A noun for a person, such as `reader`, is not counted, because `it` never stands
@@ -144,6 +150,8 @@ NEGATION_CODE = 'NAR025'
 NEGATION_MESSAGE = 'no, nothing or none on a subject or an object. Put the negation on the verb'
 OPENER_CODE = 'NAR026'
 OPENER_MESSAGE = 'a condition as a phrase before a comma. Write a clause after when or if'
+VERBLESS_CODE = 'NAR029'
+VERBLESS_MESSAGE = 'sentence without a verb. Write a sentence with a subject and a verb, or cut the sentence'
 WORDS_PATH = Path(__file__).resolve().parent / 'words.json'
 MODEL = 'en_core_web_md'
 
@@ -228,11 +236,53 @@ CHECKED_PRONOUNS = frozenset({'it', 'its'})
 SINGULAR_NOUN_TAGS = frozenset({'NN', 'NNP'})
 # a span in backticks is masked as this word, and stands for a name in the code
 MASK_WORD = 'value'
+# a name in a javadoc tag, kept in the backticks by codeprose.py of Java. reviewPairs() reads the name bare
+# matches:
+# `{@link #lang}`
+# `{@code ModifierKind}`
+# `{@linkplain PlanReader the reader}`
+# rejects:
+# `lang`
+JAVADOC_NAME = re.compile(r'`\{@(?:code|link|linkplain) ([^`}]+)\}`')
 # a word between two of these is a mention, such as `"it"`, and not a pronoun
 QUOTE_MARKS = frozenset({'"', '\u201c', '\u201d'})
 FINITE_TAGS = frozenset({'VBZ', 'VBP', 'VBD', 'MD'})
 # the parse of a longer clause before `, so` is unreliable
 FRAGMENT_MAX_WORDS = 8
+# matches:
+# ` * @param planPath where the plan file is`
+# ` * @return the plans, sorted by name`
+DOC_TAG = re.compile(r'^\s*(?:\*\s*)?@(?:param|return|throws|exception)\b')
+# matches:
+# `    Returns:`
+DOC_SECTION = re.compile(r'^\s*(?:Args|Arguments|Returns|Yields|Raises|Attributes|Keys)\s*:\s*$')
+# a declaration of a field or a constant, after a comment on the declaration
+# matches:
+# `    private final LongSupplier getter;`
+# `    public static final ModifierKind COIL = new IntKind("coil");`
+# `CACHE_DIR = Path('.narrative_cache')`
+# `    line: int`
+# `    NONE,`
+# `    COIL("coil", 1),`
+# rejects:
+# `    public long get() {`
+# `def main() -> int:`
+FIELD_DECLARATION = re.compile(
+    r'^\s*(?:(?:public|private|protected|static|final|transient|volatile|@\w+(?:\([^)]*\))?)\s+)*'
+    r'[\w<>\[\], .?]+\s+[A-Za-z_]\w*\s*(?:=|;)'
+    r'|^\s*[A-Z][A-Z0-9_]*\s*(?:\(.*\))?\s*[,;]?\s*(?:\{\s*)?$'
+    r'|^\s*[A-Za-z_][\w.]*\s*(?::\s*[^=(]+)?=(?!=)'
+    r'|^\s*[a-z_]\w*\s*:\s*[\w\[\]|., ]+$',
+)
+# the start of a comment line, or the end of a block comment between a comment and the declaration below
+COMMENT_LINE = re.compile(r'^\s*(?:#|//|/?\*|\*/)')
+# the comment marker at the start of a line, with the space after the marker: `# `, `// `, `/** `, ` * `
+COMMENT_MARK = re.compile(r'^\s*(?:#+|/{2,}|/\*+|\*(?!/))\s?')
+# a word or a run of symbols that isn't a sentence: an editor region, a divider
+# matches:
+# `region Setters`
+# `--- Auto-layout ---`
+MARKER = re.compile(r'(?:end)?region\b|[-=#*~]{3,}')
 # the roles of a noun that a negation must not have: the subject, the object, and the noun after `is`
 NEGATED_DEPS = frozenset({'nsubj', 'nsubjpass', 'dobj', 'attr', 'oprd'})
 NEGATING_PRONOUNS = frozenset({'nothing', 'none', 'nobody'})
@@ -362,6 +412,7 @@ def main() -> int:
         PRONOUN_CODE: PRONOUN_MESSAGE,
         NEGATION_CODE: NEGATION_MESSAGE,
         OPENER_CODE: OPENER_MESSAGE,
+        VERBLESS_CODE: VERBLESS_MESSAGE,
     }
     for finding in findings:
         message = messages[finding.code]
@@ -431,9 +482,15 @@ def checkFile(reader: CachedReader, checked_file: Path, changed_lines: set[int] 
         codeprose.passages(source, checked_file.suffix),
         changed_lines,
     )
-    codes = (CODE, FRAGMENT_CODE, CONNECTIVE_CODE, PRONOUN_CODE, NEGATION_CODE, OPENER_CODE)
+    codes = (CODE, FRAGMENT_CODE, CONNECTIVE_CODE, PRONOUN_CODE, NEGATION_CODE, OPENER_CODE, VERBLESS_CODE)
     silenced = {code: silencedLines(source, code) for code in codes}
-    return passageFindings(reader, checked_file, passages, silenced, page=False)
+    findings = passageFindings(reader, checked_file, passages, silenced, page=False)
+    for passage in sentencePassages(source, passages):
+        if not silenced[VERBLESS_CODE] & set(passage.lines):
+            findings.extend(
+                Finding(checked_file, passage.lineOf(hit), VERBLESS_CODE, hit) for hit in reader.verbless(passage.text)
+            )
+    return sorted(findings, key=lambda finding: finding.line)
 
 
 def passageFindings(
@@ -569,6 +626,44 @@ def changedPassages(passages: list[Passage], changed_lines: set[int] | None) -> 
     return [passage for passage in passages if changed_lines is None or changed_lines & set(passage.lines)]
 
 
+def sentencePassages(source: str, passages: list[Passage]) -> list[Passage]:
+    """Leave out the passages that NAR029 doesn't read: a passage on a field or a constant, a list item, the text of a
+    javadoc tag, and an entry of a docstring section such as `Returns:`.
+
+    A noun phrase is allowed in each of those passages, because each passage is about one value.
+
+    Returns:
+        The passages of full sentences, in the order given.
+    """
+    lines = source.splitlines()
+    kept: list[Passage] = []
+    for passage in passages:
+        first = lines[passage.lines[0] - 1] if passage.lines[0] <= len(lines) else ''
+        below = next(
+            (line for line in lines[passage.lines[-1] :] if line.strip() and not COMMENT_LINE.match(line)),
+            '',
+        )
+        above = itertools.takewhile(lambda line: line.strip(), reversed(lines[: passage.lines[0] - 1]))
+        in_section = any(DOC_SECTION.match(line) for line in above)
+        # a docstring is below its declaration, so only a comment can be on a field
+        on_field = bool(COMMENT_LINE.match(first) and FIELD_DECLARATION.match(below))
+        # the reader of a language may not mark a numbered item of a docstring, such as `4. verify.py writes …`
+        numbered = bool(prose.LIST_MARKER.match(COMMENT_MARK.sub('', first).strip()))
+        if passage.list_item or numbered or DOC_TAG.match(first) or in_section or on_field:
+            continue
+        # the reader joins a docstring paragraph and the paragraph's `Args:` or `Returns:` section into one passage.
+        # Each entry of the section is about one value
+        header = next(
+            (index for index, number in enumerate(passage.lines) if DOC_SECTION.match(lines[number - 1])),
+            None,
+        )
+        if header is None:
+            kept.append(passage)
+        elif header > 0:
+            kept.append(Passage(passage.lines[:header], passage.texts[:header], passage.list_item, passage.heading))
+    return kept
+
+
 def silencedLines(source: str, code: str) -> set[int]:
     silenced: set[int] = set()
     for number, line in enumerate(source.splitlines(), start=1):
@@ -602,7 +697,7 @@ def quotedWord(token: Token) -> bool:
 
 
 def standaloneThat(token: Token) -> bool:
-    # `that` as a pronoun, such as `return that`
+    # `that` is a pronoun when the parse doesn't attach `that` to a noun. `return that` is an example
     return token.lower_ == 'that' and token.tag_ == 'DT' and token.dep_ != 'det'
 
 
@@ -621,6 +716,42 @@ def americanSpelling(word: str, verbs: frozenset[str]) -> str:
 ### vocabulary #########################################################################################
 
 
+def bareNames(text: str) -> MaskedText:
+    """Mask each span in backticks, and write each name in a javadoc tag bare: `{@link PlanReader#read(Path)}` as
+    `read`.
+
+    The label of a link is read as prose in place of the name: `{@linkplain PlanReader the reader}` as `the reader`.
+
+    Returns:
+        The masked text, and the span of each bare name in the masked text. A label isn't a bare name.
+    """
+    pieces: list[str] = []
+    names: list[range] = []
+    length = 0
+    last = 0
+    for span in QUOTED.finditer(text):
+        pieces.append(text[last : span.start()])
+        length += span.start() - last
+        found = JAVADOC_NAME.fullmatch(span.group(0))
+        reference, _space, label = found.group(1).strip().partition(' ') if found else ('', '', '')
+        word = label.strip() or re.split(r'[.#]', reference.split('(')[0])[-1] or MASK_WORD
+        if found and not label.strip() and word != MASK_WORD:
+            names.append(range(length, length + len(word)))
+        pieces.append(word)
+        length += len(word)
+        last = span.end()
+    pieces.append(text[last:])
+    return MaskedText(''.join(pieces), names)
+
+
+@dataclass(frozen=True)
+class MaskedText:
+    """`MaskedText` is the text of a passage with each span in backticks masked, and the span of each bare name."""
+
+    text: str
+    names: list[range]
+
+
 @dataclass(frozen=True)
 class Finding:
     checked_file: Path
@@ -631,7 +762,7 @@ class Finding:
 
 @dataclass(frozen=True)
 class PronounLine:
-    """A sentence with a pronoun, on the pronoun list of the review."""
+    """A `PronounLine` is one entry of the pronoun list of the review."""
 
     line: int
     pronouns: str
@@ -694,12 +825,15 @@ class SentenceReader:
 
         A verb on LITERAL is an operation of code only with a direct object and code as the subject:
         `PlanLoader reads the plan file`. `A saved index reads as the first mode` and `the mode that runs recipeMap` are
-        listed. A pair that agentVerbs() flags is left out, because it is already a finding.
+        listed. A name in a javadoc tag is read bare, and isn't code for this test:
+        `{@link #lang} and {@link #translate} take the last part of a key` is listed as `lang take`. A pair that
+        agentVerbs() flags is left out, because it is already a finding.
 
         Returns:
             One `subject verb` string per pair, in sentence order.
         """
-        doc = self.nlp(QUOTED.sub('value', text))
+        masked = bareNames(text)
+        doc = self.nlp(masked.text)
         flagged = set(self.agentVerbs(text))
         pairs: list[str] = []
         for token in doc:
@@ -711,12 +845,17 @@ class SentenceReader:
                 continue
             lemma = self._stem(verb) if misread_noun else self._lemma(verb)
             skipped = lemma in RELATION_VERBS or lemma in RECEIVING_VERBS or lemma in self.stative_verbs
-            if skipped or self._misreadSubject(token, verb):
+            # a bare name is a name in the code. The parse of the name is sound, and the name isn't a person, even when
+            # spaCy reads `lang` as a surname
+            in_name = any(token.idx in name for name in masked.names)
+            if skipped or (not in_name and self._misreadSubject(token, verb)):
                 continue
-            if lemma in LITERAL and self._codeSubject(token) and any(c.dep_ == 'dobj' for c in verb.children):
+            operation = lemma in LITERAL and self._codeSubject(token) and any(c.dep_ == 'dobj' for c in verb.children)
+            if operation and not in_name:
                 continue
             page_part = lemma == 'show' and token.lemma_.lower() in PAGE_PARTS
-            if not page_part and not self._canAct(token) and (pair := f'{token.text} {verb.text}') not in flagged:
+            can_act = not in_name and self._canAct(token)
+            if not page_part and not can_act and (pair := f'{token.text} {verb.text}') not in flagged:
                 pairs.append(pair)
         for subject, verb in self._compoundMisreadings(doc):
             if self._stem(verb) == 'show' and subject.lemma_.lower() in PAGE_PARTS:
@@ -779,6 +918,83 @@ class SentenceReader:
             if subordinate or not (has_subject or has_finite_verb or label or command or interjection):
                 heads.append(head)
         return heads
+
+    def verbless(self, text: str) -> list[str]:
+        """Find each sentence without a verb, other than a label before a colon, a parenthesis, and a divider.
+
+        A sentence has a verb when a word of the sentence is a finite verb, when the sentence opens with a verb, such as
+        `Returns the cached copy.`, or when spaCy reads the verb as a plural noun: `a plan marks the node`.
+
+        Returns:
+            The first four words of each such sentence, in sentence order.
+        """
+        hits: list[str] = []
+        for sentence in self.nlp(QUOTED.sub(MASK_WORD, text)).sents:
+            words = [token for token in sentence if token.is_alpha]
+            content = [token for token in words if token.lower_ != MASK_WORD and not token.is_stop]
+            stripped = sentence.text.strip()
+            structure = stripped.endswith(':') or (stripped.startswith('(') and stripped.rstrip('.').endswith(')'))
+            # a list line, or a label of up to six words before a colon, such as `NAR018: a possessive followed by own`.
+            # NAR029 skips such a line, because the label rule covers a label before a colon
+            entry = bool(re.match(r'[-*]\s|(?:[\w`.\-]+\s){0,5}[\w`.\-]+:\s', stripped))
+            if len(words) < 2 or not content or structure or entry or MARKER.match(stripped):
+                continue
+            finite = any(token.tag_ in FINITE_TAGS for token in sentence)
+            # the tag of a verb with a subject can be the tag of a participle, such as `come` in
+            # `the lines of a finding come from …`
+            with_subject = any(
+                token.pos_ == 'VERB' and any(child.dep_ in ('nsubj', 'nsubjpass') for child in token.children)
+                for token in sentence
+            )
+            command = any(token.dep_ == 'ROOT' and token.tag_ == 'VB' for token in sentence)
+            opener = words[0].text[:1].isupper() and (words[0].tag_ in ('VB', 'VBZ', 'VBP') or self._isVerb(words[0]))
+            # a one-line comment starts in lowercase, and the parse can read a command such as `retry on a timeout` or
+            # `sort by date` as an adjective or an adverb. A noun before `of`, such as `cache of the rows`, isn't a
+            # command
+            following = words[0].nbor(1) if words[0].i + 1 < sentence.end else None
+            opener = opener or (
+                words[0].i == sentence.start
+                and words[0].is_lower
+                and words[0].tag_ not in ('NN', 'NNS')
+                and self._isVerb(words[0])
+                and following is not None
+                and (following.pos_ == 'DET' or (following.pos_ == 'ADP' and following.lower_ != 'of'))
+            )
+            # `a span in backticks counts as a noun`, `value and value converge`,
+            # `files before 2025/04/03 lack the column`: a verb that the parse tags as a noun, after a noun or a number
+            # and before a word that can't follow a noun in a noun phrase. After a number, only an article counts,
+            # because `One step of a chain` is a noun phrase
+            plural_verb = any(
+                (
+                    token.tag_ == 'NNS'
+                    or (token.tag_ == 'NN' and token.i > sentence.start and token.nbor(-1).text == MASK_WORD)
+                    or (
+                        token.tag_ == 'NN'
+                        and token.i > sentence.start
+                        and token.nbor(-1).pos_ == 'NUM'
+                        and token.i + 1 < sentence.end
+                        and token.nbor(1).pos_ == 'DET'
+                    )
+                )
+                and self._isVerb(token)
+                and token.i > sentence.start
+                and token.nbor(-1).pos_ in ('NOUN', 'PROPN', 'NUM', 'ADJ')
+                and (token.i + 1 >= sentence.end or token.nbor(1).pos_ in ('ADP', 'DET', 'ADV', 'PART', 'PUNCT', 'NUM'))
+                for token in sentence
+            )
+            # `value and value count`: the parse makes the verb the root noun of a coordinated noun phrase
+            coordinated = any(
+                token.dep_ == 'ROOT'
+                and token.tag_ in ('NN', 'NNS')
+                and self._isVerb(token)
+                and any(any(grandchild.dep_ == 'cc' for grandchild in child.children) for child in token.lefts)
+                for token in sentence
+            )
+            plural_verb = plural_verb or coordinated
+            misread = any(verb.sent == sentence for _subject, verb in self._compoundMisreadings(sentence.as_doc()))
+            if not (finite or with_subject or command or opener or plural_verb or misread):
+                hits.append(' '.join(sentence.text.split()[:4]))
+        return hits
 
     def connectives(self, text: str, *, page: bool) -> list[str]:
         """Find each clause that `as` or `, where` joins to a sentence.
@@ -1010,6 +1226,9 @@ class SentenceReader:
                 hits[verb.i] = f'{verb.head.text} {verb.text}'
         return hits
 
+    def _isVerb(self, word: Token) -> bool:
+        return any(form in self.verbs or form in LITERAL for form in (word.lemma_.lower(), self._stem(word)))
+
     def _lemma(self, verb: Token) -> str:
         return americanSpelling(verb.lemma_.lower(), self.verbs)
 
@@ -1167,7 +1386,7 @@ Result = TypeVar('Result')
 
 
 class CachedReader:
-    """The checks of SentenceReader, with the results of each passage text kept between runs.
+    """`CachedReader` runs the checks of `SentenceReader`, and saves the results of each passage text for the next run.
 
     spaCy is loaded at the first text that is not in the cache.
     """
@@ -1204,6 +1423,9 @@ class CachedReader:
 
     def fragments(self, text: str) -> list[str]:
         return self._cached(text, 'heads', lambda reader: reader.fragments(text))
+
+    def verbless(self, text: str) -> list[str]:
+        return self._cached(text, 'verbless', lambda reader: reader.verbless(text))
 
     def connectives(self, text: str, *, page: bool) -> list[str]:
         name = 'page_connectives' if page else 'connectives'

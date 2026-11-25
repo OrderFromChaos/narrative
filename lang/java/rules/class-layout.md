@@ -12,20 +12,20 @@ public final class PlanFiles {
     public static final String PLAN_SUFFIX = ".plan";   // constants first, grouped BY CONCERN
     public static final int MAX_PLANS = 64;
 
-    private final Path planDir;                       // then fields, then constructors
+    private final Path planDir;                       // the fields and then the constructors follow
 
     public PlanFiles(Path planDir) {
         this.planDir = planDir;
     }
 
-    public List<Plan> readAll() throws PlanException {  // the entry point, then callees in
-        ...                                           // first-call order
+    public List<Plan> readAll() throws PlanException {  // the entry point comes next
+        ...                                           // callees follow in first-call order
     }
 
     private Plan readOne(Path planPath) throws PlanException { ... }
 
     /** One plan file, parsed. */
-    public record Plan(String name, int machineCount) {}  // nested types LAST
+    public record Plan(String name, int machineCount) {}  // nested types go LAST
 }
 ```
 

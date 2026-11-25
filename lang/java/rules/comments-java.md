@@ -49,8 +49,8 @@ final int tier = tag.hasKey("tier") ? tag.getInteger("tier") : 1;
 - `// Character.isDigit() accepts non-ASCII digits such as '٣'. Check the range '0' to '9' too`
 - the `X would` form in full:
   ```java
-  // Here Files.readAllBytes() is used. The alternative, Files.readString(), would throw
-  // MalformedInputException on a byte that is not UTF-8.
+  // Here Files.readAllBytes() is used. The alternative, Files.readString(), would throw MalformedInputException on a byte
+  // that is not UTF-8.
   final byte[] planBytes = Files.readAllBytes(planPath);
   ```
 
@@ -59,8 +59,8 @@ final int tier = tag.hasKey("tier") ? tag.getInteger("tier") : 1;
 ### Depth
 
 ```java
-// The vendor API returns at most 100 rows per page, and doesn't return a total count.
-// Keep requesting until a page comes back short.
+// The vendor API returns at most 100 rows per page, and doesn't return a total count. Keep requesting until a page
+// comes back short.
 while ((page = fetchPage(cursor)).size() == PAGE_SIZE) {
 ```
 

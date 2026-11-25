@@ -1,7 +1,7 @@
 ## File layout
 
 ```python
-from __future__ import annotations   # required for types-last
+from __future__ import annotations   # types-last needs this import
 
 import struct                        # plain imports, alphabetised
 import sys
@@ -21,15 +21,15 @@ def main() -> int:                   # FIRST. A reader starts here
     ...
 
 
-def stepOne(...) -> ...:             # workflow, in first-call order
+def stepOne(...) -> ...:             # the workflow functions follow, in first-call order
 def stepTwo(...) -> ...:
 def leafHelper(...) -> ...:
 
 
 ### vocabulary #########################################################################
 
-ScanId = NewType('ScanId', int)      # types LAST. A reader needs what main() passes
-class Outcome(Enum): ...             # around only after the high-level design
+ScanId = NewType('ScanId', int)      # the types go LAST, after the high-level design
+class Outcome(Enum): ...
 class ConfigError(RuntimeError): ...
 @dataclass(frozen=True)
 class ScanHeader: ...

@@ -4,11 +4,11 @@ Sources:
     gold    benchmark/round10/rating*.md with rating*_key.md and eval/sources/round10_ratings.tsv
     gold    benchmark/round10/seeds.md, the user's rewrites of Claude's text
     gold    benchmark/round10/agentverb/gold.tsv, sentence labels for NAR017 alone
-    silver  benchmark/round10/classes.jsonl, joined to corpus.jsonl for the text
+    bronze  benchmark/round10/classes.jsonl, joined to corpus.jsonl for the text
 
 The context of a rated comment is the snippet that the user rated, at level snippet. A seed has no
 context unless the seed's text is a rated comment, and a gold.tsv sentence has none: level none. The
-context of a silver comment comes from the comment's file. A window of the file at the last commit
+context of a bronze comment comes from the comment's file. A window of the file at the last commit
 of corpus.jsonl, or at the commit of a history record, is level window. The hunks of an edit run's
 diff are level snippet.
 
@@ -111,7 +111,7 @@ def main() -> int:
         f'{countIds(gold_tsv)} units after {len(gold_tsv_lines) - countIds(gold_tsv)} duplicate lines collapsed',
     )
     print(
-        f'classes.jsonl: {len(classes)} silver labels on {countIds(classes)} units, '
+        f'classes.jsonl: {len(classes)} bronze labels on {countIds(classes)} units, '
         f'{context_misses} with no context found',
     )
     splits = Counter(unit.split.value for unit in units)
@@ -414,7 +414,7 @@ def importAgentVerbGold() -> list[Unit]:
 
 
 def importClasses() -> tuple[list[Unit], int]:
-    """Make one silver unit per classes.jsonl record, with the text of the matching corpus.jsonl record.
+    """Make one bronze unit per classes.jsonl record, with the text of the matching corpus.jsonl record.
 
     A trim is a rewrite to the trimmed text. Every F code of the file was judged on every record,
     so an F code absent from a record is a negative for that record. A K code is the kind
@@ -449,7 +449,7 @@ def importClasses() -> tuple[list[Unit], int]:
             rules=tuple(code for code in record['codes'] if code.startswith('F')),
             rewrite=record['trimmed'],
             labeller='agent',
-            tier=Tier.SILVER,
+            tier=Tier.BRONZE,
             date=dates[index],
             judged=fault_codes,
             note='. '.join(note for note in notes if note) or None,

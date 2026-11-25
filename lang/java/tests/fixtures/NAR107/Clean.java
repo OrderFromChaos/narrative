@@ -10,7 +10,7 @@ public final class Clean {
         };
     }
 
-    /** The size of a plan. */
+    /** Each plan has one size. */
     public enum Size {
         SMALL,
         LARGE

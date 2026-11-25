@@ -47,6 +47,12 @@ Label fields:
              matrix that is not for one of those codes
     audit    the label is a blind re-label of a unit that already had a gold label
 
+`tier` is how the label was checked:
+    gold     the user read the unit and ruled on the unit
+    silver   nobody read the unit, but a check of the output backs the label, such as the user's review of a
+             pull request or of a cleaned-up page. A later check of that kind can change the label
+    bronze   nothing checked the label. A bronze label is for prototypes only
+
 `context_level` is how much of the unit's surroundings the predictor and the labeller see:
     none     the unit alone
     snippet  a few lines chosen for display, such as a rated snippet or the hunks of a diff

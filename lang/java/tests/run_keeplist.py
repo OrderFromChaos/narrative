@@ -7,7 +7,7 @@ The copy is in a temporary directory outside git, so the keep-list is given with
 4. After a blank line above the method, the entry still matches.
 5. After a change to the text of the line, the finding is printed again.
 
-Usage, with the interpreter of the lint venv. javachecks.py imports spaCy from that venv:
+Run the script with the interpreter of the lint venv, because javachecks.py imports spaCy from that venv:
     $ ~/.local/share/narrative/lintenv/bin/python tests/run_keeplist.py
 
 Exit codes:

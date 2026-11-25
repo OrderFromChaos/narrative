@@ -4,7 +4,7 @@ package fixtures.nar012;
 public final class Clean {
 
     public static int size() {
-        // one event name per log call
+        // each log call writes one event name
         return 1;
     }
 }

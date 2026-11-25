@@ -26,12 +26,13 @@ is done.
 
 --project DIR is the project directory. Each named path is read from the current directory.
 
-After the checks, verify.py writes six review lists over the Java sources and the pages to review-lists.txt in the cache
+After the checks, verify.py writes the review lists over the Java sources and the pages to review-lists.txt in the cache
 directory, .narrative_cache, or the directory given with --cache-dir:
 - every sentence
 - every subject that cannot act, paired with the subject's verb
 - every sentence with a pronoun
 - every sentence with a free modifier
+- when a page was named, each section of each page with the section's words and lines
 - every declaration with a javadoc or a comment, and every method over 20 body lines (NAR116)
 - every method and constructor with more than 3 parameters (NAR131)
 
@@ -40,6 +41,9 @@ have them. The path of the file and the number of entries in each list are on th
 shows them. verify.py doesn't write the lists on exit 2, or after a Gradle failure. Each list stops after 1000 entries,
 and the last line of the list is the command for the next 1000. --since removes the limit. --since also limits the
 checks and the lists to passages with a changed line.
+
+--cleanup prints the words of each named page, and the words of the page at HEAD, or at merge-base(HEAD, REF) with
+--since. Pass --cleanup when the user asks for a cleanup of a page.
 
 --keep FILE:LINE:CODE adds the finding to the keep-list and doesn't run a check. A kept finding isn't printed in later
 runs. The keep-list is described in the docstring of javachecks.py.
@@ -50,6 +54,7 @@ Usage:
     $ python3 verify.py --no-fix                 # no re-wrap, and spotlessCheck in place of spotlessApply
     $ python3 verify.py src/main/java/com/example/gui
     $ python3 verify.py README.md docs/page.html
+    $ python3 verify.py README.md --cleanup                 # and the words of README.md against HEAD
     $ python3 verify.py --prose-only --since origin/dev     # comments and pages only, with no Gradle run
     $ python3 verify.py --project ../MyMod --cache-dir /tmp/narrative     # a mod in another directory
     $ printf '%s\n' "$DRAFT" | python3 verify.py - --cache-dir /tmp/narrative      # a page from stdin
@@ -74,7 +79,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from wording import countEntries
+from wording import countEntries, pageSize
 
 
 SKILL_DIR = Path(__file__).resolve().parent
@@ -147,6 +152,11 @@ def main() -> int:
         help='add a finding that the user chose to keep to the keep-list, check nothing, and exit',
     )
     parser.add_argument('--reason', help='with --keep, the reason, as a # line above the entry')
+    parser.add_argument(
+        '--cleanup',
+        action='store_true',
+        help='print the words of each page, and the words at HEAD, or at the --since base',
+    )
     args = parser.parse_args()
     print(f'narrative-gtnh skill: {readInstalledVersion()}', flush=True)
 
@@ -171,6 +181,9 @@ def main() -> int:
     pages = [path for path in paths if path.suffix.lower() in PROSE_SUFFIXES]
     java_sources = [path for path in paths if path.suffix.lower() not in PROSE_SUFFIXES]
     since = ['--since', args.since] if args.since else []
+    if args.cleanup:
+        for page in pages:
+            print(pageSize(page, args.since), flush=True)
     if pages and not java_sources:
         if Path('gradle.properties').is_file():
             print('verify.py: only pages are named, so no Java source is checked. Name src/main/java too', flush=True)
@@ -333,7 +346,7 @@ def reportFindings(
 
 
 def writeReviewLists(venv_python: Path, arguments: list[str], lists_path: Path, *, all_sentences: bool) -> str | None:
-    """Write the four lists for Prose review in SKILL.md to `lists_path`, with javachecks.py --prose.
+    """Write the lists for Prose review in SKILL.md to `lists_path`, with javachecks.py --prose.
 
     Args:
         venv_python: The interpreter of the lint venv, with spaCy.
@@ -343,8 +356,8 @@ def writeReviewLists(venv_python: Path, arguments: list[str], lists_path: Path, 
 
     Returns:
         The number of entries in each list, such as
-        `12 sentences, 3 pairs, 1 pronoun sentences, 2 free modifier sentences`. None when javachecks.py --prose fails
-        or prints fewer lists than LIST_UNITS.
+        `12 sentences, 3 pairs, 1 pronoun sentences, 2 free modifier sentences`, and the sections when a page was named.
+        None when javachecks.py --prose fails or prints fewer lists than LIST_UNITS.
     """
     every = ['--all-sentences'] if all_sentences else []
     listed = subprocess.run(
@@ -360,12 +373,13 @@ def writeReviewLists(venv_python: Path, arguments: list[str], lists_path: Path, 
             sections.append([])
         elif sections:
             sections[-1].append(line)
-    if listed.returncode != EXIT_SUCCESS or len(sections) != len(LIST_UNITS):
+    # javachecks.py adds the section list when a page was named
+    units = LIST_UNITS if len(sections) == len(LIST_UNITS) else (*LIST_UNITS, 'sections')
+    if listed.returncode != EXIT_SUCCESS or len(sections) != len(units):
         return None
 
     lists_path.write_text(listed.stdout, encoding='utf-8')
-    counts = [f'{countEntries(entries)} {unit}' for entries, unit in zip(sections, LIST_UNITS, strict=True)]
-    return f'{counts[0]}, {counts[1]}, {counts[2]}, {counts[3]}'
+    return ', '.join(f'{countEntries(entries)} {unit}' for entries, unit in zip(sections, units, strict=True))
 
 
 def prepareCache(cache_dir: Path) -> Path:

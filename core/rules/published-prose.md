@@ -12,6 +12,8 @@ or `was changed to`. Changelog wording belongs only in a changelog file that alr
 repository, such as `CHANGELOG.md`. Do not create a changelog file unless the user asks for one.
 (R11-page-changelog)
 
+Load `nar:page` to clean up a page. (R14-load-page)
+
 State the current fact and the condition of the fact. Don't write the history of the page, such
 as an earlier figure or a change of mind: `far smaller than it first looked` → `9% less code on a
 spec with fixed outputs`. (R12-page-history)

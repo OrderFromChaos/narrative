@@ -1,8 +1,14 @@
-"""The wording checks and the --since helpers, shared by the checkers of every language of Narrative.
+"""`wording.py` has the wording checks and the --since helpers. The checkers of every language of Narrative import the
+module.
 
 NAR012 to NAR016, NAR018, and NAR024 flag wording that a comment, docstring or published page doesn't need. The checks
 read lines of prose. A language's checker passes in the lines of the language's comments and doc comments, and
-checkPage() reads a Markdown, HTML or plain text page through prose.py.
+checkPage() reads a Markdown, HTML or plain text page through prose.py. checkPage() also reports NAR028 on a page: a
+release named by the release's place in the history, such as `older bundles`, in a sentence without a version number or
+a date.
+
+listSections() lists each section of a page with the section's size, for the section list of verify.py. pageSize()
+compares the words of a page with the words of the page at a commit, for verify.py --cleanup.
 
 readChangedLines() lists the lines that the diff against a base branch adds or changes, for --since. pageSpans() maps
 each line of a page to the lines of the line's passage, for --since. countEntries() counts the entries of a review list,
@@ -18,6 +24,7 @@ Usage, from a script in this directory:
 from __future__ import annotations
 
 import fnmatch
+import itertools
 import os
 import re
 import subprocess
@@ -38,6 +45,7 @@ RULES = {
     'NAR016': 'container verb in a comment or docstring. State the fact without making the subject hold or carry it',
     'NAR018': 'possessive "own" in a comment or docstring. Drop "own", or name the owner',
     'NAR024': 'contrast with ", not" or "not merely". State the fact, and a fact about the other thing separately',
+    'NAR028': 'release named by its place in the history, on a page. Write the version number or the date',
     'NAR000': 'file could not be read or parsed',
 }
 
@@ -47,6 +55,11 @@ LIST_PAGE = 1000
 # matches the last line of a list cut by listPage():
 # `... 412 left out of 1412 sentences. For the next 1000: checks.py --prose --from-sentence 1001 src/`
 LEFT_OUT = re.compile(r'^\.\.\. \d+ left out of (?P<total>\d+) ')
+# the heading of the section list of verify.py
+SECTIONS_HEADING = (
+    '--- each section of each page, with the words and the lines: what does the reader of the page do with the'
+    ' section? Label the section keep, move or cut ---'
+)
 # the git pathspecs of a page
 PAGE_PATTERNS = tuple(sorted(f'*{suffix}' for suffix in prose.PROSE_SUFFIXES))
 
@@ -64,12 +77,129 @@ def checkPage(checked_file: Path) -> list[Finding]:
     except UnicodeDecodeError as exc:
         return [Finding(checked_file, 0, 'NAR000', f'not UTF-8: {exc.reason}')]
 
-    passages = prose.readPassages(checked_file)
+    passages = prose.textPassages(source, checked_file.suffix)
     prose_lines = [line for passage in passages for line in zip(passage.lines, passage.texts, strict=True)]
     list_items = {passage.lines[0] for passage in passages if passage.list_item}
     suppressed = prose.suppressedCodes(source)
-    findings = wordingFindings(prose_lines, list_items, checked_file)
+    findings = [*wordingFindings(prose_lines, list_items, checked_file), *undatedReleases(passages, checked_file)]
     return [f for f in findings if not (suppressed.get(f.line, set()) & {f.code, 'ALL'})]
+
+
+def undatedReleases(passages: list[prose.Passage], checked_file: Path) -> list[Finding]:
+    """Flag NAR028: a release named by the release's place in the history, in a sentence without a version or a date.
+
+    A reader of `bundles before this version` can't tell which release the sentence means, and the meaning changes with
+    each release. A version number or a date anywhere in the sentence counts, so
+    `bundles from earlier versions of pack 2.9.0` isn't flagged. A phrase in backticks is a quoted example, and isn't
+    flagged either.
+
+    Returns:
+        One finding per phrase, on the line where the phrase starts.
+    """
+    # matches:
+    # `before this version`
+    # `the current release`
+    # `older bundles`
+    # `earlier versions`
+    # rejects:
+    # `the version field`
+    RELATIVE = re.compile(
+        r'\b(?:this|the current|the latest|the new)\s+(?:version|release|build)\b'
+        r'|\b(?:earlier|older|previous|prior|newer|recent|later)\s+(?:versions?|releases?|builds?|bundles?)\b',
+        re.IGNORECASE,
+    )
+    # matches:
+    # `v1.0.0`, `2.9.1`, `v0.6`
+    # `2026-04-13`, `2026-04`, `in 2024`, `March 2025`
+    DATED = re.compile(
+        r'\bv?\d+\.\d+\.\d+\b|\bv\d+(?:\.\d+)?\b|\b\d{4}-\d{2}\b|\b(?:19|20)\d{2}\b',
+        re.IGNORECASE,
+    )
+    findings: list[Finding] = []
+    for passage in passages:
+        cursor = 0
+        for sentence in prose.SENTENCE_BREAK.split(passage.text.strip()):
+            if not sentence:
+                continue
+            cursor = max(passage.text.find(sentence, cursor), 0)
+            # a phrase in backticks is a quoted example, such as a rule's example of the phrase. Each span becomes
+            # spaces of the same length, so an offset in `masked` is an offset in the sentence
+            masked = re.sub(r'`[^`]*`', lambda span: ' ' * len(span.group(0)), sentence)
+            if not DATED.search(sentence):
+                for found in RELATIVE.finditer(masked):
+                    phrase = ' '.join(found.group(0).split())
+                    findings.append(
+                        Finding(checked_file, passage.lineAt(cursor + found.start()), 'NAR028', repr(phrase)),
+                    )
+            cursor += len(sentence)
+    return findings
+
+
+def listSections(page: Path, changed_lines: set[int] | None) -> list[str]:
+    """List each section of a page with the section's size, for the section list of verify.py.
+
+    A section runs from a heading to the next heading of any level, so each subsection is a separate entry. The words
+    are the words of the prose, without the headings and the code blocks. A page without a heading is one entry.
+
+    Args:
+        page: A Markdown, HTML or plain text page.
+        changed_lines: Under --since, the changed lines of the page, and only a section with a changed line is listed.
+            None without --since.
+
+    Returns:
+        One entry per section, such as `README.md:20: ### Server install: 78 words, 7 lines (6% of the page)`.
+    """
+    passages = prose.readPassages(page)
+    line_count = len(page.read_text(encoding='utf-8').splitlines())
+    # the words of the headings count for no section, so the shares of the sections add up to 100%
+    total = sum(len(passage.text.split()) for passage in passages if not passage.heading) or 1
+    starts = [passage for passage in passages if passage.heading]
+    if not starts or passages[0].lines[0] < starts[0].lines[0]:
+        starts.insert(0, prose.Passage((1,), ('(the text before the first heading)',)))
+    listed: list[str] = []
+    for start, after in itertools.zip_longest(starts, starts[1:]):
+        first = start.lines[0]
+        end = after.lines[0] if after else line_count + 1
+        if changed_lines is not None and not changed_lines & set(range(first, end)):
+            continue
+        words = sum(
+            len(passage.text.split()) for passage in passages if first <= passage.lines[0] < end and not passage.heading
+        )
+        title = f'{"#" * start.heading} {start.text}' if start.heading else start.text
+        size = f'{plural(words, "word")}, {plural(end - first, "line")} ({round(100 * words / total)}% of the page)'
+        listed.append(f'{page}:{first}: {title}: {size}')
+    return listed
+
+
+def pageSize(page: Path, since: str | None) -> str:
+    """Compare the words of a page with the words of the page at HEAD, or at merge-base(HEAD, since), for verify.py
+    --cleanup.
+
+    Returns:
+        A line such as `README.md: 1,210 words, 2,950 at HEAD (-59%)`. When the page isn't in that commit, the line has
+        the reason.
+    """
+    now = countWords(page.read_text(encoding='utf-8'), page.suffix)
+    try:
+        repo_root = Path(runGit(['rev-parse', '--show-toplevel'], page.resolve().parent).strip())
+        base, name = (
+            ('HEAD', 'HEAD') if since is None else (runGit(['merge-base', 'HEAD', since], repo_root).strip(), since)
+        )
+        relative = page.resolve().relative_to(repo_root).as_posix()
+        before = countWords(runGit(['show', f'{base}:{relative}'], repo_root), page.suffix)
+    except GitError:
+        return f'{page}: {now:,} words. The page is not in HEAD of a git repository, so the page has no size to compare'
+    if not before:
+        return f'{page}: {now:,} words, 0 at {name}'
+    return f'{page}: {now:,} words, {before:,} at {name} ({round(100 * (now - before) / before):+d}%)'
+
+
+def plural(count: int, noun: str) -> str:
+    return f'{count} {noun}' if count == 1 else f'{count} {noun}s'
+
+
+def countWords(text: str, suffix: str) -> int:
+    return sum(len(passage.text.split()) for passage in prose.textPassages(text, suffix))
 
 
 def wordingFindings(prose_lines: list[tuple[int, str]], list_items: set[int], checked_file: Path) -> list[Finding]:

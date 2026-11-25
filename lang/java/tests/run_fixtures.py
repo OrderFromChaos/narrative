@@ -4,8 +4,8 @@ Each project is one Java level of GTNHGradle: this directory for Java 25, java8/
 fixtures of a project are the files of its fixtures/ directory, and in java8/ and jabel/ also the directories and files
 of ./fixtures that the project's shared-fixtures.txt names, one per line.
 
-For a file under fixtures/<code>/ whose name starts with Flagged, the expected codes are that code
-alone. For a file whose name starts with Clean, no code is expected. A warning counts as its code.
+For a file under fixtures/<code>/ whose name starts with Flagged, the expected codes are that code alone. For a file
+whose name starts with Clean, any code is a failure. A warning counts as its code.
 
 Usage:
     $ python3 tests/run_fixtures.py --gradle ~/.gradle/wrapper/dists/gradle-9.4.0-bin/<hash>/gradle-9.4.0/bin/gradle
@@ -52,7 +52,7 @@ def main() -> int:
 
 
 def checkProject(project_dir: Path, gradle: str, venv: Path | None) -> int:
-    """Run verify.py from one fixture project, and print each of its fixture files that has the wrong codes.
+    """Run verify.py from one fixture project, and print each fixture file of the project with the wrong codes.
 
     Returns:
         0 when every fixture file has its expected codes, 1 when one does not, 2 when verify.py did not run the checks.
@@ -60,7 +60,7 @@ def checkProject(project_dir: Path, gradle: str, venv: Path | None) -> int:
     targets = fixtureTargets(project_dir)
     venv_arguments = ['--venv', str(venv)] if venv else []
     target_arguments = [os.path.relpath(target, project_dir) for target in targets]
-    # with --no-fix there is no re-wrap, and the NAR125 fixtures stay ragged
+    # --no-fix skips the re-wrap, so the NAR125 fixtures stay ragged
     command = [sys.executable, str(VERIFY_PATH), '--gradle', gradle, *venv_arguments, '--no-fix', *target_arguments]
     result = subprocess.run(command, cwd=project_dir, capture_output=True, text=True, check=False)
     name = project_dir.relative_to(TESTS_DIR).as_posix() if project_dir != TESTS_DIR else 'tests'

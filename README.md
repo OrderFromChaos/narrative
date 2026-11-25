@@ -259,6 +259,8 @@ Values indicate rate per 100 comment blocks, with 95% CIs.
 | `NAR025` | `no`, `nothing` or `none` on a subject or an object: `writes nothing`, `no invoice is sent twice` |
 | `NAR026` | a condition as a phrase before a comma: `With a full disk, export() deletes the partial file` |
 | `NAR027` | the value of a constant in a comment: `# retry every 30 s` above `RETRY_DELAY_SECONDS = 30` |
+| `NAR028` | a release named by its place in the history, on a page: `bundles before this version` |
+| `NAR029` | a sentence without a verb in a comment or docstring: `In tooltip order.` |
 
 `NAR000` is code for a file that could not be read or parsed.
 

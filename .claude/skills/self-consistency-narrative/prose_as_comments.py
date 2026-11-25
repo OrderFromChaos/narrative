@@ -1,11 +1,11 @@
 """Write the comment examples of the skill documents as Python files, so agentverbs.py can read them.
 
-Each rule module and each document of a language gets one examples file, named after the module's
-path: `core__rules__comments_examples.py` has every comment example of `core/rules/comments.md`, from
-backticks in the prose and from code blocks, as a trailing comment on the line of the example's
-source. agentverbs.py skips backticked text in prose, and reads each trailing comment as a separate
-passage, so each example is checked alone. The prose of the documents is checked directly:
-`agentverbs.py core/rules/*.md`.
+Each rule module and each document of a language gets one examples file, named after the module's path:
+`core__rules__comments_examples.py` has every comment example of `core/rules/comments.md`, from backticks in the prose
+and from code blocks, on the line of the example's source. An example from the prose, and a comment after code, are
+written as a trailing comment, and agentverbs.py reads each trailing comment as a separate passage, so each example is
+checked alone. A full-line comment of a code block stays a full-line comment, so a comment of several lines is one
+passage. The prose of the documents is checked directly: `agentverbs.py core/rules/*.md`.
 
 Usage:
     $ python3 prose_as_comments.py OUT_DIR
@@ -59,6 +59,10 @@ def commentExamples(markdown: str) -> str:
         if stripped.startswith('```'):
             in_code = not in_code
             examples.append('')
+            continue
+
+        if in_code and stripped.startswith('# '):
+            examples.append(stripped)
             continue
 
         if in_code:

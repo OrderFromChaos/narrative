@@ -9,7 +9,7 @@ public abstract sealed class CleanSealed permits CleanSealed.Whole, CleanSealed.
         this.name = name;
     }
 
-    /** A kind with an int value. */
+    /** Each {@code Whole} has an int value. */
     public static final class Whole extends CleanSealed {
 
         public Whole(String name) {
@@ -17,7 +17,7 @@ public abstract sealed class CleanSealed permits CleanSealed.Whole, CleanSealed.
         }
     }
 
-    /** A kind with a long value. */
+    /** Each {@code Wide} has a long value. */
     public static final class Wide extends CleanSealed {
 
         public Wide(String name) {

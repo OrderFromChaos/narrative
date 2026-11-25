@@ -6,7 +6,11 @@ fix findings, so read the lists from the run after the fixes. The first list has
 docstring in the code, and every sentence of each named page. The second has each subject that
 cannot act, paired with the subject's verb, for every verb that is neither a `NAR017` finding nor
 an operation of code. A verb such as `reads` or `runs` is an operation of code only with a direct
-object and code as the verb's subject: `PlanLoader reads the plan file` is one, and `the spec reads` isn't. The
+object and code as the verb's subject: `PlanLoader reads the plan file` is one, and `the spec reads` isn't. A name in
+a javadoc `{@link}`, `{@linkplain}` or `{@code}` tag isn't code for this test, and the second list has the pair with the
+bare name. Read the sentence with the bare name: `{@link #depot} and {@link #route} take the last part of a stop id`
+reads as `depot and route take the last part of a stop id`. A reader of the bare sentence can't tell the argument or the
+result of a call. Write the call and the result: `route("north.12")` returns `"12"`. (R14-bare-name) The
 third has every sentence with `it`, `its`, or a standalone `that`, each after the sentence before. The fourth has every
 sentence with a free modifier: write the phrase as a clause or a separate sentence, or cut the phrase
 (R12-no-free-modifier). The fifth list has each docstring, javadoc, and member comment, and each function over 20 body lines (`NAR116`). Take these steps for each

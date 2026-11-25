@@ -59,6 +59,9 @@ INLINE_ELEMENTS = frozenset({
     'a', 'abbr', 'b', 'cite', 'code', 'data', 'dfn', 'em', 'i', 'kbd', 'mark', 'q', 's', 'samp',
     'small', 'span', 'strong', 'sub', 'sup', 'time', 'tspan', 'u', 'var', 'wbr',
 })  # fmt: skip
+# matches:
+# `h2`
+HTML_HEADING = re.compile(r'h[1-6]')
 # inline elements whose text is code, kept in backticks
 CODE_ELEMENTS = frozenset({'code', 'kbd', 'samp', 'var'})
 # matches:
@@ -67,13 +70,16 @@ SENTENCE_BREAK = re.compile(r'(?<=[.!?])\s+')
 
 
 def readPassages(prose_file: Path) -> list[Passage]:
-    """Read one Markdown, HTML or plain text file into passages, chosen by the file's suffix.
+    return textPassages(prose_file.read_text(encoding='utf-8'), prose_file.suffix)
+
+
+def textPassages(text: str, suffix: str) -> list[Passage]:
+    """Read the text of a Markdown, HTML or plain text page into passages, chosen by the suffix of the page.
 
     Returns:
         The passages in line order.
     """
-    text = prose_file.read_text(encoding='utf-8')
-    suffix = prose_file.suffix.lower()
+    suffix = suffix.lower()
     if suffix in ('.html', '.htm'):
         return htmlPassages(text)
     if suffix in ('.md', '.markdown'):
@@ -129,7 +135,8 @@ def markdownPassages(markdown: str) -> list[Passage]:
             continue
         if start := HEADING.match(line) or LIST_MARKER.match(line):
             list_item = start.re is LIST_MARKER
-            passages.append(Passage((number,), (inlineText(line[start.end() :]),), list_item))
+            level = 0 if list_item else len(start.group(0).strip())
+            passages.append(Passage((number,), (inlineText(line[start.end() :]),), list_item, level))
             # a heading is one line, and a list item takes the indented lines after the item
             open_passage = list_item
             continue
@@ -195,19 +202,21 @@ def paragraphPassages(text: str) -> list[Passage]:
 class Passage:
     """Consecutive lines of prose, read as one text.
 
-    A list item can open with a term and a dash, so the dash check of wording.py skips the item.
+    A list item can open with a term and a dash, so the dash check of wording.py skips the item. `heading` is the level
+    of a heading, from 1 for `#` or `h1` to 6, and 0 for a passage that isn't a heading.
     """
 
     lines: tuple[int, ...]
     texts: tuple[str, ...]
     list_item: bool = False
+    heading: int = 0
 
     @property
     def text(self) -> str:
         return ' '.join(self.texts)
 
     def extendedBy(self, number: int, text: str) -> Passage:
-        return Passage((*self.lines, number), (*self.texts, text), self.list_item)
+        return Passage((*self.lines, number), (*self.texts, text), self.list_item, self.heading)
 
     def sentences(self) -> list[tuple[int, str]]:
         """Split the passage into sentences, each with the line on which the sentence starts.
@@ -215,17 +224,21 @@ class Passage:
         Returns:
             The line and the text of each sentence, in order.
         """
-        # Passage.text is the lines joined by single spaces. ends is the offset after each line, for bisect_right()
-        ends = list(itertools.accumulate(len(text) + 1 for text in self.texts))
         found: list[tuple[int, str]] = []
         cursor = 0
         for sentence in SENTENCE_BREAK.split(self.text.strip()):
             if not sentence:
                 continue
             cursor = max(self.text.find(sentence, cursor), 0)
-            found.append((self.lines[min(bisect.bisect_right(ends, cursor), len(self.lines) - 1)], sentence))
+            found.append((self.lineAt(cursor), sentence))
             cursor += len(sentence)
         return found
+
+    def lineAt(self, offset: int) -> int:
+        """Find the line of the character at `offset` in Passage.text."""
+        # Passage.text is the lines joined by single spaces. ends is the offset after each line, for bisect_right()
+        ends = list(itertools.accumulate(len(text) + 1 for text in self.texts))
+        return self.lines[min(bisect.bisect_right(ends, offset), len(self.lines) - 1)]
 
     def lineOf(self, hit: str) -> int:
         """Find the line of a hit such as `summary shows`.
@@ -255,6 +268,8 @@ class HtmlProse(HTMLParser):
         # line number to text, for the passage being read
         self.pending: dict[int, str] = {}
         self.pending_list_item = False
+        # the level of the heading being read, or 0
+        self.pending_heading = 0
         self.done: list[Passage] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -265,6 +280,7 @@ class HtmlProse(HTMLParser):
         elif tag not in INLINE_ELEMENTS:
             self.endPassage()
             self.pending_list_item = tag == 'li'
+            self.pending_heading = int(tag[1]) if HTML_HEADING.fullmatch(tag) else 0
 
     def handle_endtag(self, tag: str) -> None:
         if tag in SKIPPED_ELEMENTS:
@@ -287,9 +303,10 @@ class HtmlProse(HTMLParser):
         lines = [(number, text) for number, text in lines if text]
         if lines:
             numbers, texts = zip(*lines, strict=True)
-            self.done.append(Passage(tuple(numbers), tuple(texts), self.pending_list_item))
+            self.done.append(Passage(tuple(numbers), tuple(texts), self.pending_list_item, self.pending_heading))
         self.pending = {}
         self.pending_list_item = False
+        self.pending_heading = 0
 
     def passages(self) -> list[Passage]:
         self.endPassage()

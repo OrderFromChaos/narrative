@@ -45,14 +45,15 @@ nothing.
    `core/tools/`, which the built skill copies beside them, so `MYPYPATH` names both directories:
 
    ```bash
-   cd <scratch> && MYPYPATH=<repo>/core/tools:<repo>/lang/java/tools PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skills/python/verify.py --venv <repo>/.lintenv <repo>/lang/java/tools/javachecks.py <repo>/lang/java/tools/codeprose.py <repo>/lang/java/tools/verify.py <repo>/lang/java/tests/run_fixtures.py <repo>/lang/java/tests/run_rewrap.py
+   cd <scratch> && MYPYPATH=<repo>/core/tools:<repo>/lang/java/tools PATH=<repo>/.lintenv/bin:$PATH <repo>/.lintenv/bin/python <repo>/skills/python/verify.py --venv <repo>/.lintenv <repo>/lang/java/tools/javachecks.py <repo>/lang/java/tools/codeprose.py <repo>/lang/java/tools/verify.py <repo>/lang/java/tests/run_fixtures.py <repo>/lang/java/tests/run_rewrap.py <repo>/lang/java/tests/run_review.py
    ```
 
    All 7 checks must pass.
 
 5. **Fixtures**: `python3 lang/java/tests/run_fixtures.py --gradle <gradle>` reports 0 files with the wrong
    codes. One Gradle run at a time, at `nice -n 19`. `~/.local/share/narrative/lintenv/bin/python
-   lang/java/tests/run_rewrap.py` reports 0 cases wrong.
+   lang/java/tests/run_rewrap.py` and `lang/java/tests/run_review.py`, with the same interpreter, each report 0 cases
+   wrong.
 
 6. **Records and build**: `python3 verify_docs.py` reports 0 problems.
 

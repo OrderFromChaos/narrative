@@ -17,6 +17,10 @@ checking the value. Label a claim without data as a hypothesis, or delete the cl
 assumption as an assumption. A spike at 08:30 may be the school run and unrelated to the timetable
 change.
 
+**Replace each relative time with a release or a date from the history of the project.** (R14-dated) `Exports before
+this version don't have a route column` → `Exports before 1.1.0 don't have a route column`. Do the same for `older bundles`,
+`recently`, `(current)` and `found later`.
+
 **Don't claim more than the data shows.** (R13-no-overclaim) When a pattern has a simpler cause,
 name the cause. A value that only goes down is at the lowest reading on record at each new failure.
 A failure at that reading is the expected result of any failure, and isn't evidence about the value.

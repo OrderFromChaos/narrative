@@ -15,10 +15,15 @@ page.
 In these rules, the reader is the target audience of the page, named before you write (**Reader**),
 never a generic reader.
 
-**The steps, in short.** (R13-steps)
-1. Load `nar:core`, this skill, and the category skill of the page, before you plan the page.
-2. Name the target audience, and the question of the page.
-3. Write the page, then run `verify.py` on the page once (**Verify a page**).
-4. Fix each finding, take **Prose review** of `nar:core` for each sentence you wrote, then check the
-   page against the checklist at the end of this skill.
+**Load `nar:core`, this skill and the category skill of the page before you plan the page.** (R13-steps)
+
+**To write a new page, name the reader and the question, write the page, and run `verify.py` once.** (R13-steps) Fix
+each finding, take **Prose review** of `nar:core`, and check the page against the checklist at the end of this skill.
+
+**To clean up a page, cut before you change a sentence.** (R14-cleanup-steps)
+1. Name the reader and the question of the page.
+2. Label each section `keep`, `move` or `cut` (R14-triage).
+3. Make the moves and the cuts, and check that each moved fact is on the destination page.
+4. Date each relative time (R14-dated).
+5. Run `verify.py --cleanup`, fix each finding, and take **Prose review**.
 

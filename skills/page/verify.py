@@ -14,9 +14,13 @@ the path of the saved page.
 When a file or a page was checked, verify.py writes five review lists, over the Python files and the pages, to
 review-lists.txt in the cache directory, .narrative_cache, or the directory given with --cache-dir: every sentence,
 every subject that cannot act paired with the subject's verb, every sentence with a pronoun, every sentence with a free
-modifier, and each declaration with a docstring or a comment and each function over 20 body lines (NAR116). The path of
-the file and the number of entries in each list are on the last line of the output, so `tail -1` shows them. Each list
-stops after 1000 entries, and the last line of the list is the command for the next 1000. --since removes the limit.
+modifier, and each declaration with a docstring or a comment and each function over 20 body lines (NAR116). When a page
+was named, a sixth list has each section of each page with the section's words and lines. The path of the file and the
+number of entries in each list are on the last line of the output, so `tail -1` shows them. Each list stops after 1000
+entries, and the last line of the list is the command for the next 1000. --since removes the limit.
+
+--cleanup prints the words of each named page, and the words of the page at HEAD, or at merge-base(HEAD, REF) with
+--since. Pass --cleanup when the user asks for a cleanup of a page.
 
 --since REF limits the findings and the list entries to lines that the diff against merge-base(HEAD, REF) adds or
 changes. A finding on a `def` or `class` line counts for every line of the definition, and a finding in a comment,
@@ -38,6 +42,7 @@ Usage:
     $ python3 verify.py . --no-fix           # report only, change nothing
     $ python3 verify.py . --venv .lintenv    # a venv other than the shared one (SHARED_VENV)
     $ python3 verify.py README.md docs/report.html
+    $ python3 verify.py README.md --no-fix --cleanup     # and the words of README.md against HEAD
     $ python3 verify.py . --since origin/main     # only lines changed since merge-base(HEAD, origin/main)
     $ printf '%s\n' "$DRAFT" | python3 verify.py - --cache-dir /tmp/narrative     # a page from stdin
 
@@ -65,7 +70,19 @@ from typing import Any
 
 from codeprose import changeSpans
 from prose import PROSE_SUFFIXES
-from wording import ChangedLines, GitError, Spans, countEntries, findFiles, inChange, readChangedLines
+from wording import (
+    SECTIONS_HEADING,
+    ChangedLines,
+    GitError,
+    Spans,
+    changedLinesOf,
+    countEntries,
+    findFiles,
+    inChange,
+    listSections,
+    pageSize,
+    readChangedLines,
+)
 
 
 TOOLS = ('ruff', 'pylint', 'mypy', 'vermin')
@@ -80,8 +97,8 @@ SHARED_VENV = DATA_HOME / 'narrative' / 'lintenv'
 VENV_BIN = 'Scripts' if sys.platform == 'win32' else 'bin'
 VENV_PYTHON = 'python.exe' if sys.platform == 'win32' else 'python'
 SKIPPED = frozenset({'.venv', 'venv', '.lintenv', '.git', 'build', 'dist', '__pycache__'})
-# the default cache directory: the spaCy results of agentverbs.py, a page read from stdin, and the five review lists of
-# the last run, for Prose review. .ruff_cache and .mypy_cache are in the directory of the run
+# the default cache directory: the spaCy results of agentverbs.py, a page read from stdin, and the review lists of the
+# last run, for Prose review. .ruff_cache and .mypy_cache are in the directory of the run
 CACHE_DIR = Path('.narrative_cache')
 LISTS_NAME = 'review-lists.txt'
 # the command-line path of a page read from stdin
@@ -112,6 +129,11 @@ def main() -> int:
     parser.add_argument('--since', help='report only lines changed since merge-base(HEAD, SINCE)')
     parser.add_argument('--cache-dir', type=Path, default=CACHE_DIR, help=f'the cache directory (default: {CACHE_DIR})')
     parser.add_argument('--stdin-suffix', default='.md', help='the suffix of a page read from stdin (default: .md)')
+    parser.add_argument(
+        '--cleanup',
+        action='store_true',
+        help='print the words of each page, and the words at HEAD, or at the --since base',
+    )
     args = parser.parse_args()
     print(f'narrative skill: {readInstalledVersion()}')
 
@@ -186,9 +208,24 @@ def main() -> int:
         print(f'\nall {len(results)} checks passed')
         print('These lint checks cover only some of the rules. Check the other rules by hand.')
 
+    if args.cleanup:
+        print()
+        for page in pages:
+            print(pageSize(page, args.since))
+
     lists_path = cache_dir / LISTS_NAME
     review_arguments = [*prose_targets, *since]
-    counts = writeReviewLists(toolchain.python, review_arguments, cache, lists_path, all_sentences=args.all_sentences)
+    sections = (
+        [entry for page in pages for entry in listSections(page, changedLinesOf(changed, page))] if pages else None
+    )
+    counts = writeReviewLists(
+        toolchain.python,
+        review_arguments,
+        cache,
+        lists_path,
+        sections=sections,
+        all_sentences=args.all_sentences,
+    )
     if counts is None:
         print("verify.py: a review list command failed, so verify.py didn't write the review lists", file=sys.stderr)
         return EXIT_NO_TOOLCHAIN
@@ -208,16 +245,18 @@ def writeReviewLists(
     cache: list[str],
     lists_path: Path,
     *,
+    sections: list[str] | None,
     all_sentences: bool,
 ) -> str | None:
-    """Write the five lists for Prose review in SKILL.md to `lists_path`: sentences, agent verbs, pronouns, free
-    modifiers, and declarations.
+    """Write the lists for Prose review in SKILL.md to `lists_path`: sentences, agent verbs, pronouns, free modifiers,
+    declarations, and the sections of the pages.
 
     Args:
         python: The interpreter with the parser modules installed, for agentverbs.py.
         arguments: Every Python file and every page checked in this run, then the --since option.
         cache: The --cache option of agentverbs.py.
         lists_path: The file for the lists, in the cache directory.
+        sections: The section list of the named pages, or None without a page.
         all_sentences: List every entry, not only the first 1000 of each list.
 
     Returns:
@@ -228,7 +267,7 @@ def writeReviewLists(
     checker = Path(__file__).resolve().parent / 'checks.py'
     agent_verbs = Path(__file__).resolve().parent / 'agentverbs.py'
     every = ['--all-sentences'] if all_sentences else []
-    review_lists = (
+    review_lists = [
         (
             'sentences',
             '--- every sentence of every comment, docstring and page: read each against SKILL.md, Comments ---',
@@ -258,7 +297,9 @@ def writeReviewLists(
             ' and the code? ---',
             run([sys.executable, str(checker), '--declarations', *arguments]),
         ),
-    )
+    ]
+    if sections is not None:
+        review_lists.append(('sections', SECTIONS_HEADING, Output(0, '\n'.join(sections))))
     if any(listed.code != 0 for _unit, _heading, listed in review_lists):
         return None
 
@@ -650,7 +691,9 @@ def gradeVermin(output: Output) -> Result:
 
 @dataclass(frozen=True)
 class RuffEdit:
-    """One edit of a ruff fix. A position is a row and a column, counted from 1, and the end is not part of the edit."""
+    """A `RuffEdit` is one edit of a ruff fix. A position is a row and a column, counted from 1, and the end is not part
+    of the edit.
+    """
 
     start: tuple[int, int]
     end: tuple[int, int]

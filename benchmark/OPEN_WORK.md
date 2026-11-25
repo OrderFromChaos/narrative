@@ -201,7 +201,14 @@ specificity:
 
 The arms, the units and the scoring scripts are in `~/.local/share/narrative/eval-private/runs/claudish-rules/batch/`.
 
-## 9. For the user
+## 9. Labels on declarations (R14-verbless)
+
+`NAR029` leaves out a label on a constant, an enum constant or a field, and the text of a `@param`, `@return` or
+`Args:` entry. The user isn't sure that such labels are good, and asked for a closer look before a rule covers them. A
+start: sample the labels that `sentencePassages()` of `agentverbs.py` leaves out in GT5-Unofficial and PlanNH, and put
+the sample to the user as keep, cut or rewrite.
+
+## 10. For the user
 
 - Commit the branch, after review.
 - Archive the narrative-java repository, with a README line pointing to `nar@narrative`.

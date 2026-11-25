@@ -61,7 +61,7 @@ private static Level levelOf(Outcome outcome) {
     return switch (outcome) {
         case INGESTED -> Level.INFO;
         case REJECTED -> Level.WARN;
-        // no default arm. A new constant of Outcome is then a compile error
+        // a new constant of Outcome is a compile error, because the switch doesn't have a default arm
     };
 }
 ```

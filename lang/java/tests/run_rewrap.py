@@ -1,10 +1,9 @@
 """Run javachecks.py --rewrap on each case file and compare the result with the expected file.
 
-For tests/rewrap/<Name>.java the expected result is tests/rewrap/<Name>.expected.java. The re-wrap
-runs on a copy in a temporary directory, twice. After the second run, the file must be the same as
-after the first.
+For tests/rewrap/<Name>.java the expected result is tests/rewrap/<Name>.expected.java. The re-wrap runs on a copy in a
+temporary directory, twice. After the second run, the file must be the same as after the first.
 
-Usage, with the interpreter of the lint venv. javachecks.py imports spaCy from that venv:
+Run the script with the interpreter of the lint venv, because javachecks.py imports spaCy from that venv:
     $ ~/.local/share/narrative/lintenv/bin/python tests/run_rewrap.py
 
 Exit codes:

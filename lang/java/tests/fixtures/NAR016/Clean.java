@@ -4,7 +4,7 @@ package fixtures.nar016;
 public final class Clean {
 
     public static int size() {
-        // one map entry per plan
+        // the map has one entry for each plan
         return 1;
     }
 }

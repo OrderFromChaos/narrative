@@ -21,7 +21,7 @@ isn't a fact.
 digest of the sections. (R13-brief-summary)
 
 **State a fact on one page, and link to that page from the other pages.** (R13-brief-one-page) The
-GPS charts, route maps and fault codes live on the depot logs page. The brief has the conclusions
+GPS charts, route maps and fault codes are on the depot logs page. The brief has the conclusions
 and links to the depot logs page.
 
 **List the next investigation steps, and record what the user ruled out.** (R13-brief-next) Don't

@@ -22,7 +22,7 @@ gratuitous variation. When two rules conflict, follow the rule under which the r
 Second principle, for representation choices: **prefer what the type checker and IDE can follow**,
 even when a looser form is more flexible. The type checker here is javac. (R3-P2-rank)
 
-**The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
+**Take these steps in order.** (R11-steps-summary) The details are in **Procedures**, the last section.
 1. Load `nar:core` and this skill before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
 3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head`, or
@@ -97,20 +97,20 @@ public final class PlanFiles {
     public static final String PLAN_SUFFIX = ".plan";   // constants first, grouped BY CONCERN
     public static final int MAX_PLANS = 64;
 
-    private final Path planDir;                       // then fields, then constructors
+    private final Path planDir;                       // the fields and then the constructors follow
 
     public PlanFiles(Path planDir) {
         this.planDir = planDir;
     }
 
-    public List<Plan> readAll() throws PlanException {  // the entry point, then callees in
-        ...                                           // first-call order
+    public List<Plan> readAll() throws PlanException {  // the entry point comes next
+        ...                                           // callees follow in first-call order
     }
 
     private Plan readOne(Path planPath) throws PlanException { ... }
 
     /** One plan file, parsed. */
-    public record Plan(String name, int machineCount) {}  // nested types LAST
+    public record Plan(String name, int machineCount) {}  // nested types go LAST
 }
 ```
 
@@ -314,7 +314,7 @@ private static Level levelOf(Outcome outcome) {
     return switch (outcome) {
         case INGESTED -> Level.INFO;
         case REJECTED -> Level.WARN;
-        // no default arm. A new constant of Outcome is then a compile error
+        // a new constant of Outcome is a compile error, because the switch doesn't have a default arm
     };
 }
 ```
@@ -628,7 +628,7 @@ sample. Keep it small, and re-paste the sample when the output changes.
  *     Centrifuge         4    0.25/s
  * </pre>
  *
- * A machine with no rate shows {@code -} in the RATE column.
+ * The RATE column has {@code -} for a machine without a rate.
  */
 ```
 
@@ -782,8 +782,8 @@ final int tier = tag.hasKey("tier") ? tag.getInteger("tier") : 1;
 - `// Character.isDigit() accepts non-ASCII digits such as '٣'. Check the range '0' to '9' too`
 - the `X would` form in full:
   ```java
-  // Here Files.readAllBytes() is used. The alternative, Files.readString(), would throw
-  // MalformedInputException on a byte that is not UTF-8.
+  // Here Files.readAllBytes() is used. The alternative, Files.readString(), would throw MalformedInputException on a byte
+  // that is not UTF-8.
   final byte[] planBytes = Files.readAllBytes(planPath);
   ```
 
@@ -792,8 +792,8 @@ final int tier = tag.hasKey("tier") ? tag.getInteger("tier") : 1;
 ### Depth
 
 ```java
-// The vendor API returns at most 100 rows per page, and doesn't return a total count.
-// Keep requesting until a page comes back short.
+// The vendor API returns at most 100 rows per page, and doesn't return a total count. Keep requesting until a page
+// comes back short.
 while ((page = fetchPage(cursor)).size() == PAGE_SIZE) {
 ```
 

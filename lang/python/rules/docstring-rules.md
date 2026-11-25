@@ -7,12 +7,12 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 - **It is visible in the file.** `frozen=True` is on the line above. `| None` is in the signature.
   A reader who has the file open does not need either restated.
 - **Its negation would be a bug, an absurdity, or an implementation that a developer wouldn't ship.** Negate the
-  sentence and read it back. `it never holds a value that the file did not state` negates to a bug.
+  sentence and read it back. `the field is never set to a value missing from the file` negates to a bug.
   `An empty line doesn't have a value` negates to an absurdity. `Other files are skipped, so the quota file
   can share the directory` negates to a scanner that dies on a stray file. A developer wouldn't ship that scanner.
   All three are free sentences and all three go. **Assume the reader expects competent code, and
   document only the departures.**
-- **It is a language feature, explained.** `Such a field holds None` repeats what optional means.
+- **It is a language feature, explained.** `Such a field can be None` repeats what optional means.
 - **It goes stale and the tools don't check it**, unless it is a sample you accept that cost for.
 
 **Compress what survives:**

@@ -23,7 +23,7 @@ Second principle, for representation choices: **prefer what the type checker and
 even when a looser form is more flexible. State in a `dict[str, Any]` passes `mypy --strict` only
 with a `cast()` or a key lookup at every use. Typed attributes pass with neither. (R3-P2-rank)
 
-**The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
+**Take these steps in order.** (R11-steps-summary) The details are in **Procedures**, the last section.
 1. Load `nar:core` and this skill before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
 3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head`, or
@@ -47,7 +47,7 @@ without an id or a linter behind the rule does not belong here.**
 ## File layout
 
 ```python
-from __future__ import annotations   # required for types-last
+from __future__ import annotations   # types-last needs this import
 
 import struct                        # plain imports, alphabetised
 import sys
@@ -67,15 +67,15 @@ def main() -> int:                   # FIRST. A reader starts here
     ...
 
 
-def stepOne(...) -> ...:             # workflow, in first-call order
+def stepOne(...) -> ...:             # the workflow functions follow, in first-call order
 def stepTwo(...) -> ...:
 def leafHelper(...) -> ...:
 
 
 ### vocabulary #########################################################################
 
-ScanId = NewType('ScanId', int)      # types LAST. A reader needs what main() passes
-class Outcome(Enum): ...             # around only after the high-level design
+ScanId = NewType('ScanId', int)      # the types go LAST, after the high-level design
+class Outcome(Enum): ...
 class ConfigError(RuntimeError): ...
 @dataclass(frozen=True)
 class ScanHeader: ...
@@ -659,12 +659,12 @@ The summary line is mandatory. **A body is not, and usually does not earn its pl
 - **It is visible in the file.** `frozen=True` is on the line above. `| None` is in the signature.
   A reader who has the file open does not need either restated.
 - **Its negation would be a bug, an absurdity, or an implementation that a developer wouldn't ship.** Negate the
-  sentence and read it back. `it never holds a value that the file did not state` negates to a bug.
+  sentence and read it back. `the field is never set to a value missing from the file` negates to a bug.
   `An empty line doesn't have a value` negates to an absurdity. `Other files are skipped, so the quota file
   can share the directory` negates to a scanner that dies on a stray file. A developer wouldn't ship that scanner.
   All three are free sentences and all three go. **Assume the reader expects competent code, and
   document only the departures.**
-- **It is a language feature, explained.** `Such a field holds None` repeats what optional means.
+- **It is a language feature, explained.** `Such a field can be None` repeats what optional means.
 - **It goes stale and the tools don't check it**, unless it is a sample you accept that cost for.
 
 **Compress what survives:**
@@ -750,7 +750,7 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 ### Decoding aids
 
 - `SIZE_PATTERN = re.compile(...)  # number, then an optional binary unit suffix`
-- `# fsum() for accurate floating point math`
+- `# fsum() adds floats without the rounding error of sum()`
 - a regex, with a string the regex matches and one the regex rejects:
   ```python
   # matches:
@@ -769,8 +769,8 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 - `# isdigit() admits non-ASCII digits such as '²'. Check isascii() too`
 - the `X would` form in full:
   ```python
-  # Here read_bytes() is used. The alternative, read_text(), would turn \r\n and \r into \n, even
-  # inside a quoted CSV field.
+  # Here read_bytes() is used. The alternative, read_text(), would turn \r\n and \r into \n, even inside a quoted CSV
+  # field.
   csv_bytes = csv_path.read_bytes()
   ```
 
@@ -779,8 +779,8 @@ account_id = row['account_id'] if 'account_id' in row.keys() else None
 ### Depth
 
 ```python
-# The vendor API returns at most 100 rows per page, and doesn't return a total count.
-# Keep requesting until a page comes back short.
+# The vendor API returns at most 100 rows per page, and doesn't return a total count. Keep requesting until a page comes
+# back short.
 while len(page := fetchPage(cursor)) == PAGE_SIZE:
 ```
 

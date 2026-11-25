@@ -385,7 +385,7 @@ def checkHasattrSelf(tree: ast.Module, checked_file: Path) -> list[Finding]:
 def checkArgsPerLine(tree: ast.Module, checked_file: Path) -> list[Finding]:
     """Flag `def` signatures with more than three arguments on one line.
 
-    Signatures only. Calls are exempt.
+    Calls are exempt.
 
     The formatter cannot do this. `ruff format` leaves a four-argument signature alone while the signature fits in 120
     columns, and COM812 only fires once a construct has already been split.

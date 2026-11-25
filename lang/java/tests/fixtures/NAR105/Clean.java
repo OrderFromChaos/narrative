@@ -9,7 +9,7 @@ public final class Clean {
         compound.setString("size", size.name());
     }
 
-    /** The size of a plan. */
+    /** Each plan has one size. */
     public enum Size {
         SMALL,
         LARGE

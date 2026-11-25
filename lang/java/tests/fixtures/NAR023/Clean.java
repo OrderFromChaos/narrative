@@ -13,7 +13,7 @@ public final class Clean {
         return span;
     }
 
-    /** The doubled span, at least 1. */
+    /** Returns the doubled span, at least 1. */
     public int doubledSpan() {
         final int doubled = 2 * span;
         return Math.max(1, doubled);

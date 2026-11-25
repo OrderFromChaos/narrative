@@ -13,7 +13,7 @@ gratuitous variation. When two rules conflict, follow the rule under which the r
 Second principle, for representation choices: **prefer what the type checker and IDE can follow**,
 even when a looser form is more flexible. The type checker here is javac. (R3-P2-rank)
 
-**The steps, in short. The details are in Procedures, the last section.** (R11-steps-summary)
+**Take these steps in order.** (R11-steps-summary) The details are in **Procedures**, the last section.
 1. Load `nar:core` and this skill before you plan a change, not only before you edit.
 2. Make a batch of edits, then run `verify.py` once for the batch.
 3. Read the findings and the review lists of that run. Do not filter the output with `grep`, `head`, or

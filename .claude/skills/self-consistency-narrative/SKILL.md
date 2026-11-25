@@ -94,7 +94,8 @@ Do not fix these, and do not re-report them as new:
   connection), `stages that nothing reuses`
 - trade terms: `the source pushes` and `when the source can push` (push notifications)
 - a banned word named in the rule that bans the word (`deliberately`, `holds`, `its own`, `no longer`
-  in the bullets that ban them), quoted bad examples, and dashes after a list-item term
+  in the bullets that ban them), the fault that a quoted bad example shows, and dashes after a list-item term.
+  Fix each other fault of a bad example, so that the example shows the fault of one rule
 - decision ids and the missing module docstring in the generated files
 
 When a hit is new, judge it by reading the sentence: does a non-person subject do something only a

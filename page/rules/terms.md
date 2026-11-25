@@ -12,9 +12,9 @@ and define the term in one sentence at first use.
 - `Ways around the queue` → `Queue exceptions`
 - `The two forms` → `Refund request form`
 
-**One term, one meaning.** (R13-one-meaning) Don't use one word for two things on one page, such as
-`late` for a bus behind the timetable and for the rule of counting first delays. Don't use two words
-for one thing (**Reader**).
+**Give each term one meaning on the page.** (R13-one-meaning) Don't use one word for two things on
+one page, such as `late` for a bus behind the timetable and for the rule of counting first delays.
+Don't use two words for one thing (**Reader**).
 
 **Write out a method or a condition in place of a packed modifier.** (R13-packed-modifier) `flagged
 trip`, `clean week` and `first-delay AUC` each stand for a procedure, and `clean week` sounds like a

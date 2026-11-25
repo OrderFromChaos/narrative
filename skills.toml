@@ -116,6 +116,7 @@ files = [
     "core/tools/wording.py",
     "core/tools/words.json",
     "core/tools/requirements-lock.txt",
+    "page/a11y-dark.css",
 ]
 requires = ["core"]
 

@@ -11,7 +11,8 @@ Each of these is a comment block:
 - one `/* */` comment
 
  In a passage of prose, a blank line, a pragma, a divider, a
-list item, a ``` fence, and a block tag of a doc comment start a new passage, and the lines of a sample such as `\\code`
+list item, a fence of three backticks, and a block tag of a doc comment start a new passage, and the lines of a sample
+such as `\\code`
 ... `\\endcode` are left out. A block for the re-wrap is a run of whole-line comments, or one `/* */` comment over
 several lines. A trailing comment, a one-line `/* */` comment, and a `//` comment continued by a backslash are never
 re-wrapped. In a `/* */` comment, the line of the opener and the line of `*/` are fixed.
@@ -384,7 +385,7 @@ def plainUnchanged(text: str) -> str:
 
 @dataclass(frozen=True)
 class Span:
-    """The offsets of one comment in the source, from `//` or `/*` up to the line break or after `*/`."""
+    """A `Span` has the offsets of one comment in the source, from `//` or `/*` up to the line break or after `*/`."""
 
     start: int
     end: int
@@ -423,7 +424,7 @@ NO_MARKUP = DocMarkup(
 
 @dataclass(frozen=True)
 class Language:
-    """One language of the `//` and `/* */` family. The module of the language defines the value.
+    """A `Language` is one language of the `//` and `/* */` family. The module of the language defines the value.
 
     `lex()` returns the comment spans in source order. `doc_openers` lists the openers of a doc comment, such as `/**`
     and `///`. `pragma` matches the text of a tool directive that is not prose, such as `NOLINT` or `eslint-disable`.
@@ -439,8 +440,8 @@ class Language:
 
 @dataclass(frozen=True)
 class Comment:
-    """One comment as written. `texts` has the line number and the text of each line. The text doesn't include the
-    opener and `*/`."""
+    """A `Comment` is one comment as written. `texts` has the line number and the text of each line. The text doesn't
+    include the opener and `*/`."""
 
     opener: str
     texts: tuple[tuple[int, str], ...]

@@ -159,7 +159,7 @@ changes. (J1-pr-base-comments)
     vendor API accepts`
   The item is about config comments too, because a config comment is code text. Help text for
   players in the lang file is outside the item. A tooltip may have `Range 8-64 blocks`. `NAR027` flags a
-  number in a comment that is the value of a constant the comment names, or of a constant just below
+  number in a comment that is the value of a constant named in the comment, or of a constant just below
   (R12-no-constant-values)
 - alternatives never in the code (`rather than`, `instead of`), except in architecture discussion (R10-Q07, R10-rather-than)
 - risks far outside the task's scale, and decisions too inconsequential for a later reader to reconsider (R10-Q13, R10-rating)
@@ -188,8 +188,8 @@ R10-depth-example, R10-period-join)
 - a one-line comment has a lowercase start, and doesn't end with a period. Several lines, and every docstring, are sentences. (R10-Q26, R10-Q35, R10-docstrings)
 - two sentences over a connective such as `which`, `since`, `as`, or `, where`. A reader can attach
   the clause after a connective to the wrong noun. `migrate before load, which reads the
-  account_id column` → `migrate before load. load reads the account_id column`. A comparison with
-  `as` to other code states no fact: `a float, as in the parser` → `the parser computes in float
+  account_id column` → `migrate before load. load reads the account_id column`. Write the fact in place of
+  a comparison with `as` to other code: `totals are floats, as in the parser` → `the parser computes in float
   too`. `NAR021` flags `as in`, a sentence that opens with `As` and doesn't have a verb, `as the X verbs
   it`, and `, where` (R10-period-join, R11-connective-as-where)
 - no free modifier. A free modifier is a phrase without a verb that follows a comma. Each of these
@@ -247,7 +247,7 @@ R10-depth-example, R10-period-join)
 - possessives and noun compounds over relative clauses: `the archive's collections`, `in read order` (R10-seed-1, R10-seed-9, R10-Q32)
 - trade terms over paraphrase: `doesn't have side effects`. Modifiers before the noun: `JSONL logs`. (R10-seed-3, R10-seed-4)
 - the conclusion. State what the code means, and leave out how the code gets there: `empty when a
-  malformed line names no customer as a string` → `empty when malformed`. Cut a
+  malformed line has a customer field that isn't a string` → `empty when malformed`. Cut a
   clause about an internal check, structure, or attribute unless the reader needs the clause to act.
   (R10-conclusion)
 - no intensifiers. Drop a word that adds stress and doesn't add a fact, such as `exactly`,
@@ -282,18 +282,21 @@ R10-depth-example, R10-period-join)
   - `retry on a timeout, not on a refusal` → `retry on a timeout. Raise ConnectionError when the
     server refuses the connection`
   `NAR024` flags `, not` and `not merely` (R12-not-contrast)
-- don't make the first sentence of a docstring a noun phrase for the identifier. Write a sentence
-  with a verb about what the reader can't get from the name, or cut the docstring:
+- write each sentence with a verb. Rewrite a noun phrase for the identifier, or a fragment such as
+  `In tooltip order.`, as a sentence with a verb about what the reader can't get from the name, or
+  cut the fragment:
   - `The size of this stratum (number of lines)` on the field `size` → no javadoc, and the name
     `lineCount`
   - `A GL display list of the mob spawn overlay.` on the class `MobOverlayDisplayList` →
     `` `MobOverlayDisplayList` compiles the overlay quads of each chunk column into one GL display
     list. ``
   A label is fine on a constant, an enum constant or a field when the label has a fact that isn't
-  in the name, such as the look of a style:
+  in the name, such as the look of a style. The text of a `@param`, `@return` or `Args:` entry may be
+  a label too:
   - `` {@link #addVertices} adds a small square in the middle of the block `` on `SQUARE` →
     `A small square in the middle of an untinted block.`
-  When the fact fits in the name, rename the field. (R12-no-name-phrase, R12-label-constant)
+  When the fact fits in the name, rename the field. `NAR029` flags a sentence without a verb in the
+  other places. (R12-no-name-phrase, R12-label-constant, R14-verbless)
 - callables as `name()`, and no article before an identifier (R10-Q30, R10-Q35)
 - only names the reader can resolve from the comment's position (R10-Q22, R10-Q21)
 - only verbs for what code literally does, when the subject is code or an abstract noun. These verbs
@@ -326,7 +329,7 @@ R10-depth-example, R10-period-join)
 - no semicolon and no dash. Write two sentences (R10-no-semicolon, `NAR013`)
 - Write two sentences in place of a clause joined by a colon, or of an `X: Y` opening. When the
   half after the colon is a definition of the word before the colon, cut the definition:
-  `# idempotent: a second run changes nothing` → `# idempotent`. A colon is fine before a code
+  `# idempotent: a second run leaves the table unchanged` → `# idempotent`. A colon is fine before a code
   example or a bulleted list (R12-colon)
 - a list of more than two items after a colon in bullets. Put a sentence about the list above
   the bullets. A list of two items may be inline:

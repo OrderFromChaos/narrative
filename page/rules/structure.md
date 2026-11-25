@@ -1,5 +1,10 @@
 ## Structure
 
+**In a cleanup, label each section `keep`, `move` or `cut` before you change a sentence.** (R14-triage) Give each
+`keep` the reader's action, each `move` the other reader and the page, and each `cut` the reason. `The reader might
+want to know` isn't an action. Put the labels and the share of the page that you cut or moved in the report. A table
+of driver shifts on the depot manager's page about late buses is a `move` to the rota planner's page.
+
 **Name the reader's use of each section.** (R13-section-use) Do the same for each paragraph, table,
 chart and table row in the section, and delete what the reader can't use, even when the data is
 true, measured and hard to get. Delete a paragraph with the values of a chart or a table in words. A

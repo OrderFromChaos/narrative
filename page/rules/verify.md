@@ -9,6 +9,9 @@ wording checks and `agentverbs.py` run on a page, and a Python project's config 
 python3 "${CLAUDE_SKILL_DIR}/verify.py" docs/report.html --no-fix
 ```
 
+For a cleanup, add `--cleanup`. The last review list of the run is the section list. Give each entry of the section
+list the reader's action.
+
 A path of `-` is a page read from stdin, such as a draft that is not in a file yet. Take **Prose
 review** of `nar:core` on the lists of the run, and handle each finding by **A finding is
 information**.
@@ -24,7 +27,7 @@ this checklist, one item at a time, and fix each failure.
    Each heading follows the same rule.
 2. The page doesn't have a promotional word, an intensifier, a tagline heading, a strawman, a
    question setup, a label and colon in running prose, a kicker, a signpost, a fragment run, an
-   exclamation mark, or before and after framing.
+   exclamation mark, before and after framing, or two titles for one item.
 3. Each term is the system's name, the field's name or a plain description. A coined term recurs on
    the page and has a definition at first use. Each term has one meaning on the page.
 4. The summary, if the page has one, is about three lines with the conclusion, the status and the
@@ -44,3 +47,5 @@ this checklist, one item at a time, and fix each failure.
    - the latest data
 
    Each diagram passes **Diagrams**, and each table passes **Tables**.
+9. For a cleanup, the report has the `keep`, `move` or `cut` label of each section, and the share of the page that
+   you cut or moved.

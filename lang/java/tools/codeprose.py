@@ -195,7 +195,7 @@ def splitMarkup(text: str, *, javadoc: bool) -> tuple[bool, bool, str]:
     # `{@code List.copyOf}`
     # `{@link PlanReader#read(Path)}`
     # `{@linkplain PlanReader the reader}`
-    INLINE_TAG = re.compile(r'\{@(?:code|literal|link|linkplain|value)\s+([^}]*)\}')
+    INLINE_TAG = re.compile(r'\{@(code|literal|link|linkplain|value)\s+([^}]*)\}')
     # matches:
     # `@param planPath where the plan file is`
     # `@throws PlanException when the file has no machine count`
@@ -213,10 +213,33 @@ def splitMarkup(text: str, *, javadoc: bool) -> tuple[bool, bool, str]:
         breaks = True
         text = text[tag.end() :]
     list_item = list_item or bool(re.match(r'^<li>', text, re.IGNORECASE))
-    text = INLINE_TAG.sub(lambda inline: f'`{inline[1].strip()}`', text)
+    text = INLINE_TAG.sub(inlineSpan, text)
     text = re.sub(r'</?code>', '`', text)
     text = re.sub(r'<[^>]+>', ' ', text)
     return breaks, list_item, ' '.join(text.split())
+
+
+def inlineSpan(inline: re.Match[str]) -> str:
+    """Write an inline tag as a span in backticks.
+
+    A name in a `{@code}`, `{@link}` or `{@linkplain}` tag is written with the tag: `` `{@link #lang}` ``. reviewPairs()
+    of agentverbs.py reads the tag as the bare name. For other content, the span has the content only: `` `"/"` `` for
+    `{@code "/"}`.
+    """
+    # matches:
+    # `#lang`
+    # `ModifierKind`
+    # `PlanReader#read(Path) the reader`
+    # rejects:
+    # `"/"`
+    # `-1`
+    # `(a + b)`
+    NAME = re.compile(r'#?[A-Za-z_$][\w$]*(?:[.#][A-Za-z_$][\w$]*)*(?:\([^)]*\))?(?:\s+[^}]+)?')
+    tag, content = inline[1], inline[2].strip()
+    is_name = NAME.fullmatch(content) and content not in ('null', 'true', 'false', 'this')
+    if tag in ('code', 'link', 'linkplain') and is_name and (tag != 'code' or ' ' not in content):
+        return f'`{{@{tag} {content}}}`'
+    return f'`{content}`'
 
 
 def commentBlocks(source: str, _suffix: str = '.java') -> list[list[Line]]:
@@ -307,7 +330,7 @@ class CommentKind(Enum):
 
 @dataclass(frozen=True)
 class Comment:
-    """One comment as written. `texts` has the line number and the text of each line of the comment."""
+    """A `Comment` is one comment as written. `texts` has the line number and the text of each line of the comment."""
 
     kind: CommentKind
     texts: tuple[tuple[int, str], ...]

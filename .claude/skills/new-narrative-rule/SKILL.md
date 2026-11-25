@@ -22,14 +22,19 @@ description: Add or change a rule in the Narrative skill, tested on fresh agents
 4. **Generalize the rule.** Rewrite each example in another domain, so the examples aren't from the
    dataset. An agent copies the example of a rule word for word. Make the fix of each example the
    fix you want most often, such as a cut before a rewrite, and make the text after the arrow pass
-   the skill. Put the text after the arrow of each example through the review lists too, and rewrite
+   the skill. Make the text before the arrow break the new rule only, so the reader sees which fault
+   the rule is about. Put the text after the arrow of each example through the review lists too, and rewrite
    the text until the lists are empty. An imperative in a rule is a command that an agent follows in
    every case. Write `may` for a permission: `Write a list of two items inline` → `A list of two
-   items may be inline`.
+   items may be inline`. Open the rule with one bold imperative sentence, and add a sentence or an
+   example only where the rule is unclear without the sentence or the example. A bold noun phrase, such as `The steps for a
+   page that exists.`, is a label in place of a rule.
 5. **De-poison the rule text.** Run the checks of `.claude/skills/self-consistency-narrative/`
    (sections 2 and 3) on the rule text, and check each comment example as a comment. Read the
    rule text against the user's Claudish patterns and against the new rule itself. Fix each finding,
-   and run the checks again after every edit.
+   and run the checks again after every edit. Then read each draft of the batch as an agent that
+   loads the skill and never saw this session. Name each page, version and tool in full, so you don't
+   write `the other page`, `the version` or `the reader's tools` for a thing from this session.
 6. **Test the rule inside the full skill.** Insert the rule into a full copy of `skill/SKILL.md` in
    the scratchpad, and run fresh agents with that copy on the original dataset. Do not paste the
    rule into the prompt. The test is whether an agent follows the rule among every other rule of

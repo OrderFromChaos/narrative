@@ -4,7 +4,7 @@ package fixtures.nar018;
 public final class Clean {
 
     public static int size() {
-        // one cache per plan
+        // each plan gets one cache
         return 1;
     }
 }

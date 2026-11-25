@@ -13,7 +13,7 @@ public final class Clean {
         throw new IllegalArgumentException("unknown size " + size);
     }
 
-    /** The size of a plan. */
+    /** Each plan has one size. */
     public enum Size {
         SMALL,
         LARGE

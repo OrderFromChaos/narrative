@@ -210,7 +210,7 @@ class Line:
 
 @dataclass(frozen=True)
 class Paragraph:
-    """The lines of one paragraph, and the hang of the first line of the paragraph."""
+    """A `Paragraph` has the lines of one paragraph, and the hang of the first line of the paragraph."""
 
     lines: tuple[Line, ...]
     hang: int

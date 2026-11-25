@@ -24,12 +24,17 @@ page.
 In these rules, the reader is the target audience of the page, named before you write (**Reader**),
 never a generic reader.
 
-**The steps, in short.** (R13-steps)
-1. Load `nar:core`, this skill, and the category skill of the page, before you plan the page.
-2. Name the target audience, and the question of the page.
-3. Write the page, then run `verify.py` on the page once (**Verify a page**).
-4. Fix each finding, take **Prose review** of `nar:core` for each sentence you wrote, then check the
-   page against the checklist at the end of this skill.
+**Load `nar:core`, this skill and the category skill of the page before you plan the page.** (R13-steps)
+
+**To write a new page, name the reader and the question, write the page, and run `verify.py` once.** (R13-steps) Fix
+each finding, take **Prose review** of `nar:core`, and check the page against the checklist at the end of this skill.
+
+**To clean up a page, cut before you change a sentence.** (R14-cleanup-steps)
+1. Name the reader and the question of the page.
+2. Label each section `keep`, `move` or `cut` (R14-triage).
+3. Make the moves and the cuts, and check that each moved fact is on the destination page.
+4. Date each relative time (R14-dated).
+5. Run `verify.py --cleanup`, fix each finding, and take **Prose review**.
 
 ## Reader
 
@@ -74,6 +79,10 @@ checking the value. Label a claim without data as a hypothesis, or delete the cl
 assumption as an assumption. A spike at 08:30 may be the school run and unrelated to the timetable
 change.
 
+**Replace each relative time with a release or a date from the history of the project.** (R14-dated) `Exports before
+this version don't have a route column` → `Exports before 1.1.0 don't have a route column`. Do the same for `older bundles`,
+`recently`, `(current)` and `found later`.
+
 **Don't claim more than the data shows.** (R13-no-overclaim) When a pattern has a simpler cause,
 name the cause. A value that only goes down is at the lowest reading on record at each new failure.
 A failure at that reading is the expected result of any failure, and isn't evidence about the value.
@@ -92,6 +101,11 @@ the user had called very important. The agent restored the section as two senten
 unanswered questions, and left out the two tables of shifts.
 
 ## Structure
+
+**In a cleanup, label each section `keep`, `move` or `cut` before you change a sentence.** (R14-triage) Give each
+`keep` the reader's action, each `move` the other reader and the page, and each `cut` the reason. `The reader might
+want to know` isn't an action. Put the labels and the share of the page that you cut or moved in the report. A table
+of driver shifts on the depot manager's page about late buses is a `move` to the rota planner's page.
 
 **Name the reader's use of each section.** (R13-section-use) Do the same for each paragraph, table,
 chart and table row in the section, and delete what the reader can't use, even when the data is
@@ -144,17 +158,24 @@ UTC log times before they reach the page.
 `Route 12 Delays`, `Oven Logs`, `Supplier Onboarding`. `What the delay information shows` is a
 clause. Put the finding in the first sentence, and the name of the subject in the title.
 
+**Give a page, a section or a card one title.** (R14-one-title) `Bus network · Route audit · v2` over `Route 12
+delays` → `Route 12 delays`. Put `v2` in the first sentence.
+
+**When an item has a short name, use the name in each place, and leave out a letter or a code for the item.**
+(R14-name-not-letter) `cause B` → `late starts`. Leave a numbered name such as `Bake 2` on a run of a test plan
+(R13-test-plan).
+
 **A title or a heading is a noun phrase, with no clause.** (R13-heading-noun, R12-topic-heading)
 - `How the queue jams` → `Queue jams`
 - `Why the bread sank` → `Collapse cause`
 - `What starts a delay` → `Delay triggers`
 - `Who calls whom` → `Call paths`
 
-A reduced relative clause counts as a clause: `Rules the timetable keeps` → `Timetable rules`.
+A reduced relative clause counts as a clause: `Rules the drivers follow` → `Driver rules`.
 
 **Name a topic in a heading, and put the finding under the heading.** (R13-heading-topic)
 - `Route 12 runs late on Mondays because of the market` → `Monday market delays`
-- `The delay doesn't need traffic` → `Delay without traffic`
+- `Buses run late without traffic` → `Delay without traffic`
 
 Put the finding in the first sentence under the heading, where the finding has room for a status and
 a number.
@@ -175,8 +196,8 @@ Drop a leading `The` that a reader doesn't need, and sweep words such as `Every`
 **Start a dated heading with the date.** (R13-heading-date) `05-02 detour on Main Street`, `Council
 reply of 05-09`.
 
-**Use the words a reader types to find the page later.** (R13-heading-search) `what the information
-shows` → `route delays`.
+**Use the words a reader types to find the page later.** (R13-heading-search) `what we
+found` → `route delays`.
 
 **Don't repeat the parent heading, or the first line under the heading.** (R13-heading-repeat)
 
@@ -209,39 +230,42 @@ section, or a statistically significant result.
 A rhetorical setup is a common LLM tell. To test a sentence, delete the setup, and write the fact
 that is left as the sentence.
 
-**Denied strawman.** (R13-strawman) `Not just X, but Y`, `This isn't X. It's Y`, or `X, not Y` when
+**Leave out a denied strawman.** (R13-strawman) `Not just X, but Y`, `This isn't X. It's Y`, or `X, not Y` when
 a reader didn't think X. Write Y. `NAR024` flags `X, not Y` and `not merely`, and this rule covers
 the other forms too. When a reader is likely to assume X, write the fact about X in a separate
 sentence, with the reason X is wrong.
 - `The oven isn't the bottleneck, the proofing is` → `The oven waits on the proofing. Each tray is
   proofed before the oven is free.`
 
-**Question and answer.** (R13-question-setup) `The result?`, `Why does this matter?` or `The catch?`
-before the answer. Write the answer. A question belongs on a page only as a question without an
-answer yet.
+**Leave out a setup question before an answer.** (R13-question-setup) `The result?`, `Why does this
+matter?` and `The catch?` are such questions. Write the answer. A question belongs on a page only as
+a question without an answer yet.
 
-**A label and a colon in running prose.** (R13-label-colon) A colon or a dash splits the sentence
-into a label without a verb and the rest, with the short part on either side. A short tail is a
-reveal, such as `The fix: one line.` or `Here's the catch: …`. A short head is a label on an
-explanation, such as `AUC 0.9: a cut on rainfall separates …`, `Evidence: …` or `The user's point:
-…`. People don't speak this way. Write one ordinary sentence with a subject and a verb: `The north
-depot's delay is the only delay on each day of the week.` A label with a colon is fine in a bullet,
-a table cell, a caption, a glossary entry, and before a list.
+**Write a sentence in place of a label and a colon in running prose.** (R13-label-colon) A colon or
+a dash splits the sentence into a label without a verb and the rest, with the short part on either
+side. A short tail is a reveal, such as `The fix: one line.` or `Here's the catch: …`. A short head
+is a label on an explanation, such as `AUC 0.9: a cut on rainfall separates …`, `Evidence: …` or
+`The user's point: …`. People don't speak this way. Write one ordinary sentence with a subject and a
+verb: `The north depot's delay is the only delay on each day of the week.` A label with a colon is
+fine in a bullet, a table cell, a caption, a glossary entry, and before a list.
 
-**Kicker at the end of a section.** (R13-kicker) `In short, …`, `The bottom line: …`, `That's the
-whole story.`, `Nothing else.` End a section on the last fact.
+**Leave out a kicker at the end of a section.** (R13-kicker) `In short, …`, `The bottom line: …`,
+`That's the whole story.`, `Nothing else.` End a section on the last fact.
 
-**Signposts.** (R13-signposts) `Here's what you need to know`, `Let's break it down`, `It's worth
-noting that`, `Importantly,`, `This is where X comes in.` Delete the signpost and keep the rest.
+**Leave out signposts.** (R13-signposts) `Here's what you need to know`, `Let's break it down`,
+`It's worth noting that`, `Importantly,`, `This is where X comes in.` Delete the signpost and keep
+the rest.
 
-**Fragment runs and triplets.** (R13-fragments) `Simple. Fast. Reliable.`, or `faster, simpler and
-safer` without a fact behind each word. List only items with a fact on the page, and give the fact.
+**Leave out fragment runs and triplets.** (R13-fragments) `Simple. Fast. Reliable.`, or `faster,
+simpler and safer` without a fact behind each word. List only items with a fact on the page, and
+give the fact.
 
-**Dramatic punctuation.** (R13-punctuation) An em dash for a pause or a reveal, an exclamation mark,
-a one-word paragraph. Use a comma, a period or parentheses. Keep a dash for an aside only.
+**Leave out dramatic punctuation.** (R13-punctuation) An em dash for a pause or a reveal, an
+exclamation mark, a one-word paragraph. Use a comma, a period or parentheses. Keep a dash for an
+aside only.
 
-**Before and after framing without a change for the reader.** (R13-before-after) `No more waiting`,
-`Gone are the days`. Say what happens, with the number.
+**Leave out before and after framing without a change for the reader.** (R13-before-after) `No more
+waiting`, `Gone are the days`. Say what happens, with the number.
 
 ## Terms
 
@@ -257,9 +281,9 @@ and define the term in one sentence at first use.
 - `Ways around the queue` → `Queue exceptions`
 - `The two forms` → `Refund request form`
 
-**One term, one meaning.** (R13-one-meaning) Don't use one word for two things on one page, such as
-`late` for a bus behind the timetable and for the rule of counting first delays. Don't use two words
-for one thing (**Reader**).
+**Give each term one meaning on the page.** (R13-one-meaning) Don't use one word for two things on
+one page, such as `late` for a bus behind the timetable and for the rule of counting first delays.
+Don't use two words for one thing (**Reader**).
 
 **Write out a method or a condition in place of a packed modifier.** (R13-packed-modifier) `flagged
 trip`, `clean week` and `first-delay AUC` each stand for a procedure, and `clean week` sounds like a
@@ -313,6 +337,23 @@ series of how or when a reading was taken, such as GPS reads against driver repo
 export against the April export. Put the source of each reading in a footnote. When a chart had a
 series for the March export, the reader learned from the dots of that series only that the reads
 came from another export.
+
+**Style an HTML page in one dark theme, unless the user asks for a light theme.** (R14-dark-only) Leave out the light
+colours and the `prefers-color-scheme` rules, and check the contrast of each colour against the dark background only.
+
+**Highlight the syntax of each code block on an HTML page.** (R14-code-highlight) Name the language of each block,
+such as `class="language-java"`, load highlight.js 11.9.0 from cdnjs, and paste `${CLAUDE_SKILL_DIR}/a11y-dark.css`
+into the `<style>` of the page. Each colour of the `a11y-dark` theme has a contrast of at least 7:1 on the theme's
+background.
+
+**Keep the standard colour of a value, such as green for added lines and red for removed lines of a diff.**
+(R14-standard-colour) GitHub and `git diff` show added lines in green and removed lines in red, so a reader expects
+those colours on a count of changed lines. Write `+363 −67` with `+363` in green and `−67` in red. A failed test in
+red and a passed test in green follow the same rule.
+
+**Give each item of a set one colour, and use that colour for the item in the cards, the tables and the charts of the
+page.** (R14-item-colour) Four causes of late buses get four colours, and `late starts` has one colour on the card,
+the table and the chart.
 
 **Give each data series a colour of the series' own.** (R13-series-colour) Keep the colour of each
 series far in hue from the colour of each other series on the page. Next to red breakdown markers, a
@@ -388,6 +429,9 @@ wording checks and `agentverbs.py` run on a page, and a Python project's config 
 python3 "${CLAUDE_SKILL_DIR}/verify.py" docs/report.html --no-fix
 ```
 
+For a cleanup, add `--cleanup`. The last review list of the run is the section list. Give each entry of the section
+list the reader's action.
+
 A path of `-` is a page read from stdin, such as a draft that is not in a file yet. Take **Prose
 review** of `nar:core` on the lists of the run, and handle each finding by **A finding is
 information**.
@@ -403,7 +447,7 @@ this checklist, one item at a time, and fix each failure.
    Each heading follows the same rule.
 2. The page doesn't have a promotional word, an intensifier, a tagline heading, a strawman, a
    question setup, a label and colon in running prose, a kicker, a signpost, a fragment run, an
-   exclamation mark, or before and after framing.
+   exclamation mark, before and after framing, or two titles for one item.
 3. Each term is the system's name, the field's name or a plain description. A coined term recurs on
    the page and has a definition at first use. Each term has one meaning on the page.
 4. The summary, if the page has one, is about three lines with the conclusion, the status and the
@@ -423,3 +467,5 @@ this checklist, one item at a time, and fix each failure.
    - the latest data
 
    Each diagram passes **Diagrams**, and each table passes **Tables**.
+9. For a cleanup, the report has the `keep`, `move` or `cut` label of each section, and the share of the page that
+   you cut or moved.

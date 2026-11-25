@@ -80,7 +80,8 @@ come from Maven Central on the first run.
   [`tests/jabel/`](tests/jabel/). All three are checked by
   `python3 lang/java/tests/run_fixtures.py --gradle <gradle>`. The cases of
   `javachecks.py --rewrap` are in `tests/rewrap/`, checked by `lang/java/tests/run_rewrap.py` with
-  the interpreter of the lint venv.
+  the interpreter of the lint venv. The cases of the subject-verb pairs of `javachecks.py --prose` are in
+  `tests/review/`, checked by `lang/java/tests/run_review.py` with the same interpreter.
 - The prose checks are in [`core/tools/`](../../core/tools/), shared with the Python skill.
   `javachecks.py` reads Java comments through [`tools/codeprose.py`](tools/codeprose.py).
 
